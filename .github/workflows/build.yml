@@ -1,0 +1,108 @@
+on: [push]
+
+name: Build and Test
+
+jobs:
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+
+  codecov:
+    needs: test
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - uses: Swatinem/rust-cache@v2
+      - name: Install tarpaulin
+        run: cargo install cargo-tarpaulin
+        continue-on-error: true
+      - run: cargo tarpaulin --features ml --out Xml
+      - uses: codecov/codecov-action@v2
+
+  build_windows:
+    needs: test
+    name: Build Windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install mingw-w64
+        run: sudo apt-get install mingw-w64
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2022-12-20
+          target: x86_64-pc-windows-gnu
+          override: true
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: "windows"
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --target x86_64-pc-windows-gnu --release
+      - uses: actions/upload-artifact@v3
+        with:
+          name: rtz_x86_64-pc-windows-gnu
+          path: target/x86_64-pc-windows-gnu/release/rtz.exe
+
+  build_linux:
+    needs: test
+    name: Build Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2022-12-20
+          target: x86_64-unknown-linux-gnu
+          override: true
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: "linux"
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --target x86_64-unknown-linux-gnu --release
+      - uses: actions/upload-artifact@v3
+        with:
+          name: rtz_x86_64-unknown-linux-gnu
+          path: target/x86_64-unknown-linux-gnu/release/rtz
+
+  build_macos:
+    needs: test
+    name: Build MacOS
+    # TODO: Eventually, it would be better to cross-compile with `aarch64-apple-darwin`.
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v2
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: "mac"
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2022-12-20
+          target: aarch64-apple-darwin
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --target aarch64-apple-darwin --release
+      - uses: actions/upload-artifact@v3
+        with:
+          name: rtz_aarch64-apple-darwin
+          path: target/aarch64-apple-darwin/release/rtz
