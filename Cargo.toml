@@ -2,8 +2,29 @@
 name = "rtz"
 version = "0.1.0"
 edition = "2021"
+authors = ["Aaron Roney <twitchax@gmail.com>"]
+license = "MIT"
+description = "A tool to easily work with time zones via a binary, a library, or a server."
+readme = "README.md"
+homepage = "https://github.com/twitchax/rtz"
+repository = "https://github.com/twitchax/rtz"
+keywords = ["cli", "time", "zone", "timezone"]
+categories = ["command-line-utilities"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "rtzlib"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "rtz"
+path = "src/bin.rs"
+required-features = ["cli"]
+
+[features]
+default = ["cli"]
+
+cli = ["clap"]
 
 [dependencies]
 anyhow = { version = "1.0.72", features = ["backtrace"] }
@@ -20,7 +41,10 @@ cached = "0.44.0"
 serde = { version = "1.0.126" }
 serde_json = "1.0.64"
 
-tinyvec = "1.6.0"
+bincode = { version = "2.0.0-rc.3", git = "https://github.com/bincode-org/bincode.git", default-features = false, features = ["alloc", "serde"] }
+
+# cli
+clap = { version = "4.0.29", features = ["derive"], optional = true }
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"

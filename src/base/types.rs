@@ -1,34 +1,39 @@
-// Result Types.
+//! All of the types used in the library.
 
 use std::ops::Deref;
 
-use serde::{self, Serialize, Deserialize};
 use geo::{Coord, Geometry, Rect};
+use serde::{self, Deserialize, Serialize};
 
 use super::geo::get_timezones;
 
 // Result types.
 
 /// A shortened version of [`anyhow::Result<T>`].
-pub type Res<T> = anyhow::Result<T>;
+pub(crate) type Res<T> = anyhow::Result<T>;
 /// A shortened version of [`anyhow::Result<()>`](anyhow::Result).
 pub type Void = anyhow::Result<()>;
 /// A shortened version of [`anyhow::Error`].
-pub type Err = anyhow::Error;
+pub(crate) type Err = anyhow::Error;
 
 // Helper types.
 
-pub type RoundLngLat = (i16, i16);
-pub type LngLat = (f64, f64);
+pub(crate) type RoundInt = i16;
+pub(crate) type RoundLngLat = (RoundInt, RoundInt);
+pub(crate) type LngLat = (f64, f64);
 
-pub type TimezoneIds = [i16; 10];
+/// A collection of `id`s into the global time zone static cache.
+pub(crate) type TimezoneIds = [RoundInt; 10];
+/// A [`Timezone`] static reference.
 pub type TimezoneRef = &'static Timezone;
+/// A collection of [`Timezone`] static references.
 pub type TimezoneRefs = Vec<TimezoneRef>;
 
 // Geo Types.
 
-/// A collection of [`Timezone`]s.
-pub struct ConcreteTimezones(Vec<Timezone>);
+/// A concrete collection of [`Timezone`]s.
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) struct ConcreteTimezones(Vec<Timezone>);
 
 impl Deref for ConcreteTimezones {
     type Target = Vec<Timezone>;
@@ -62,24 +67,37 @@ impl<'a> IntoIterator for &'a ConcreteTimezones {
     }
 }
 
-/// A TZ version of [`geojson::Feature`].
-#[derive(Debug, Serialize)]
+/// A representation of the [Natural Earth Data](https://www.naturalearthdata.com/) 
+/// [geojson](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_10m_time_zones.geojson) 
+/// [`geojson::Feature`]s.
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Timezone {
+    /// The index of the [`Timezone`] in the global static cache.
     pub id: usize,
+    /// The `objectid` of the [`Timezone`].
     pub objectid: u64,
+    /// The `friendly_name` of the [`Timezone`] (e.g., `America/Los_Angeles`).
     pub friendly_name: Option<String>,
 
+    /// The `description` of the [`Timezone`] (e.g., the countries affected).
     pub description: String,
+    /// The `dst_description` of the [`Timezone`] (i.e., daylight savings time information).
     pub dst_description: Option<String>,
 
+    /// The `offset_str` of the [`Timezone`] (e.g., `UTC-8:00`).
     pub offset_str: String,
 
+    /// The `zone_num` of the [`Timezone`] (e.g., `-8`).
     pub zone_num: Option<i64>,
+    /// The `zone_str` of the [`Timezone`] (e.g., `"-9.5"`).
     pub zone_str: String,
+    /// The `raw_offset` of the [`Timezone`] (e.g., `-28800`).
     pub raw_offset: i64,
 
+    /// The bounding box of the [`Timezone`].
     pub bbox: Rect,
+    /// The geometry of the [`Timezone`].
     pub geometry: Geometry,
 }
 
@@ -130,7 +148,7 @@ impl From<(usize, &geojson::Feature)> for Timezone {
 }
 
 /// Trait that allows converting a [`u16`] into a [`Timezone`] reference (from the global list).
-pub trait IntoTimezone {
+pub(crate) trait IntoTimezone {
     fn into_timezone(self) -> Res<TimezoneRef>;
 }
 
@@ -141,7 +159,7 @@ impl IntoTimezone for u16 {
 }
 
 /// Trait that allows converting a [`u16`] into a [`Timezone`] reference (from the global list).
-pub trait MapIntoTimezone {
+pub(crate) trait MapIntoTimezone {
     fn map_timezone(self) -> Option<TimezoneRef>;
 }
 
@@ -158,7 +176,7 @@ impl MapIntoTimezone for Option<&u16> {
 }
 
 /// Trait that allows converting a [`u16`] into a [`Timezone`] reference (from the global list).
-pub trait MapIntoTimezones {
+pub(crate) trait MapIntoTimezones {
     fn map_timezones(self) -> Option<TimezoneRefs>;
 }
 
@@ -178,7 +196,7 @@ impl MapIntoTimezones for Option<&TimezoneIds> {
 
             let tz = timezones.get(*id as usize);
 
-            if let Some (tz) = tz {
+            if let Some(tz) = tz {
                 result.push(tz);
             }
         }
