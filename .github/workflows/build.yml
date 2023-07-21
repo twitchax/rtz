@@ -32,7 +32,7 @@ jobs:
       - name: Install tarpaulin
         run: cargo install cargo-tarpaulin
         continue-on-error: true
-      - run: cargo tarpaulin --features ml --out Xml
+      - run: cargo tarpaulin --out Xml
       - uses: codecov/codecov-action@v2
 
   build_windows:
