@@ -149,7 +149,7 @@ static TZ_BINCODE: &[u8] = include_bytes!("../../assets/ne_10m_time_zones.bincod
 static TZ_BINCODE: &[u8] = include_bytes!("..\\..\\assets\\ne_10m_time_zones.bincode");
 
 #[cfg(host_family_unix)]
-static CACHE_100KM_BINCODE: &[u8] = include_bytes!("../../assets/100km_cache.bincode");
+static CACHE_BINCODE: &[u8] = include_bytes!("../../assets/100km_cache.bincode");
 #[cfg(host_family_windows)]
 static CACHE_BINCODE: &[u8] = include_bytes!("..\\..\\assets\\100km_cache.bincode");
 

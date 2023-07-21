@@ -22,3 +22,6 @@
 // Modules.
 
 pub mod base;
+
+#[cfg(feature = "wasm")]
+pub mod wasm;

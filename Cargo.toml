@@ -22,13 +22,14 @@ path = "src/bin.rs"
 required-features = ["cli"]
 
 [features]
-default = ["cli"]
+default = ["cli", "wasm"]
 
 cli = ["clap"]
+server = ["tokio"]
+wasm = ["wasm-bindgen", "wasm-bindgen-futures", "wee_alloc", "js-sys"]
 
 [dependencies]
 anyhow = { version = "1.0.72", features = ["backtrace"] }
-tokio = { version = "1.29.1", features = ["full"] }
 rayon = "1.7.0"
 geojson = "0.24.1"
 geo = "0.26.0"
@@ -36,6 +37,8 @@ chashmap = "2.2.2"
 async-trait = "0.1.71"
 
 rand = "0.8.5"
+getrandom = { version = "0.2", features = ["js"] }
+
 cached = "0.44.0"
 
 serde = { version = "1.0.126" }
@@ -45,6 +48,15 @@ bincode = { version = "2.0.0-rc.3", git = "https://github.com/bincode-org/bincod
 
 # cli
 clap = { version = "4.0.29", features = ["derive"], optional = true }
+
+# server
+tokio = { version = "1.29.1", features = ["full"], optional = true}
+
+# wasm
+wasm-bindgen = { version = "0.2.84", optional = true }
+wasm-bindgen-futures = { version = "0.4.34", optional = true }
+wee_alloc = { version = "0.4.5", optional = true }
+js-sys = { version = "0.3.61", optional = true }
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"

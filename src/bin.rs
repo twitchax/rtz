@@ -2,8 +2,7 @@
 
 use rtzlib::base::types::Void;
 
-#[tokio::main]
-async fn main() -> Void {
+fn main() -> Void {
     println!("Hello, world!");
 
     Ok(())
