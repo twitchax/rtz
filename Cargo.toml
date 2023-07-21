@@ -1,6 +1,6 @@
 [package]
 name = "rtz"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Aaron Roney <twitchax@gmail.com>"]
 license = "MIT"
@@ -22,7 +22,7 @@ path = "src/bin.rs"
 required-features = ["cli"]
 
 [features]
-default = ["cli", "wasm"]
+default = ["cli"]
 
 cli = ["clap"]
 server = ["tokio"]

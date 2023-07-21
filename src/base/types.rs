@@ -67,8 +67,8 @@ impl<'a> IntoIterator for &'a ConcreteTimezones {
     }
 }
 
-/// A representation of the [Natural Earth Data](https://www.naturalearthdata.com/) 
-/// [geojson](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_10m_time_zones.geojson) 
+/// A representation of the [Natural Earth Data](https://www.naturalearthdata.com/)
+/// [geojson](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_10m_time_zones.geojson)
 /// [`geojson::Feature`]s.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

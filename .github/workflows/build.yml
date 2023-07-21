@@ -13,7 +13,9 @@ jobs:
         with:
           toolchain: nightly
           override: true
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2\
+        with:
+          key: "test"
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -29,6 +31,8 @@ jobs:
           toolchain: nightly
           override: true
       - uses: Swatinem/rust-cache@v2
+        with:
+          key: "cov"
       - name: Install tarpaulin
         run: cargo install cargo-tarpaulin
         continue-on-error: true

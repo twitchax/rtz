@@ -1,6 +1,6 @@
 //! All of the geo-specific functions.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 use chashmap::CHashMap;
 use geo::{Contains, Coord, Intersects, Rect};
@@ -9,7 +9,7 @@ use std::sync::OnceLock;
 
 use geojson::{FeatureCollection, GeoJson};
 
-use super::types::{ConcreteTimezones, MapIntoTimezones, RoundLngLat, TimezoneIds, TimezoneRef, TimezoneRefs, RoundInt};
+use super::types::{ConcreteTimezones, MapIntoTimezones, RoundInt, RoundLngLat, TimezoneIds, TimezoneRef, TimezoneRefs};
 
 // Constants.
 
@@ -18,9 +18,7 @@ pub fn get_timezone(xf: f64, yf: f64) -> Option<TimezoneRef> {
     let x = xf.floor() as i16;
     let y = yf.floor() as i16;
 
-    let cache = get_cache();
-
-    let timezones = cache.get(&(x, y)).map_timezones()?;
+    let timezones = get_from_cache(x, y)?;
 
     // [ARoney] Optimization: If there is only one timezone, we can skip the more expensive
     // intersection check.  Edges are weird, so we still need to check if the point is in the
@@ -38,7 +36,7 @@ pub fn get_timezone_via_full_lookup(xf: f64, yf: f64) -> Option<TimezoneRef> {
 }
 
 /// Get value from the 100km cache.
-fn get_from_cache(x: i16, y: i16) -> Option<TimezoneRefs> {
+pub(crate) fn get_from_cache(x: i16, y: i16) -> Option<TimezoneRefs> {
     let cache = get_cache();
 
     cache.get(&(x, y)).map_timezones()
@@ -49,23 +47,26 @@ fn get_cache() -> &'static HashMap<RoundLngLat, TimezoneIds> {
     CACHE.get_or_init(|| {
         let (cache, _len): (HashMap<RoundLngLat, Vec<RoundInt>>, usize) = bincode::serde::decode_from_slice(CACHE_BINCODE, bincode::config::standard()).unwrap();
 
-        cache.into_iter().map(|(key, value)| {
-            let value = [
-                #[allow(clippy::get_first)]
-                value.get(0).cloned().unwrap_or(-1),
-                value.get(1).cloned().unwrap_or(-1),
-                value.get(2).cloned().unwrap_or(-1),
-                value.get(3).cloned().unwrap_or(-1),
-                value.get(4).cloned().unwrap_or(-1),
-                value.get(5).cloned().unwrap_or(-1),
-                value.get(6).cloned().unwrap_or(-1),
-                value.get(7).cloned().unwrap_or(-1),
-                value.get(8).cloned().unwrap_or(-1),
-                value.get(9).cloned().unwrap_or(-1),
-            ];
+        cache
+            .into_iter()
+            .map(|(key, value)| {
+                let value = [
+                    #[allow(clippy::get_first)]
+                    value.get(0).cloned().unwrap_or(-1),
+                    value.get(1).cloned().unwrap_or(-1),
+                    value.get(2).cloned().unwrap_or(-1),
+                    value.get(3).cloned().unwrap_or(-1),
+                    value.get(4).cloned().unwrap_or(-1),
+                    value.get(5).cloned().unwrap_or(-1),
+                    value.get(6).cloned().unwrap_or(-1),
+                    value.get(7).cloned().unwrap_or(-1),
+                    value.get(8).cloned().unwrap_or(-1),
+                    value.get(9).cloned().unwrap_or(-1),
+                ];
 
-            (key, value)
-        }).collect::<HashMap<_, _>>()
+                (key, value)
+            })
+            .collect::<HashMap<_, _>>()
     })
 }
 
@@ -78,9 +79,9 @@ pub(crate) fn get_timezones() -> &'static ConcreteTimezones {
 }
 
 /// Get the GeoJSON features from the binary assets.
-fn get_geojson_features() -> &'static FeatureCollection {
+pub fn get_geojson_features(geojson_input: impl AsRef<Path>) -> &'static FeatureCollection {
     GEOJSON_FEATURECOLLECTION.get_or_init(|| {
-        let tz_geojson = std::fs::read_to_string("assets/ne_10m_time_zones.geojson").unwrap();
+        let tz_geojson = std::fs::read_to_string(geojson_input).unwrap();
         FeatureCollection::try_from(tz_geojson.parse::<GeoJson>().unwrap()).unwrap()
     })
 }
@@ -89,8 +90,9 @@ fn get_geojson_features() -> &'static FeatureCollection {
 ///
 /// "100km" is a bit of a misnomer.  This is really 100km _at the equator_, but this
 /// makes it easier to reason about what the caches are doing.
-fn generate_100km_cache() {
-    let timezones = get_timezones();
+fn generate_cache(bincode_input: impl AsRef<Path>, bincode_destination: impl AsRef<Path>) {
+    let data = std::fs::read(bincode_input).unwrap();
+    let (timezones, _len): (ConcreteTimezones, usize) = bincode::serde::decode_from_slice(&data, bincode::config::standard()).unwrap();
     let map = CHashMap::new();
 
     (-180..180).into_par_iter().for_each(|x| {
@@ -102,7 +104,7 @@ fn generate_100km_cache() {
 
             let mut intersected = Vec::new();
 
-            for tz in timezones {
+            for tz in &timezones {
                 if tz.geometry.intersects(&rect) {
                     intersected.push(tz.id as RoundInt);
                 }
@@ -117,24 +119,21 @@ fn generate_100km_cache() {
         cache.insert(key, value);
     }
 
-    std::fs::write("assets/100km_cache.bincode", bincode::serde::encode_to_vec(&cache, bincode::config::standard()).unwrap()).unwrap();
-
-    //let json = serde_json::to_string(&cache).unwrap();
-    //std::fs::write("assets/100km_cache.json", json).unwrap();
+    std::fs::write(bincode_destination, bincode::serde::encode_to_vec(&cache, bincode::config::standard()).unwrap()).unwrap();
 }
 
 /// Generate bincode representation of the timezones.
-fn generate_timezones() {
-    let features = get_geojson_features();
+fn generate_timezones(geojson_input: impl AsRef<Path>, bincode_destination: impl AsRef<Path>) {
+    let features = get_geojson_features(geojson_input);
     let timezones = ConcreteTimezones::from(features);
 
-    std::fs::write("assets/ne_10m_time_zones.bincode", bincode::serde::encode_to_vec(timezones, bincode::config::standard()).unwrap()).unwrap();
+    std::fs::write(bincode_destination, bincode::serde::encode_to_vec(timezones, bincode::config::standard()).unwrap()).unwrap();
 }
 
 /// Generates new bincodes for the timezones and the cache from the GeoJSON.
-pub(crate) fn generate_bincodes() {
-    generate_timezones();
-    generate_100km_cache();
+pub fn generate_bincodes(geojson_input: impl AsRef<Path>, timezone_bincode_destination: impl AsRef<Path>, cache_bincode_destination: impl AsRef<Path>) {
+    generate_timezones(geojson_input, timezone_bincode_destination.as_ref());
+    generate_cache(timezone_bincode_destination, cache_bincode_destination);
 }
 
 // Statics.
@@ -169,9 +168,15 @@ mod tests {
     }
 
     #[test]
-    fn test_get_100km_cache() {
+    fn test_get_cache() {
         let cache = get_cache();
         assert_eq!(cache.len(), 64_800);
+    }
+
+    #[test]
+    fn test_get_from_cache() {
+        let cache = get_from_cache(-121, 46);
+        assert_eq!(cache.unwrap().len(), 1);
     }
 
     #[test]

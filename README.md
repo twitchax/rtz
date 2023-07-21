@@ -28,12 +28,41 @@ NPM:
 $ npm install --save rtzweb
 ```
 
-### Wasmer
-
 ### Help Docs
 
 ```bash
+$ rtz
 
+A tool to easily work with time zones via a binary, a library, or a server.
+
+Usage: rtz [COMMAND]
+
+Commands:
+  resolve   Resolve a timezone from a lng,lat pair
+  generate  Generate the bincoded timezone and cache files
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+```
+
+### Resolve a Time Zone
+
+```bash
+$ rtz resolve "-87.62,41.88"
+
+Friendly Name:   America/Chicago
+UTC Offset:      UTC-06:00
+Offset Seconds:  -21600
+Description:     Canada (almost all of Saskatchewan), Costa Rica, El Salvador, Ecuador (Galapagos Islands), Guatemala, Honduras, Mexico (most), Nicaragua,
+DST Description: Canada (Manitoba), United States (Illinois, most of Texas)
+```
+
+### Generate the Cache Files
+
+```bash
+$ rtz generate /assets/ne_10m_time_zones.geojson
 ```
 
 ## Library Usage
@@ -47,17 +76,43 @@ rtz = "*" #choose a version
 
 ### Examples
 
+```rust
+use rtzlib::base::geo::get_timezone;
 
+// Query a time zone for a given `(lng,lat)`.
+assert_eq!(
+    get_timezone(-121., 46.)
+        .unwrap()
+        .friendly_name
+        .as_ref()
+        .unwrap(),
+    "America/Los_Angeles"
+);
+```
 
 ## JS Usage
 
+The npm package is available [here](https://www.npmjs.com/package/rtzweb).
 
+First, load the module as you would any other ES module.
+
+```js
+import * as rtz from 'rtzweb/rtzlib.js';
+```
+
+Then, you can use the library similarly as you would in Rust.
+
+```js
+let tz = rtz.getTimeZone(-121, 46);
+tz.friendly_name; // "America/Los_Angeles"
+```
 
 ## Feature Flags
 
 The library and binary both support various feature flags.  Of most important note are:
 * `default = ["cli"]`
 * `cli`: enables the CLI features, and can be removed if only compiling the library.
+* `wasm`: enables the WASM features, and is required to build an NPM package via `wasm-pack`.
 * `server`: enables the `serve` subcommand, which starts a Rocket web server that can respond to time zone requests.
 
 ## Test
