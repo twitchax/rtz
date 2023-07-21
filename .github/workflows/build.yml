@@ -14,8 +14,6 @@ jobs:
           toolchain: nightly
           override: true
       - uses: Swatinem/rust-cache@v2
-        with:
-          key: "test"
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -32,7 +30,7 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v2
         with:
-          key: "cov"
+          cache-all-crates: "true"
       - name: Install tarpaulin
         run: cargo install cargo-tarpaulin
         continue-on-error: true
@@ -53,8 +51,6 @@ jobs:
           target: x86_64-pc-windows-gnu
           override: true
       - uses: Swatinem/rust-cache@v2
-        with:
-          key: "windows"
       - uses: actions-rs/cargo@v1
         with:
           command: build
@@ -76,8 +72,6 @@ jobs:
           target: x86_64-unknown-linux-gnu
           override: true
       - uses: Swatinem/rust-cache@v2
-        with:
-          key: "linux"
       - uses: actions-rs/cargo@v1
         with:
           command: build
@@ -95,8 +89,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: Swatinem/rust-cache@v2
-        with:
-          key: "mac"
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly-2023-07-04
