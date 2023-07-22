@@ -8,7 +8,7 @@ pub(crate) mod types;
 
 // Imports.
 
-use log::{info, LevelFilter};
+use log::LevelFilter;
 use simple_logger::SimpleLogger;
 
 use crate::{web::config::Config, Void};
@@ -17,24 +17,30 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Starts the web server.
 #[cfg(feature = "web")]
-pub fn server_start(config_path: String, bind_address: Option<String>, port: Option<u16>) -> Void {
+pub fn server_start(config_path: String, bind_address: Option<String>, port: Option<u16>, should_log: Option<bool>) -> Void {
     use crate::base::types::Err;
 
     tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap().block_on(async {
-        // Set up logging.
-        SimpleLogger::new().with_level(LevelFilter::Info).init().unwrap();
-
         // Spew version.
 
-        info!("Version: v{}", VERSION);
+        println!("Version: v{}", VERSION);
 
         // Ingest config.
 
-        let config = Config::new(&config_path, bind_address, port)?;
+        let config = Config::new(&config_path, bind_address, port, should_log)?;
+
+        // Set up logging.
+        
+        let log_level = if config.should_log {
+            LevelFilter::Info
+        } else {
+            LevelFilter::Off
+        };
+        SimpleLogger::new().with_level(log_level).init().unwrap();
 
         // Start rocket server.
 
-        server::start(&config, true).await?;
+        server::start(&config).await?;
 
         Ok::<_, Err>(())
     })?;
@@ -51,9 +57,9 @@ mod tests {
     use rocket::{local::asynchronous::Client, http::{Status, Header}};
 
     async fn get_client() -> Client {
-        let config = Config::new("", None, None).unwrap();
+        let config = Config::new("", None, None, Some(false)).unwrap();
     
-        Client::tracked(super::server::create_rocket(&config, false).expect("Tests require that Rocket be successfully created."))
+        Client::tracked(super::server::create_rocket(&config).expect("Tests require that Rocket be successfully created."))
             .await
             .expect("Tests require that the Rocket client be instantiated.")
     }
@@ -107,14 +113,14 @@ mod bench {
     extern crate test;
 
     use rocket::{local::blocking::Client, http::Status};
-    use test::{Bencher};
+    use test::Bencher;
 
     use super::config::Config;
 
     fn get_client() -> Client {
-        let config = Config::new("", None, None).unwrap();
+        let config = Config::new("", None, None, Some(false)).unwrap();
     
-        Client::tracked(super::server::create_rocket(&config, false).expect("Tests require that Rocket be successfully created."))
+        Client::tracked(super::server::create_rocket(&config).expect("Tests require that Rocket be successfully created."))
             .expect("Tests require that the Rocket client be instantiated.")
     }
 

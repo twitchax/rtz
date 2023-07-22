@@ -1,6 +1,6 @@
 use std::net::IpAddr;
 
-use rocket::{data::Limits, get, serde::json::Json, shield::Shield, Build, Rocket};
+use rocket::{data::Limits, get, serde::json::Json, shield::Shield, Build, Rocket, log::LogLevel};
 use rocket_okapi::{
     openapi, openapi_get_routes,
     swagger_ui::{make_swagger_ui, SwaggerUIConfig},
@@ -14,8 +14,8 @@ use super::{
 };
 
 /// Starts the web server.
-pub async fn start(config: &Config, should_log: bool) -> Void {
-    create_rocket(config, should_log)?.launch().await?;
+pub async fn start(config: &Config) -> Void {
+    create_rocket(config)?.launch().await?;
     Ok(())
 }
 
@@ -26,13 +26,12 @@ pub async fn start(config: &Config, should_log: bool) -> Void {
 /// * Mounts the static files, which are built externally, and copied into the final application container.
 /// * Mounts the request handlers defined in this module.
 /// * Attaches a custom fairing  
-pub fn create_rocket(config: &Config, should_log: bool) -> Res<Rocket<Build>> {
-    let log_level = if should_log {
-        rocket::config::LogLevel::Normal
+pub fn create_rocket(config: &Config) -> Res<Rocket<Build>> {
+    let log_level = if config.should_log {
+        LogLevel::Normal
     } else {
-        rocket::config::LogLevel::Off
+        LogLevel::Off
     };
-
     let rocket_config = rocket::config::Config {
         address: config.bind_address.parse::<IpAddr>()?,
         port: config.port,

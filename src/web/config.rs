@@ -1,7 +1,6 @@
 //! The configuration module.
 
 use config::{Environment, File};
-use log::warn;
 use serde::{Deserialize, Serialize};
 
 use crate::base::types::Res;
@@ -10,6 +9,7 @@ use crate::base::types::Res;
 struct OptionalConfig {
     bind_address: Option<String>,
     port: Option<u16>,
+    should_log: Option<bool>,
 }
 
 /// The configuration type.
@@ -17,6 +17,7 @@ struct OptionalConfig {
 pub struct Config {
     pub(crate) bind_address: String,
     pub(crate) port: u16,
+    pub(crate) should_log: bool,
 }
 
 impl Config {
@@ -24,7 +25,7 @@ impl Config {
     ///
     /// Alternatively, this method will fallback to environment variables with the
     /// prefix `RTZ` (e.g., `RTZ_BIND_ADDRESS`).
-    pub fn new(config_path: &str, cli_bind_address: Option<String>, cli_port: Option<u16>) -> Res<Self> {
+    pub fn new(config_path: &str, cli_bind_address: Option<String>, cli_port: Option<u16>, cli_should_log: Option<bool>) -> Res<Self> {
         let builder = config::Config::builder()
             .add_source(File::with_name(config_path).required(false))
             .add_source(Environment::with_prefix("rtz"));
@@ -34,14 +35,20 @@ impl Config {
         let config = Config {
             bind_address: optional_config.bind_address.unwrap_or_else(|| {
                 cli_bind_address.unwrap_or_else(|| {
-                    warn!("No bind address specified. Defaulting to `0.0.0.0`.");
+                    println!("No bind address specified. Defaulting to `0.0.0.0`.");
                     "0.0.0.0".to_string()
                 })
             }),
             port: optional_config.port.unwrap_or_else(|| {
                 cli_port.unwrap_or_else(|| {
-                    warn!("No port specified. Defaulting to `8082`.");
+                    println!("No port specified. Defaulting to `8082`.");
                     8082
+                })
+            }),
+            should_log: optional_config.should_log.unwrap_or_else(|| {
+                cli_should_log.unwrap_or_else(|| {
+                    println!("No logging preference specified. Defaulting to `true`.");
+                    true
                 })
             }),
         };
