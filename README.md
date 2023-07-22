@@ -10,22 +10,24 @@
 
 # rtz
 
-A self-contained timezone library / binary / server for Rust / JS (via WASM) ([free server](https://tz.twitchax.com/api/tz/30/30)) using data from the [Natural Earth](https://www.naturalearthdata.com/) dataset.
+A self-contained timezone library / binary / server for Rust / JS (via WASM) ([free server](http://tz.twitchax.com/api/tz/30/30)) using data from the [Natural Earth](https://www.naturalearthdata.com/) dataset.
 
 ## Free Server
 
-Server is deployed to four regions across the globe, and is available at [tz.twitchax.com](https://tz.twitchax.com/api/tz/30/30).  Each region is currently 
+Server is deployed to four regions across the globe, and is available at [tz.twitchax.com](http://tz.twitchax.com/api/tz/30/30).  Each region is currently 
 capable of supporting around 8,000 RPS, and is deployed to the following regions: sea, iad, ams, hkg.
 
-Requests take the form of `https://tz.twitchax.com/api/tz/{lng}/{lat}`.
+Requests take the form of `http://tz.twitchax.com/api/tz/{lng}/{lat}`.
 
 Example request:
 
 ```bash
-$ curl https://tz.twitchax.com/api/tz/30/30
+$ curl http://tz.twitchax.com/api/tz/30/30
 
 {"id":65,"objectid":17,"friendlyName":"Europe/Mariehamn","description":"Libya, Egypt, Bulgaria, Cyprus, Greece, Israel, Jordan, Lebanon, Moldova, Palestine, Romania, Syria, Turkey, Ukraine","dstDescription":"Bulgaria, Cyprus, Greece, Israel, Jordan, Lebanon, Moldova, Palestine, Romania, Syria, Turkey, Ukraine","offsetStr":"UTC+02:00","zoneNum":2,"zoneStr":"+2","rawOffset":7200}
 ```
+
+HTTPS is also available, but is not recommended due to the performance overhead for the client and the server, and the lack of sensitive data being transmitted.
 
 ## Binary Usage
 
@@ -180,9 +182,13 @@ This implementation trades binary size for performance by employing an in-binary
 
 ### Free Server
 
-Below is the sample performance to resolve a time zone from a `(lng,lat)` pair to one of the data centers.
+Below is the sample performance to resolve a time zone from a `(lng,lat)` pair to one of the data centers using a concurrency of 1,000, achieving 8,000 RPS.
 
-![Drill Perf](static/perf.png)
+![Drill Perf 1](static/perf1.png)
+
+Below is the sample performance to resolve a time zone from a `(lng,lat)` pair to one of the data centers using a concurrency of 100, achieving an average response time of `24 ms`.
+
+![Drill Perf 2](static/perf2.png)
 
 ## Test
 
