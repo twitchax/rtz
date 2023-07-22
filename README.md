@@ -168,7 +168,7 @@ The library and binary both support various feature flags.  Of most important no
 * `default = ["cli"]`
 * `cli`: enables the CLI features, and can be removed if only compiling the library.
 * `wasm`: enables the WASM features, and is required to build an NPM package via `wasm-pack`.
-* `server`: enables the `serve` subcommand, which starts a Rocket web server that can respond to time zone requests.
+* `web`: enables the `serve` subcommand, which starts a Rocket web server that can respond to time zone requests.
 
 ## Performance
 
