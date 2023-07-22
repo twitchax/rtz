@@ -1,0 +1,8 @@
+concurrency: 400
+base: 'http://localhost:8082'
+iterations: 50000
+
+plan:
+  - name: Fetch TZ
+    request:
+      url: /api/tz/-120.5/46.5

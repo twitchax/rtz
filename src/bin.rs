@@ -31,6 +31,22 @@ enum Command {
         #[arg(short, long, default_value = "assets/100km_cache.bincode")]
         cache_bincode_destination: String,
     },
+
+    /// Serve the timezone API.
+    #[cfg(feature = "web")]
+    Serve {
+        /// The server configuration path.
+        #[arg(short, long, default_value = "dummy_5439258095")]
+        config_path: String,
+
+        /// The address on which to serve the API.
+        #[arg(short, long)]
+        bind_address: Option<String>,
+
+        /// The port on which to serve the API.
+        #[arg(short, long)]
+        port: Option<u16>,
+    },
 }
 
 fn main() -> Void {
@@ -67,6 +83,10 @@ fn start(args: Args) -> Void {
         }) => {
             generate_bincodes(geojson_input, timezone_bincode_destination, cache_bincode_destination);
         }
+        #[cfg(feature = "web")]
+        Some(Command::Serve { config_path, bind_address, port }) => {
+            rtzlib::server_start(config_path, bind_address, port)?;
+        }
         None => {
             return Err(anyhow::Error::msg("No command specified."));
         }
@@ -82,7 +102,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_resolve() {
+    fn can_resolve() {
         start(Args {
             command: Some(Command::Resolve { lng_lat: "-87.62,41.88".to_string() }),
         })
@@ -90,7 +110,7 @@ mod tests {
     }
 
     #[test]
-    fn test_generate_bincodes() {
+    fn can_generate_bincodes() {
         let geojson_input = "test/ne_10m_time_zones.test.geojson";
         let timezone_bincode_destination = "test/ne_10m_time_zones.test.bincode";
         let cache_bincode_destination = "test/100km_cache.test.bincode";

@@ -3,8 +3,8 @@
 //! # Examples
 //!
 //! ```
-//! use rtzlib::base::geo::get_timezone;
-//! 
+//! use rtzlib::get_timezone;
+//!
 //! // Query a time zone for a given `(lng,lat)`.
 //! assert_eq!(
 //!     get_timezone(-121., 46.)
@@ -33,3 +33,8 @@ pub use crate::base::types::Void;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;
+
+#[cfg(feature = "web")]
+pub mod web;
+#[cfg(feature = "web")]
+pub use crate::web::server_start;

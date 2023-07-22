@@ -162,25 +162,25 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     #[test]
-    fn test_get_timezones() {
+    fn can_get_timezones() {
         let timezones = get_timezones();
         assert_eq!(timezones.len(), 120);
     }
 
     #[test]
-    fn test_get_cache() {
+    fn can_get_cache() {
         let cache = get_cache();
         assert_eq!(cache.len(), 64_800);
     }
 
     #[test]
-    fn test_get_from_cache() {
+    fn can_get_from_cache() {
         let cache = get_from_cache(-121, 46);
         assert_eq!(cache.unwrap().len(), 1);
     }
 
     #[test]
-    fn test_exact_lookup() {
+    fn can_perform_exact_lookup() {
         assert_eq!(get_timezone_via_full_lookup(-177.0, -15.0), None);
         assert_eq!(get_timezone_via_full_lookup(-121.0, 46.0).unwrap().friendly_name.as_ref().unwrap(), "America/Los_Angeles");
 
@@ -188,7 +188,7 @@ mod tests {
     }
 
     #[test]
-    fn test_100km_cache() {
+    fn can_access_100km_cache() {
         let cache = get_cache();
 
         assert_eq!(cache.get(&(-177, -15)).map_timezones().unwrap().len(), 2);
@@ -200,7 +200,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cache_assisted_accuracy() {
+    fn can_verify_cache_assisted_accuracy() {
         (0..1_000).into_par_iter().for_each(|_| {
             let x = rand::random::<f64>() * 360.0 - 180.0;
             let y = rand::random::<f64>() * 180.0 - 90.0;
@@ -222,7 +222,6 @@ mod bench {
 
     #[bench]
     fn bench_full_lookup_sweep(b: &mut Bencher) {
-        // Optionally include some setup.
         let xs = (-179..180).step_by(10);
         let ys = (-89..90).step_by(10);
 
@@ -237,7 +236,6 @@ mod bench {
 
     #[bench]
     fn bench_cache_assisted_sweep(b: &mut Bencher) {
-        // Optionally include some setup.
         let xs = (-179..180).step_by(10);
         let ys = (-89..90).step_by(10);
 
@@ -252,7 +250,6 @@ mod bench {
 
     #[bench]
     fn bench_worst_case_full_lookup_single(b: &mut Bencher) {
-        // Optionally include some setup.
         let x = -177;
         let y = -15;
 
@@ -263,7 +260,6 @@ mod bench {
 
     #[bench]
     fn bench_worst_case_cache_assisted_single(b: &mut Bencher) {
-        // Optionally include some setup.
         let x = -67.5;
         let y = -66.5;
 

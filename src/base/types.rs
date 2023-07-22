@@ -20,7 +20,7 @@ pub(crate) type Err = anyhow::Error;
 
 pub(crate) type RoundInt = i16;
 pub(crate) type RoundLngLat = (RoundInt, RoundInt);
-pub(crate) type LngLat = (f64, f64);
+//pub(crate) type LngLat = (f64, f64);
 
 /// A collection of `id`s into the global time zone static cache.
 pub(crate) type TimezoneIds = [RoundInt; 10];
@@ -71,7 +71,6 @@ impl<'a> IntoIterator for &'a ConcreteTimezones {
 /// [geojson](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_10m_time_zones.geojson)
 /// [`geojson::Feature`]s.
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Timezone {
     /// The index of the [`Timezone`] in the global static cache.
     pub id: usize,
