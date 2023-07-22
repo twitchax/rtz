@@ -21,8 +21,8 @@ $ wasm-pack publish
 ## Publish to wasmer
 
 ```bash
-$ cargo wasi build --release --no-default-features --features cli --features web
-$ cargo wasix publish
+$ cargo wasi build --release --no-default-features --features cli
+$ wasmer publish
 ```
 
 ## Publish to Docker

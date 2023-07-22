@@ -1,0 +1,24 @@
+[package]
+name = 'twitchax/rtz'
+version = '0.3.2'
+description = 'A tool to easily work with time zones via a binary, a library, or a server.'
+license = 'MIT'
+readme = 'README.md'
+repository = 'https://github.com/twitchax/rtz'
+homepage = 'https://github.com/twitchax/rtz'
+
+# See more keys and definitions at https://docs.wasmer.io/registry/manifest
+
+[dependencies]
+
+[[module]]
+name = 'rtz'
+source = 'target/wasm32-wasi/release/rtz.wasm'
+abi = 'wasi'
+
+[module.interfaces]
+wasi = '0.1.0-unstable'
+
+[[command]]
+name = 'rtz'
+module = 'rtz'

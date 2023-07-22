@@ -14,7 +14,8 @@ pub(crate) type Res<T> = anyhow::Result<T>;
 /// A shortened version of [`anyhow::Result<()>`](anyhow::Result).
 pub type Void = anyhow::Result<()>;
 /// A shortened version of [`anyhow::Error`].
-//pub(crate) type Err = anyhow::Error;
+#[allow(dead_code)]
+pub(crate) type Err = anyhow::Error;
 
 // Helper types.
 

@@ -65,6 +65,23 @@ DST Description: Canada (Manitoba), United States (Illinois, most of Texas)
 $ rtz generate /assets/ne_10m_time_zones.geojson
 ```
 
+### Wasmer
+
+```bash
+wasmer run twitchax/rtz -- resolve 30,30
+```
+
+### Run the Server
+
+```bash
+$ cargo install rtz --features web
+$ rtz serve
+```
+
+```bash
+$ docker run -it --rm -p 8082 twitchax/rtx
+```
+
 ## Library Usage
 
 Add this to your `Cargo.toml`:

@@ -1,6 +1,6 @@
 [package]
 name = "rtz"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 authors = ["Aaron Roney <twitchax@gmail.com>"]
 license = "MIT"
@@ -50,7 +50,7 @@ bincode = { version = "2.0.0-rc.3", git = "https://github.com/bincode-org/bincod
 clap = { version = "4.0.29", features = ["derive"], optional = true }
 
 # web
-tokio = { version = "1.29.1", features = ["full"], optional = true }
+tokio = { version = "1.29.1", features = ["rt"], optional = true }
 rocket = { version = "0.5.0-rc.3", features = ["secrets", "tls", "json"], optional = true }
 rocket_okapi = { version = "0.8.0-rc.3", features = ["swagger", "rapidoc"], optional = true }
 rocket_cors = { version = "0.6.0-alpha2", optional = true }
