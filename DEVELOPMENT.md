@@ -24,3 +24,13 @@ $ wasm-pack publish
 $ cargo wasi build --release --no-default-features --features cli --features web
 $ cargo wasix publish
 ```
+
+## Publish to Docker
+
+```bash
+docker build -t twitchax/rtz:0.3.0 -f ./docker/Dockerfile .
+```
+
+```bash
+docker push twitchax/rtz:0.3.0
+```
