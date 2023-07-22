@@ -1,6 +1,6 @@
 [package]
 name = "rtz"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Aaron Roney <twitchax@gmail.com>"]
 license = "MIT"
@@ -22,7 +22,7 @@ path = "src/bin.rs"
 required-features = ["cli"]
 
 [features]
-default = ["cli", "web"]
+default = ["cli"]
 
 cli = ["clap"]
 web = ["tokio", "rocket", "rocket_okapi", "rocket_cors", "config", "log", "simple_logger", "schemars", "chrono"]

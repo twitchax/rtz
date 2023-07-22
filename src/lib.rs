@@ -28,7 +28,7 @@
 // Modules.
 
 pub mod base;
-pub use crate::base::geo::{generate_bincodes, get_timezone};
+pub use crate::base::geo::{generate_bincodes, get_timezone, get_timezone_via_full_lookup};
 pub use crate::base::types::Void;
 
 #[cfg(feature = "wasm")]

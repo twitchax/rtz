@@ -94,7 +94,7 @@ impl OpenApiResponderInner for TimezoneResponse {
             RefOr::Object(OpenApiReponse {
                 description: "\
                 #### [404 Not Found](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404)\n\
-                This response is given when you request a page that does not exists.\
+                This response is given when you request a time zone that does not exist (possibly on the edge of a boundary). \
                 "
                 .to_string(),
                 ..Default::default()

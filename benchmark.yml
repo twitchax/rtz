@@ -1,5 +1,5 @@
 concurrency: 1000
-base: 'http://localhost:8082'
+base: 'http://tz.twitchax.com'
 iterations: 50000
 
 plan:
