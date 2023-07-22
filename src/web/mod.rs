@@ -30,12 +30,8 @@ pub fn server_start(config_path: String, bind_address: Option<String>, port: Opt
         let config = Config::new(&config_path, bind_address, port, should_log)?;
 
         // Set up logging.
-        
-        let log_level = if config.should_log {
-            LevelFilter::Info
-        } else {
-            LevelFilter::Off
-        };
+
+        let log_level = if config.should_log { LevelFilter::Info } else { LevelFilter::Off };
         SimpleLogger::new().with_level(log_level).init().unwrap();
 
         // Start rocket server.
@@ -54,11 +50,14 @@ pub fn server_start(config_path: String, bind_address: Option<String>, port: Opt
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
-    use rocket::{local::asynchronous::Client, http::{Status, Header}};
+    use rocket::{
+        http::{Header, Status},
+        local::asynchronous::Client,
+    };
 
     async fn get_client() -> Client {
         let config = Config::new("", None, None, Some(false)).unwrap();
-    
+
         Client::tracked(super::server::create_rocket(&config).expect("Tests require that Rocket be successfully created."))
             .await
             .expect("Tests require that the Rocket client be instantiated.")
@@ -99,7 +98,7 @@ mod tests {
         let response = client.get("/api/tz/-121.0/46.0").dispatch().await;
 
         assert_eq!(response.status(), Status::Ok);
-        
+
         let if_modified_since = response.headers().get_one("If-Modified-Since").unwrap().to_string();
 
         let response = client.get("/api/tz/-121.0/46.0").header(Header::new("If-Modified-Since", if_modified_since)).dispatch().await;
@@ -112,16 +111,15 @@ mod tests {
 mod bench {
     extern crate test;
 
-    use rocket::{local::blocking::Client, http::Status};
+    use rocket::{http::Status, local::blocking::Client};
     use test::Bencher;
 
     use super::config::Config;
 
     fn get_client() -> Client {
         let config = Config::new("", None, None, Some(false)).unwrap();
-    
-        Client::tracked(super::server::create_rocket(&config).expect("Tests require that Rocket be successfully created."))
-            .expect("Tests require that the Rocket client be instantiated.")
+
+        Client::tracked(super::server::create_rocket(&config).expect("Tests require that Rocket be successfully created.")).expect("Tests require that the Rocket client be instantiated.")
     }
 
     #[bench]
@@ -139,7 +137,7 @@ mod bench {
             }
         });
     }
-    
+
     #[bench]
     fn bench_server_worst_case_single(b: &mut Bencher) {
         let client = get_client();
@@ -148,9 +146,7 @@ mod bench {
 
         b.iter(|| {
             let response = client.get(format!("/api/tz/{}/{}", x, y)).dispatch();
-                    assert_eq!(response.status(), Status::Ok);
+            assert_eq!(response.status(), Status::Ok);
         });
     }
-
-    
 }

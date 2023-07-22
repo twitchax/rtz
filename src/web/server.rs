@@ -1,6 +1,6 @@
 use std::net::IpAddr;
 
-use rocket::{data::Limits, get, serde::json::Json, shield::Shield, Build, Rocket, log::LogLevel};
+use rocket::{data::Limits, get, log::LogLevel, serde::json::Json, shield::Shield, Build, Rocket};
 use rocket_okapi::{
     openapi, openapi_get_routes,
     swagger_ui::{make_swagger_ui, SwaggerUIConfig},
@@ -27,11 +27,7 @@ pub async fn start(config: &Config) -> Void {
 /// * Mounts the request handlers defined in this module.
 /// * Attaches a custom fairing  
 pub fn create_rocket(config: &Config) -> Res<Rocket<Build>> {
-    let log_level = if config.should_log {
-        LogLevel::Normal
-    } else {
-        LogLevel::Off
-    };
+    let log_level = if config.should_log { LogLevel::Normal } else { LogLevel::Off };
     let rocket_config = rocket::config::Config {
         address: config.bind_address.parse::<IpAddr>()?,
         port: config.port,

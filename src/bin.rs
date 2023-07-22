@@ -88,7 +88,12 @@ fn start(args: Args) -> Void {
             generate_bincodes(geojson_input, timezone_bincode_destination, cache_bincode_destination);
         }
         #[cfg(feature = "web")]
-        Some(Command::Serve { config_path, bind_address, port, should_log }) => {
+        Some(Command::Serve {
+            config_path,
+            bind_address,
+            port,
+            should_log,
+        }) => {
             rtzlib::server_start(config_path, bind_address, port, should_log)?;
         }
         None => {
