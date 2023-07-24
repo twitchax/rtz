@@ -2,9 +2,11 @@
 
 use std::{collections::HashMap, sync::OnceLock};
 
-use geo::{Coord, Contains};
-use rtz_core::{geo::tz::ned::{TimezoneRef, TimezoneRefs, RoundLngLat, TimezoneIds, ConcreteTimezones}, base::types::{Res, Float}};
-
+use geo::{Contains, Coord};
+use rtz_core::{
+    base::types::{Float, Res},
+    geo::tz::ned::{ConcreteTimezones, RoundLngLat, TimezoneIds, TimezoneRef, TimezoneRefs},
+};
 
 /// Get the cache-driven timezone for a given longitude (x) and latitude (y).
 pub fn get_timezone(xf: Float, yf: Float) -> Option<TimezoneRef> {
@@ -42,10 +44,10 @@ fn get_cache() -> &'static HashMap<RoundLngLat, TimezoneIds> {
     #[cfg(feature = "self-contained")]
     {
         use rtz_core::geo::tz::ned::RoundInt;
-        
+
         CACHE.get_or_init(|| {
             let (cache, _len): (HashMap<RoundLngLat, Vec<RoundInt>>, usize) = bincode::serde::decode_from_slice(CACHE_BINCODE, bincode::config::standard()).unwrap();
-    
+
             cache
                 .into_iter()
                 .map(|(key, value)| {
@@ -62,7 +64,7 @@ fn get_cache() -> &'static HashMap<RoundLngLat, TimezoneIds> {
                         value.get(8).cloned().unwrap_or(-1),
                         value.get(9).cloned().unwrap_or(-1),
                     ];
-    
+
                     (key, value)
                 })
                 .collect::<HashMap<_, _>>()
@@ -92,7 +94,7 @@ fn get_cache() -> &'static HashMap<RoundLngLat, TimezoneIds> {
                         value.get(8).cloned().unwrap_or(-1),
                         value.get(9).cloned().unwrap_or(-1),
                     ];
-    
+
                     (key, value)
                 })
                 .collect::<HashMap<_, _>>()
@@ -115,8 +117,8 @@ pub(crate) fn get_timezones() -> &'static ConcreteTimezones {
 
     #[cfg(not(feature = "self-contained"))]
     {
-        use rtz_core::geo::tz::ned::{GEOJSON_ADDRESS, get_geojson_features_from_string, get_timezones_from_features};
-        
+        use rtz_core::geo::tz::ned::{get_geojson_features_from_string, get_timezones_from_features, GEOJSON_ADDRESS};
+
         static TIMEZONES: OnceLock<ConcreteTimezones> = OnceLock::new();
 
         TIMEZONES.get_or_init(|| {
@@ -124,7 +126,7 @@ pub(crate) fn get_timezones() -> &'static ConcreteTimezones {
             let geojson_input = response.text().unwrap();
 
             let features = get_geojson_features_from_string(&geojson_input);
-            
+
             get_timezones_from_features(features)
         })
     }
@@ -269,7 +271,7 @@ mod bench {
     use rtz_core::base::types::Float;
     use test::{black_box, Bencher};
 
-    use super::{get_timezone_via_full_lookup, get_timezone};
+    use super::{get_timezone, get_timezone_via_full_lookup};
 
     #[bench]
     fn bench_full_lookup_sweep(b: &mut Bencher) {

@@ -1,8 +1,9 @@
 //! A tool to easily work with timezone lookups.
 //!
 //! # Examples
-//! 
-#![cfg_attr(feature = "tz-ned", doc = r##"
+#![cfg_attr(
+    feature = "tz-ned",
+    doc = r##"
 ```
 use rtzlib::get_timezone_ned;
 
@@ -16,10 +17,9 @@ assert_eq!(
     "America/Los_Angeles"
 );
 ```
-"##)]
-
+"##
+)]
 // Directives.
-
 #![warn(rustdoc::broken_intra_doc_links, rust_2018_idioms, clippy::all, missing_docs)]
 #![allow(incomplete_features)]
 #![feature(async_closure)]

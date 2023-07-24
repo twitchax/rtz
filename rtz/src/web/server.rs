@@ -5,11 +5,11 @@ use rocket_okapi::{
     openapi, openapi_get_routes,
     swagger_ui::{make_swagger_ui, SwaggerUIConfig},
 };
-use rtz_core::base::types::{Void, Res};
+use rtz_core::base::types::{Res, Void};
 
 use super::{
     config::Config,
-    types::{IfModifiedSince, RocketState, TimezoneResponse, WebResult, get_last_modified_time},
+    types::{get_last_modified_time, IfModifiedSince, RocketState, TimezoneResponse, WebResult},
 };
 
 /// Starts the web server.
@@ -40,9 +40,7 @@ pub fn create_rocket(config: &Config) -> Res<Rocket<Build>> {
 
     let rocket = rocket::custom(rocket_config)
         .manage(state)
-        .mount("/api", openapi_get_routes![
-            get_timezone
-        ])
+        .mount("/api", openapi_get_routes![get_timezone])
         .mount(
             "/app-docs",
             make_swagger_ui(&SwaggerUIConfig {
@@ -56,8 +54,8 @@ pub fn create_rocket(config: &Config) -> Res<Rocket<Build>> {
 }
 
 /// Returns the time zone information for the given `(lng,lat)`.
-/// 
-/// This API endpoint is provided under the same [license](https://github.com/twitchax/rtz/blob/main/LICENSE) as the 
+///
+/// This API endpoint is provided under the same [license](https://github.com/twitchax/rtz/blob/main/LICENSE) as the
 /// [project](https://github.com/twitchax/rtz) itself.  It is provided as-is, with no warranty (as of today).
 #[openapi(tag = "API")]
 #[get("/tz/<lng>/<lat>")]

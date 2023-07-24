@@ -1,5 +1,3 @@
-
-
 pub fn main() {
     #[cfg(feature = "self-contained")]
     generate_self_contained_bincodes();
@@ -27,7 +25,7 @@ fn generate_ned_bincodes() {
 
     let response = reqwest::blocking::get(rtz_core::geo::tz::ned::GEOJSON_ADDRESS).unwrap();
     let geojson_input = response.text().unwrap();
-    
+
     let features = rtz_core::geo::tz::ned::get_geojson_features_from_string(&geojson_input);
     rtz_core::geo::tz::ned::generate_bincodes(features, timezone_bincode_destination, cache_bincode_destination);
 }

@@ -16,7 +16,7 @@ use rocket_okapi::{
     response::OpenApiResponderInner,
     JsonSchema, OpenApiError,
 };
-use rtz_core::{geo::tz::ned::Timezone, base::types::Err};
+use rtz_core::{base::types::Err, geo::tz::ned::Timezone};
 use serde::{Deserialize, Serialize};
 
 use super::config::Config;
@@ -114,7 +114,7 @@ pub struct TimezoneResponseRef {
     /// The `objectid` of the [`Timezone`].
     pub objectid: u64,
     /// The `friendly_name` of the [`Timezone`] (e.g., `America/Los_Angeles`).
-    /// 
+    ///
     /// Essentially, it is the IANA TZ identifier.
     pub friendly_name: Option<&'static str>,
 

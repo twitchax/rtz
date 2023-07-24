@@ -1,11 +1,11 @@
 //! All of the geo-specific functions for NED TZ lookups.
 
-use std::{collections::HashMap, path::Path, ops::Deref};
+use std::{collections::HashMap, ops::Deref, path::Path};
 
 use chashmap::CHashMap;
-use geo::{Coord, Intersects, Rect, Geometry};
+use geo::{Coord, Geometry, Intersects, Rect};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use geojson::{FeatureCollection, GeoJson};
 
@@ -50,7 +50,7 @@ pub fn get_cache_from_timezones(timezones: &ConcreteTimezones) -> HashMap<RoundL
 fn generate_cache_bincode(bincode_input: impl AsRef<Path>, bincode_destination: impl AsRef<Path>) {
     let data = std::fs::read(bincode_input).unwrap();
     let (timezones, _len): (ConcreteTimezones, usize) = bincode::serde::decode_from_slice(&data, bincode::config::standard()).unwrap();
-    
+
     let cache = get_cache_from_timezones(&timezones);
 
     std::fs::write(bincode_destination, bincode::serde::encode_to_vec(cache, bincode::config::standard()).unwrap()).unwrap();
@@ -150,7 +150,7 @@ pub struct Timezone {
     /// The index of the [`Timezone`] in the global static cache.
     pub id: usize,
     /// The `friendly_name` of the [`Timezone`] (e.g., `America/Los_Angeles`).
-    /// 
+    ///
     /// Essentially, it is the IANA TZ identifier.
     pub friendly_name: Option<String>,
 
