@@ -7,7 +7,9 @@ edition = "2021"
 default = []
 full = ["tz-ned", "self-contained"]
 
+double-precision = []
 self-contained = ["bincode"]
+
 tz-ned = []
 
 [dependencies]

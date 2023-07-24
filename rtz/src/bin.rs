@@ -52,15 +52,14 @@ fn start(args: Args) -> Void {
     match args.command {
         #[cfg(feature = "tz-ned")]
         Some(Command::ResolveNed { lng_lat }) => {
+            use rtz_core::base::types::Float;
             use rtzlib::get_timezone_ned;
 
             let Some((lng, lat)) = lng_lat.split_once(',') else {
                 return Err(anyhow::Error::msg("Invalid lng,lat pair."));
             };
 
-            let (lng, lat) = (lng.parse::<f64>()?, lat.parse::<f64>()?);
-
-
+            let (lng, lat) = (lng.parse::<Float>()?, lat.parse::<Float>()?);
             let tz = get_timezone_ned(lng, lat).ok_or_else(|| anyhow::Error::msg("Failed to resolve timezone."))?;
 
             println!();

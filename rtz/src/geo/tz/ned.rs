@@ -3,11 +3,11 @@
 use std::{collections::HashMap, sync::OnceLock};
 
 use geo::{Coord, Contains};
-use rtz_core::{geo::tz::ned::{TimezoneRef, TimezoneRefs, RoundLngLat, TimezoneIds, ConcreteTimezones}, base::types::Res};
+use rtz_core::{geo::tz::ned::{TimezoneRef, TimezoneRefs, RoundLngLat, TimezoneIds, ConcreteTimezones}, base::types::{Res, Float}};
 
 
 /// Get the cache-driven timezone for a given longitude (x) and latitude (y).
-pub fn get_timezone(xf: f64, yf: f64) -> Option<TimezoneRef> {
+pub fn get_timezone(xf: Float, yf: Float) -> Option<TimezoneRef> {
     let x = xf.floor() as i16;
     let y = yf.floor() as i16;
 
@@ -24,7 +24,7 @@ pub fn get_timezone(xf: f64, yf: f64) -> Option<TimezoneRef> {
 }
 
 /// Get the exact timezone for a given longitude (x) and latitude (y).
-pub fn get_timezone_via_full_lookup(xf: f64, yf: f64) -> Option<TimezoneRef> {
+pub fn get_timezone_via_full_lookup(xf: Float, yf: Float) -> Option<TimezoneRef> {
     get_timezones().into_iter().find(|&tz| tz.geometry.contains(&Coord { x: xf, y: yf }))
 }
 
@@ -107,7 +107,7 @@ pub(crate) fn get_timezones() -> &'static ConcreteTimezones {
         static TIMEZONES: OnceLock<ConcreteTimezones> = OnceLock::new();
 
         TIMEZONES.get_or_init(|| {
-            let (timezones, _len): (ConcreteTimezones, usize) = bincode::serde::decode_from_slice(TZ_BINCODE, bincode::config::standard()).unwrap();
+            let (timezones, _len): (ConcreteTimezones, usize) = bincode::serde::decode_from_slice(TZ_BINCODE, bincode::config::standard()).expect("Failed to decode timezones from binary: likely caused by precision difference between generated assets and current build.  Please rebuild the assets with `feature = \"force-rebuild\"` enabled.");
 
             timezones
         })
@@ -252,8 +252,8 @@ mod tests {
     #[test]
     fn can_verify_cache_assisted_accuracy() {
         (0..1_000).into_par_iter().for_each(|_| {
-            let x = rand::random::<f64>() * 360.0 - 180.0;
-            let y = rand::random::<f64>() * 180.0 - 90.0;
+            let x = rand::random::<Float>() * 360.0 - 180.0;
+            let y = rand::random::<Float>() * 180.0 - 90.0;
             let full = get_timezone_via_full_lookup(x, y);
             let cache_assisted = get_timezone(x, y);
 
@@ -266,6 +266,7 @@ mod tests {
 mod bench {
     extern crate test;
 
+    use rtz_core::base::types::Float;
     use test::{black_box, Bencher};
 
     use super::{get_timezone_via_full_lookup, get_timezone};
@@ -278,7 +279,7 @@ mod bench {
         b.iter(|| {
             for x in xs.clone() {
                 for y in ys.clone() {
-                    black_box(get_timezone_via_full_lookup(x as f64, y as f64));
+                    black_box(get_timezone_via_full_lookup(x as Float, y as Float));
                 }
             }
         });
@@ -292,7 +293,7 @@ mod bench {
         b.iter(|| {
             for x in xs.clone() {
                 for y in ys.clone() {
-                    black_box(get_timezone(x as f64, y as f64));
+                    black_box(get_timezone(x as Float, y as Float));
                 }
             }
         });
@@ -304,7 +305,7 @@ mod bench {
         let y = -15;
 
         b.iter(|| {
-            black_box(get_timezone_via_full_lookup(x as f64, y as f64));
+            black_box(get_timezone_via_full_lookup(x as Float, y as Float));
         });
     }
 

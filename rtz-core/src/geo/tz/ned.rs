@@ -9,14 +9,16 @@ use serde::{Serialize, Deserialize};
 
 use geojson::{FeatureCollection, GeoJson};
 
+use crate::base::types::Float;
+
 /// Get the cache from the timezones.
 pub fn get_cache_from_timezones(timezones: &ConcreteTimezones) -> HashMap<RoundLngLat, Vec<i16>> {
     let map = CHashMap::new();
 
     (-180..180).into_par_iter().for_each(|x| {
         for y in -90..90 {
-            let xf = x as f64;
-            let yf = y as f64;
+            let xf = x as Float;
+            let yf = y as Float;
 
             let rect = Rect::new(Coord { x: xf, y: yf }, Coord { x: xf + 1.0, y: yf + 1.0 });
 
@@ -91,8 +93,6 @@ pub static GEOJSON_ADDRESS: &str = "https://raw.githubusercontent.com/nvkelso/na
 
 // Types.
 
-// Helper types.
-
 pub type RoundInt = i16;
 pub type RoundLngLat = (RoundInt, RoundInt);
 //pub type LngLat = (f64, f64);
@@ -149,8 +149,6 @@ impl<'a> IntoIterator for &'a ConcreteTimezones {
 pub struct Timezone {
     /// The index of the [`Timezone`] in the global static cache.
     pub id: usize,
-    /// The `objectid` of the [`Timezone`].
-    pub objectid: u64,
     /// The `friendly_name` of the [`Timezone`] (e.g., `America/Los_Angeles`).
     /// 
     /// Essentially, it is the IANA TZ identifier.
@@ -164,17 +162,17 @@ pub struct Timezone {
     /// The `offset_str` of the [`Timezone`] (e.g., `UTC-8:00`).
     pub offset_str: String,
 
-    /// The `zone_num` of the [`Timezone`] (e.g., `-8`).
-    pub zone_num: f64,
+    /// The `zone_num` of the [`Timezone`] (e.g., `-8.0`).
+    pub zone_num: f32,
     /// The `zone_str` of the [`Timezone`] (e.g., `"-9.5"`).
     pub zone_str: String,
     /// The `raw_offset` of the [`Timezone`] (e.g., `-28800`).
-    pub raw_offset: i64,
+    pub raw_offset: i32,
 
     /// The bounding box of the [`Timezone`].
-    pub bbox: Rect,
+    pub bbox: Rect<Float>,
     /// The geometry of the [`Timezone`].
-    pub geometry: Geometry,
+    pub geometry: Geometry<Float>,
 }
 
 impl PartialEq for Timezone {
@@ -190,26 +188,24 @@ impl From<(usize, &geojson::Feature)> for Timezone {
         let properties = value.1.properties.as_ref().unwrap();
         let geometry = value.1.geometry.as_ref().unwrap();
 
-        let objectid = properties.get("objectid").unwrap().as_u64().unwrap();
         let dst_places = properties.get("dst_places").unwrap().as_str().map(ToOwned::to_owned);
         let name = properties.get("name").unwrap().as_str().unwrap().to_owned();
         let places = properties.get("places").unwrap().as_str().unwrap().to_owned();
 
         let time_zone = properties.get("time_zone").unwrap().as_str().unwrap().to_owned();
         let tz_name1st = properties.get("tz_name1st").unwrap().as_str().map(ToOwned::to_owned);
-        let zone = properties.get("zone").unwrap().as_f64().unwrap();
+        let zone = properties.get("zone").unwrap().as_f64().unwrap() as f32;
 
-        let bbox = Rect::new(Coord { x: bbox[0], y: bbox[1] }, Coord { x: bbox[2], y: bbox[3] });
+        let bbox = Rect::<Float>::new(Coord { x: bbox[0] as Float, y: bbox[1] as Float }, Coord { x: bbox[2] as Float, y: bbox[3] as Float });
 
-        let geometry: Geometry = geometry.value.clone().try_into().unwrap();
+        let geometry: Geometry<Float> = geometry.value.clone().try_into().unwrap();
 
         //let mut parsable_offset = time_zone.clone();
         //parsable_offset.remove_matches('+');
-        let raw_offset = (name.parse::<f64>().unwrap() * 3600.0).round() as i64;
+        let raw_offset = (name.parse::<f64>().unwrap() * 3600.0).round() as i32;
 
         Timezone {
             id,
-            objectid,
             dst_description: dst_places,
             zone_str: name,
             description: places,

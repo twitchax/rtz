@@ -9,3 +9,10 @@ pub type Void = anyhow::Result<()>;
 /// A shortened version of [`anyhow::Error`].
 #[allow(dead_code)]
 pub type Err = anyhow::Error;
+
+// Precision types.
+
+#[cfg(feature = "double-precision")]
+pub type Float = f64;
+#[cfg(not(feature = "double-precision"))]
+pub type Float = f32;
