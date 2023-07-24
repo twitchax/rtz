@@ -11,15 +11,14 @@ pub(crate) mod types;
 use log::LevelFilter;
 use simple_logger::SimpleLogger;
 
-use crate::{web::config::Config, Void};
+use rtz_core::base::types::Void;
+
+use crate::web::config::Config;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Starts the web server.
-#[cfg(feature = "web")]
 pub fn server_start(config_path: String, bind_address: Option<String>, port: Option<u16>, should_log: Option<bool>) -> Void {
-    use crate::base::types::Err;
-
     tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap().block_on(async {
         // Spew version.
 
@@ -38,7 +37,7 @@ pub fn server_start(config_path: String, bind_address: Option<String>, port: Opt
 
         server::start(&config).await?;
 
-        Ok::<_, Err>(())
+        Ok::<_, rtz_core::base::types::Err>(())
     })?;
 
     Ok(())
@@ -72,7 +71,7 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
 
         let body = response.into_string().await.unwrap();
-        let expected = r#"{"id":20,"objectid":6,"friendlyName":"America/Los_Angeles","description":"Canada (most of British Columbia), Mexico (Baja California), United States (California, most of Nevada, most of Oregon, Washington (state))","dstDescription":"Canada (most of British Columbia), Mexico (Baja California), United States (California, most of Nevada, most of Oregon, Washington (state))","offsetStr":"UTC-08:00","zoneNum":-8,"zoneStr":"-8","rawOffset":-28800}"#;
+        let expected = r#"{"id":20,"objectid":6,"friendlyName":"America/Los_Angeles","description":"Canada (most of British Columbia), Mexico (Baja California), United States (California, most of Nevada, most of Oregon, Washington (state))","dstDescription":"Canada (most of British Columbia), Mexico (Baja California), United States (California, most of Nevada, most of Oregon, Washington (state))","offsetStr":"UTC-08:00","zoneNum":-8.0,"zoneStr":"-8","rawOffset":-28800}"#;
 
         assert_eq!(body, expected);
     }

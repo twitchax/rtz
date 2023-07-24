@@ -1,0 +1,18 @@
+[package]
+name = "rtz-build"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+full = ["tz-ned", "self-contained"]
+
+force-rebuild = []
+self-contained = ["reqwest"]
+tz-ned = []
+
+[dependencies]
+rtz-core = { path = "../rtz-core" }
+
+# self-contained
+reqwest = { version = "0.11.18", optional = true, features = ["blocking"]}

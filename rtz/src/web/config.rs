@@ -1,9 +1,8 @@
 //! The configuration module.
 
 use config::{Environment, File};
+use rtz_core::base::types::Res;
 use serde::{Deserialize, Serialize};
-
-use crate::base::types::Res;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct OptionalConfig {

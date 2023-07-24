@@ -9,7 +9,7 @@ $ cargo publish
 ## Publish to NPM
 
 ```bash
-$ wasm-pack build --features wasm
+$ wasm-pack build --no-default-features --features tz-ned --features wasm
 ```
 
 Rename package to `rtzweb` in `pkg/package.json`.
@@ -21,7 +21,7 @@ $ wasm-pack publish
 ## Publish to wasmer
 
 ```bash
-$ cargo wasi build --release --no-default-features --features cli
+$ cargo wasi build --release --no-default-features --features full --features cli
 $ wasmer publish
 ```
 

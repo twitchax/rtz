@@ -1,7 +1,7 @@
 //! The main binary entrypoint.
 
 use clap::{command, Parser, Subcommand};
-use rtzlib::{generate_bincodes, get_timezone, Void};
+use rtz_core::base::types::Void;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -13,23 +13,10 @@ struct Args {
 #[derive(Subcommand, Debug)]
 enum Command {
     /// Resolve a timezone from a lng,lat pair.
-    Resolve {
+    #[cfg(feature = "tz-ned")]
+    ResolveNed {
         /// The lng,lat pair for which to lookup timezone information.
         lng_lat: String,
-    },
-
-    /// Generate the bincoded timezone and cache files.
-    Generate {
-        /// The path to the timezone geojson file.
-        geojson_input: String,
-
-        /// The path to the destination timezone bincode file.
-        #[arg(short, long, default_value = "assets/ne_10m_time_zones.bincode")]
-        timezone_bincode_destination: String,
-
-        /// The path to the destination cache bincode file.
-        #[arg(short, long, default_value = "assets/100km_cache.bincode")]
-        cache_bincode_destination: String,
     },
 
     /// Serve the timezone API.
@@ -63,14 +50,18 @@ fn main() -> Void {
 
 fn start(args: Args) -> Void {
     match args.command {
-        Some(Command::Resolve { lng_lat }) => {
+        #[cfg(feature = "tz-ned")]
+        Some(Command::ResolveNed { lng_lat }) => {
+            use rtzlib::get_timezone_ned;
+
             let Some((lng, lat)) = lng_lat.split_once(',') else {
                 return Err(anyhow::Error::msg("Invalid lng,lat pair."));
             };
 
             let (lng, lat) = (lng.parse::<f64>()?, lat.parse::<f64>()?);
 
-            let tz = get_timezone(lng, lat).ok_or_else(|| anyhow::Error::msg("Failed to resolve timezone."))?;
+
+            let tz = get_timezone_ned(lng, lat).ok_or_else(|| anyhow::Error::msg("Failed to resolve timezone."))?;
 
             println!();
             println!("Friendly Name:   {}", tz.friendly_name.as_deref().unwrap_or(""));
@@ -79,13 +70,6 @@ fn start(args: Args) -> Void {
             println!("Description:     {}", tz.description);
             println!("DST Description: {}", tz.dst_description.as_deref().unwrap_or(""));
             println!();
-        }
-        Some(Command::Generate {
-            geojson_input,
-            timezone_bincode_destination,
-            cache_bincode_destination,
-        }) => {
-            generate_bincodes(geojson_input, timezone_bincode_destination, cache_bincode_destination);
         }
         #[cfg(feature = "web")]
         Some(Command::Serve {
@@ -96,7 +80,8 @@ fn start(args: Args) -> Void {
         }) => {
             rtzlib::server_start(config_path, bind_address, port, should_log)?;
         }
-        None => {
+        #[allow(unreachable_patterns)]
+        Some(_) | None => {
             return Err(anyhow::Error::msg("No command specified."));
         }
     }
@@ -106,37 +91,14 @@ fn start(args: Args) -> Void {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
     use super::*;
 
     #[test]
+    #[cfg(feature = "tz-ned")]
     fn can_resolve() {
         start(Args {
-            command: Some(Command::Resolve { lng_lat: "-87.62,41.88".to_string() }),
+            command: Some(Command::ResolveNed { lng_lat: "-87.62,41.88".to_string() }),
         })
         .unwrap();
-    }
-
-    #[test]
-    fn can_generate_bincodes() {
-        let geojson_input = "test/ne_10m_time_zones.test.geojson";
-        let timezone_bincode_destination = "test/ne_10m_time_zones.test.bincode";
-        let cache_bincode_destination = "test/100km_cache.test.bincode";
-
-        start(Args {
-            command: Some(Command::Generate {
-                geojson_input: geojson_input.to_string(),
-                timezone_bincode_destination: timezone_bincode_destination.to_string(),
-                cache_bincode_destination: cache_bincode_destination.to_string(),
-            }),
-        })
-        .unwrap();
-
-        assert!(Path::new(timezone_bincode_destination).exists());
-        assert!(Path::new(cache_bincode_destination).exists());
-
-        std::fs::remove_file(timezone_bincode_destination).unwrap();
-        std::fs::remove_file(cache_bincode_destination).unwrap();
     }
 }

@@ -1,0 +1,30 @@
+[package]
+name = "rtz-core"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+full = ["tz-ned", "self-contained"]
+
+self-contained = ["bincode"]
+tz-ned = []
+
+[dependencies]
+anyhow = { version = "1.0.72", features = ["backtrace"] }
+
+rayon = "1.7.0"
+
+geojson = "0.24.1"
+geo = "0.26.0"
+
+chashmap = "2.2.2"
+
+serde = { version = "1.0.126" }
+serde_json = "1.0.64"
+
+# self-contained
+bincode = { version = "2.0.0-rc.3", git = "https://github.com/bincode-org/bincode.git", default-features = false, optional = true, features = ["alloc", "serde"] }
+
+[dev-dependencies]
+pretty_assertions = "1.4.0"

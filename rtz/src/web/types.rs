@@ -16,10 +16,10 @@ use rocket_okapi::{
     response::OpenApiResponderInner,
     JsonSchema, OpenApiError,
 };
+use rtz_core::{geo::tz::ned::Timezone, base::types::Err};
 use serde::{Deserialize, Serialize};
 
 use super::config::Config;
-use crate::base::types::{Err, Timezone};
 
 // Constants.
 
@@ -114,6 +114,8 @@ pub struct TimezoneResponseRef {
     /// The `objectid` of the [`Timezone`].
     pub objectid: u64,
     /// The `friendly_name` of the [`Timezone`] (e.g., `America/Los_Angeles`).
+    /// 
+    /// Essentially, it is the IANA TZ identifier.
     pub friendly_name: Option<&'static str>,
 
     /// The `description` of the [`Timezone`] (e.g., the countries affected).
@@ -125,7 +127,7 @@ pub struct TimezoneResponseRef {
     pub offset_str: &'static str,
 
     /// The `zone_num` of the [`Timezone`] (e.g., `-8`).
-    pub zone_num: Option<i64>,
+    pub zone_num: f64,
     /// The `zone_str` of the [`Timezone`] (e.g., `"-9.5"`).
     pub zone_str: &'static str,
     /// The `raw_offset` of the [`Timezone`] (e.g., `-28800`).

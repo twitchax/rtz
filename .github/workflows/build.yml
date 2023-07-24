@@ -17,7 +17,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features web
+          args: --features full --features web
 
   codecov:
     needs: test
@@ -35,7 +35,7 @@ jobs:
       - name: Install tarpaulin
         run: cargo install cargo-tarpaulin
         continue-on-error: true
-      - run: cargo tarpaulin --features web --out Xml
+      - run: cargo tarpaulin --features full --features web --out Xml
       - uses: codecov/codecov-action@v2
 
   build_windows:
@@ -55,7 +55,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --target x86_64-pc-windows-gnu --release
+          args: --features full --target x86_64-pc-windows-gnu --release
       - uses: actions/upload-artifact@v3
         with:
           name: rtz_x86_64-pc-windows-gnu
@@ -76,7 +76,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --target x86_64-unknown-linux-gnu --release
+          args: --features full --target x86_64-unknown-linux-gnu --release
       - uses: actions/upload-artifact@v3
         with:
           name: rtz_x86_64-unknown-linux-gnu
@@ -98,7 +98,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --target aarch64-apple-darwin --release
+          args: --features full --target aarch64-apple-darwin --release
       - uses: actions/upload-artifact@v3
         with:
           name: rtz_aarch64-apple-darwin

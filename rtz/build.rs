@@ -9,4 +9,6 @@ fn main() {
         println!("cargo:rustc-cfg=host_family_wasm");
         println!("cargo:rustc-cfg=wasm");
     }
+
+    rtz_build::main();
 }
