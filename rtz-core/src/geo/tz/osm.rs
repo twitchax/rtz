@@ -1,6 +1,6 @@
 //! All of the geo-specific functions for OSM TZ lookups.
 
-use geo::{Geometry, algorithm::simplify_vw::SimplifyVw};
+use geo::{algorithm::simplify_vw::SimplifyVw, Geometry};
 use serde::{Deserialize, Serialize};
 
 use crate::base::types::Float;
@@ -26,7 +26,7 @@ pub static CACHE_BINCODE_DESTINATION_NAME: &str = "osm_time_zone_cache.bincode";
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OsmTimezone {
     /// The index of the [`OsmTimezone`] in the global static cache.
-    /// 
+    ///
     /// This is is not stable across builds or new data sets.  It is merely unique during a single build.
     pub id: usize,
     /// The `identifier` of the [`OsmTimezone`] (e.g., `America/Los_Angeles`).
@@ -49,11 +49,11 @@ impl From<(usize, geojson::Feature)> for OsmTimezone {
         let id = value.0;
         let properties = value.1.properties.as_ref().unwrap();
         let geometry = value.1.geometry.as_ref().unwrap();
-        
+
         let identifier = properties.get("tzid").unwrap().as_str().unwrap().to_string();
 
         let geometry: Geometry<Float> = geometry.value.clone().try_into().unwrap();
-        
+
         #[cfg(not(feature = "unsimplified"))]
         let geometry = match geometry {
             Geometry::Polygon(polygon) => {
@@ -67,11 +67,7 @@ impl From<(usize, geojson::Feature)> for OsmTimezone {
             _ => panic!("Unexpected geometry type!"),
         };
 
-        OsmTimezone {
-            id,
-            identifier,
-            geometry,
-        }
+        OsmTimezone { id, identifier, geometry }
     }
 }
 

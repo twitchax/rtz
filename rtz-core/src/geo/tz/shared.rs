@@ -2,13 +2,16 @@
 
 // Types.
 
-use std::{ops::Deref, collections::HashMap, path::Path};
+use std::{collections::HashMap, ops::Deref, path::Path};
 
 use chashmap::CHashMap;
-use geo::{Geometry, Rect, Coord, Intersects};
+use geo::{Coord, Geometry, Intersects, Rect};
 use geojson::{FeatureCollection, GeoJson};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-use serde::{{Serialize, Deserialize}, de::DeserializeOwned};
+use serde::{
+    de::DeserializeOwned,
+    {Deserialize, Serialize},
+};
 
 use crate::base::types::Float;
 
@@ -31,7 +34,7 @@ pub type TimezoneIds = [RoundInt; TIMEZONE_LIST_LENGTH];
 // Traits.
 
 /// A trait for types that are a timezone and have a [`Geometry`].
-/// 
+///
 /// Helps abstract away this property so the helper methods can be generalized.
 pub trait IsTimezone {
     /// Get the `id` of the [`IsTimezone`].

@@ -23,7 +23,10 @@ fn generate_self_contained_bincodes() {
 fn generate_ned_bincodes() {
     use std::path::Path;
 
-    use rtz_core::geo::tz::{ned::{TIMEZONE_BINCODE_DESTINATION_NAME, CACHE_BINCODE_DESTINATION_NAME, NedTimezone}, shared::{get_geojson_features_from_string, generate_bincodes}};
+    use rtz_core::geo::tz::{
+        ned::{NedTimezone, CACHE_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME},
+        shared::{generate_bincodes, get_geojson_features_from_string},
+    };
 
     let timezone_bincode_destination = &format!("../assets/{}", TIMEZONE_BINCODE_DESTINATION_NAME);
     let cache_bincode_destination = &format!("../assets/{}", CACHE_BINCODE_DESTINATION_NAME);
@@ -44,9 +47,12 @@ fn generate_ned_bincodes() {
 
 #[cfg(all(feature = "tz-osm", feature = "self-contained"))]
 fn generate_osm_bincodes() {
-    use std::{path::Path, io::Read};
+    use std::{io::Read, path::Path};
 
-    use rtz_core::geo::tz::{osm::{TIMEZONE_BINCODE_DESTINATION_NAME, CACHE_BINCODE_DESTINATION_NAME, OsmTimezone}, shared::{get_geojson_features_from_string, generate_bincodes}};
+    use rtz_core::geo::tz::{
+        osm::{OsmTimezone, CACHE_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME},
+        shared::{generate_bincodes, get_geojson_features_from_string},
+    };
     use zip::ZipArchive;
 
     let timezone_bincode_destination = &format!("../assets/{}", TIMEZONE_BINCODE_DESTINATION_NAME);

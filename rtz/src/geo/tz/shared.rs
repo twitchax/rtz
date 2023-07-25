@@ -2,8 +2,8 @@
 
 // Traits.
 
+use rtz_core::geo::tz::shared::{ConcreteVec, RoundLngLat, TimezoneIds};
 use std::collections::HashMap;
-use rtz_core::geo::tz::shared::{ConcreteVec, TimezoneIds, RoundLngLat};
 
 /// Trait that abstracts away getting the in-memory timezones / cache.
 pub(crate) trait HasCachedData

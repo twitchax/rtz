@@ -5,10 +5,13 @@ use std::{collections::HashMap, sync::OnceLock};
 use geo::{Contains, Coord};
 use rtz_core::{
     base::types::Float,
-    geo::tz::{shared::{i16_vec_to_tomezoneids, RoundLngLat, TimezoneIds, ConcreteVec}, ned::NedTimezone},
+    geo::tz::{
+        ned::NedTimezone,
+        shared::{i16_vec_to_tomezoneids, ConcreteVec, RoundLngLat, TimezoneIds},
+    },
 };
 
-use super::shared::{MapIntoTimezones, HasCachedData};
+use super::shared::{HasCachedData, MapIntoTimezones};
 
 /// Get the cache-driven timezone for a given longitude (x) and latitude (y).
 pub fn get_timezone(xf: Float, yf: Float) -> Option<&'static NedTimezone> {
@@ -128,8 +131,8 @@ static CACHE_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\ne_time_zo
 #[cfg(test)]
 mod tests {
 
-    use super::*;
     use super::super::shared::MapIntoTimezones;
+    use super::*;
     use pretty_assertions::assert_eq;
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 

@@ -2,13 +2,18 @@
 
 use std::io::Cursor;
 
-use chrono::{Utc, Offset};
-use chrono_tz::{Tz, OffsetComponents};
-use rocket::{serde::json::Json, response::{Responder, self}, Request, Response, http::{Status, ContentType}};
-use rocket_okapi::{response::OpenApiResponderInner, gen::OpenApiGenerator, okapi::openapi3::Responses, OpenApiError};
+use chrono::{Offset, Utc};
+use chrono_tz::{OffsetComponents, Tz};
+use rocket::{
+    http::{ContentType, Status},
+    response::{self, Responder},
+    serde::json::Json,
+    Request, Response,
+};
+use rocket_okapi::{gen::OpenApiGenerator, okapi::openapi3::Responses, response::OpenApiResponderInner, OpenApiError};
 use rtz_core::geo::tz::{ned::NedTimezone, osm::OsmTimezone};
 use schemars::JsonSchema;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::types::get_last_modified_time;
 
@@ -87,13 +92,13 @@ where
 }
 
 /// The response type for the [`get_timezone`] endpoint when found.
-/// 
+///
 /// Currently ingested version of this data set is [here](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_10m_time_zones.geojson).
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct NedTimezoneResponse1 {
     /// The index of the [`NedTimezoneResponse1`] in the global static cache.
-    /// 
+    ///
     /// This is is not stable across builds or new data sets.  It is merely unique during a single build.
     pub id: usize,
     /// The `identifier` of the [`NedTimezoneResponse1`] (e.g., `America/Los_Angeles`).
@@ -130,13 +135,13 @@ impl From<&'static NedTimezone> for NedTimezoneResponse1 {
 }
 
 /// The response type for the [`get_timezone`] endpoint when found.
-/// 
+///
 /// Currently ingested version of this data set is [here](https://github.com/evansiroky/timezone-boundary-builder/releases/download/2023b/timezones-with-oceans.geojson.zip).
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct OsmTimezoneResponse1 {
     /// The index of the [`OsmTimezoneResponse1`] in the global static cache.
-    /// 
+    ///
     /// This is is not stable across builds or new data sets.  It is merely unique during a single build.
     pub id: usize,
     /// The `identifier` of the [`OsmTimezoneResponse1`] (e.g., `America/Los_Angeles`).
@@ -169,8 +174,7 @@ impl From<&'static OsmTimezone> for OsmTimezoneResponse1 {
         let time = Utc::now().with_timezone(&tz);
         let tz_offset = time.offset();
         let fixed_offset = tz_offset.fix();
-        
-        
+
         let short_identifier = tz_offset.to_string();
 
         let offset = format!("UTC{}", fixed_offset);
@@ -191,7 +195,7 @@ impl From<&'static OsmTimezone> for OsmTimezoneResponse1 {
             raw_base_offset,
             raw_dst_offset,
             zone,
-            current_time
+            current_time,
         }
     }
 }

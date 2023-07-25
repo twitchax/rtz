@@ -26,7 +26,6 @@ assert_eq!(
 #![feature(test)]
 #![feature(string_remove_matches)]
 #![feature(fs_try_exists)]
-
 #![allow(stable_features)]
 #![feature(once_cell)]
 

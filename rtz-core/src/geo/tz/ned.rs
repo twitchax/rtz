@@ -24,7 +24,7 @@ pub static CACHE_BINCODE_DESTINATION_NAME: &str = "ne_time_zone_cache.bincode";
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NedTimezone {
     /// The index of the [`NedTimezone`] in the global static cache.
-    /// 
+    ///
     /// This is is not stable across builds or new data sets.  It is merely unique during a single build.
     pub id: usize,
     /// The `identifier` of the [`NedTimezone`] (e.g., `America/Los_Angeles`).

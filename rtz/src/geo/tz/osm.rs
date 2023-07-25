@@ -5,13 +5,16 @@ use std::{collections::HashMap, sync::OnceLock};
 use geo::{Contains, Coord};
 use rtz_core::{
     base::types::Float,
-    geo::tz::{shared::{i16_vec_to_tomezoneids, RoundLngLat, TimezoneIds, ConcreteVec}, osm::OsmTimezone},
+    geo::tz::{
+        osm::OsmTimezone,
+        shared::{i16_vec_to_tomezoneids, ConcreteVec, RoundLngLat, TimezoneIds},
+    },
 };
 
-use super::shared::{MapIntoTimezones, HasCachedData};
+use super::shared::{HasCachedData, MapIntoTimezones};
 
 /// Get the cache-driven timezone for a given longitude (x) and latitude (y).
-/// 
+///
 /// The OSM database does allow overlap for disputed areas, so there can be multiple results.
 pub fn get_timezones(xf: Float, yf: Float) -> Vec<&'static OsmTimezone> {
     let x = xf.floor() as i16;
@@ -132,8 +135,8 @@ static CACHE_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\osm_time_z
 #[cfg(test)]
 mod tests {
 
-    use super::*;
     use super::super::shared::MapIntoTimezones;
+    use super::*;
     use pretty_assertions::assert_eq;
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
@@ -192,7 +195,13 @@ mod tests {
             let full = get_timezones_via_full_lookup(x, y);
             let cache_assisted = get_timezones(x, y);
 
-            assert_eq!(full.into_iter().map(|t| t.id).collect::<Vec<_>>(), cache_assisted.into_iter().map(|t| t.id).collect::<Vec<_>>(), "({}, {})", x, y);
+            assert_eq!(
+                full.into_iter().map(|t| t.id).collect::<Vec<_>>(),
+                cache_assisted.into_iter().map(|t| t.id).collect::<Vec<_>>(),
+                "({}, {})",
+                x,
+                y
+            );
         });
     }
 }

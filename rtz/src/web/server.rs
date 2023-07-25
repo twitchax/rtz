@@ -5,11 +5,12 @@ use rocket_okapi::{
     openapi, openapi_get_routes,
     swagger_ui::{make_swagger_ui, SwaggerUIConfig},
 };
-use rtz_core::base::types::{Res, Void, Float};
+use rtz_core::base::types::{Float, Res, Void};
 
 use super::{
     config::Config,
-    types::{get_last_modified_time, IfModifiedSince, RocketState, WebResult}, response_types::{LookupResponse, NedTimezoneResponse1, OsmTimezoneResponse1},
+    response_types::{LookupResponse, NedTimezoneResponse1, OsmTimezoneResponse1},
+    types::{get_last_modified_time, IfModifiedSince, RocketState, WebResult},
 };
 
 /// Starts the web server.
