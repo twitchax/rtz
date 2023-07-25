@@ -6,6 +6,11 @@
 
 /// Main entry point for build script.
 pub fn main() {
+    // Skip when building docs.
+    if std::env::var("DOCS_RS").is_ok() {
+        return;
+    }
+
     #[cfg(feature = "self-contained")]
     generate_self_contained_bincodes();
 }

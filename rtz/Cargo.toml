@@ -1,6 +1,6 @@
 [package]
 name = "rtz"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 authors = ["Aaron Roney <twitchax@gmail.com>"]
 license = "MIT"
@@ -78,4 +78,4 @@ js-sys = { version = "0.3.61", optional = true }
 pretty_assertions = "1.4.0"
 
 [build-dependencies]
-rtz-build = { path = "../rtz-build", version = "0.1.0"}
+rtz-build = { path = "../rtz-build", version = "0.2.0"}

@@ -3,7 +3,9 @@
 ## Publish to Cargo
 
 ```bash
-$ cargo publish
+$ cargo publish -p rtz-core
+$ cargo publish -p rtz-build
+$ cargo publish -p rtz
 ```
 
 ## Publish to NPM
@@ -31,9 +33,9 @@ $ wasmer publish
 ## Publish to Docker
 
 ```bash
-docker build -t twitchax/rtz:0.3.0 -f ./docker/Dockerfile .
+docker build -t twitchax/rtz:{v} -f ./docker/Dockerfile .
 ```
 
 ```bash
-docker push twitchax/rtz:0.3.0
+docker push twitchax/rtz:{v}
 ```

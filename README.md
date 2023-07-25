@@ -93,7 +93,7 @@ Options:
 ```bash
 $ rtz resolve-ned "-87.62,41.88"
 
-Identifier:   America/Chicago
+Identifier:      America/Chicago
 UTC Offset:      UTC-06:00
 Offset Seconds:  -21600
 Description:     Canada (almost all of Saskatchewan), Costa Rica, El Salvador, Ecuador (Galapagos Islands), Guatemala, Honduras, Mexico (most), Nicaragua,
