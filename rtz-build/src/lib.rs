@@ -1,5 +1,10 @@
-#![cfg(not(target_family = "wasm"))]
+//! The build script crate for `rtz`.
 
+#![cfg(not(target_family = "wasm"))]
+#![warn(rustdoc::broken_intra_doc_links, rust_2018_idioms, clippy::all, missing_docs)]
+#![allow(incomplete_features)]
+
+/// Main entry point for build script.
 pub fn main() {
     #[cfg(feature = "self-contained")]
     generate_self_contained_bincodes();

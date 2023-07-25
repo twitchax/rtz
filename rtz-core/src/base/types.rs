@@ -12,7 +12,9 @@ pub type Err = anyhow::Error;
 
 // Precision types.
 
+/// The (double-precision) floating point type used in the library.
 #[cfg(feature = "double-precision")]
 pub type Float = f64;
+/// The (single-precision) floating point type used in the library.
 #[cfg(not(feature = "double-precision"))]
 pub type Float = f32;

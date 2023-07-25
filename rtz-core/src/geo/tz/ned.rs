@@ -89,13 +89,18 @@ pub fn get_geojson_features_from_string(geojson_input: &str) -> FeatureCollectio
 
 // Statics.
 
+/// The address of the GeoJSON file.
 pub static GEOJSON_ADDRESS: &str = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_time_zones.geojson";
+/// The name of the timezone bincode file.
 pub static TIMEZONE_BINCODE_DESTINATION_NAME: &str = "ne_10m_time_zones.bincode";
+/// The name of the cache bincode file.
 pub static CACHE_BINCODE_DESTINATION_NAME: &str = "ne_time_zone_cache.bincode";
 
 // Types.
 
+/// A rounded integer.
 pub type RoundInt = i16;
+/// A rounded longitude and latitude.
 pub type RoundLngLat = (RoundInt, RoundInt);
 //pub type LngLat = (f64, f64);
 
@@ -224,6 +229,7 @@ impl From<(usize, &geojson::Feature)> for NedTimezone {
 
 // Helper methods.
 
+/// Convert a [`Vec`] of [`i16`]s into [`NedTimezoneIds`].
 pub fn i16_vec_to_tomezoneids(value: Vec<i16>) -> NedTimezoneIds {
     if value.len() > TIMEZONE_LIST_LENGTH {
         panic!("Cannot convert a Vec<i16> with more than `TIMEZONE_LIST_LENGTH` elements into a TimezoneIds.");
