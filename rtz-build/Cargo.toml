@@ -2,6 +2,14 @@
 name = "rtz-build"
 version = "0.1.0"
 edition = "2021"
+authors = ["Aaron Roney <twitchax@gmail.com>"]
+license = "MIT"
+description = "The build crate for `rtz`."
+readme = "README.md"
+homepage = "https://github.com/twitchax/rtz"
+repository = "https://github.com/twitchax/rtz"
+keywords = ["cli", "time", "zone", "timezone"]
+categories = ["command-line-utilities"]
 
 [features]
 default = []
