@@ -5,4 +5,4 @@ iterations: 10000
 plan:
   - name: Fetch TZ
     request:
-      url: /api/v1/ned/tz/-120.5/46.5
+      url: /api/v1/ned/osm/-120.5/46.5

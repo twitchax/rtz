@@ -44,7 +44,7 @@ pub trait IsTimezone {
 
 // Concrete helpers.
 
-/// A concrete collection of [`Timezone`]s.
+/// A concrete collection of concrete values.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConcreteVec<T>(Vec<T>);
 
@@ -87,7 +87,7 @@ impl<'a, T> IntoIterator for &'a ConcreteVec<T> {
 
 // Helper methods.
 
-/// Convert a [`Vec`] of [`i16`]s into [`NedTimezoneIds`].
+/// Convert a [`Vec`] of [`i16`]s into [`TimezoneIds`].
 pub fn i16_vec_to_tomezoneids(value: Vec<i16>) -> TimezoneIds {
     if value.len() > TIMEZONE_LIST_LENGTH {
         panic!("Cannot convert a Vec<i16> with more than `TIMEZONE_LIST_LENGTH` elements into a TimezoneIds.");

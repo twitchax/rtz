@@ -14,7 +14,7 @@ A self-contained geo lookup library / binary / server for Rust / JS (via WASM) (
 
 ## Free Server
 
-Server is deployed to four regions across the globe, and is available at [tz.twitchax.com](http://tz.twitchax.com/api/v1/osm/tz/30/30).  Each region is currently 
+The server is deployed to four regions across the globe, and is available at [tz.twitchax.com](http://tz.twitchax.com/api/v1/osm/tz/30/30).  Each region is currently 
 capable of supporting around 8,000 RPS, and is deployed to the following regions: sea, iad, ams, hkg.
 
 In addition, the server will now generally attempt to not break backwards compatibility within an api version.  This means that the server will (attempt to) not change the response format for a given api version, and will (attempt to) not remove any fields from the response.  This does not mean that the server will not add fields to the response, but it will (attempt to) not remove them.
