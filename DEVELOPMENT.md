@@ -27,15 +27,16 @@ $ wasm-pack publish
 $ # Regenerate the cache.
 $ cargo build --release --no-default-features --features full
 $ cargo wasix build --release --no-default-features --features full --features cli
-$ wasmer publish
+$ # Need `--no-validate` for some reason when pushing a WASIX binary.
+$ wasmer publish --no-validate
 ```
 
 ## Publish to Docker
 
 ```bash
-docker build -t twitchax/rtz:{v} -f ./docker/Dockerfile .
+$ docker build -f ./docker/Dockerfile -t twitchax/rtz:{v} .
 ```
 
 ```bash
-docker push twitchax/rtz:{v}
+$ docker push twitchax/rtz:{v}
 ```

@@ -21,23 +21,33 @@ WORKDIR /build/rtz
 # The order of these statements is important: change with care.
 
 COPY ./assets ./assets
-COPY ./Cargo.toml ./Cargo.lock build.rs ./
+COPY ./Cargo.toml ./Cargo.lock ./
 
-RUN mkdir -p ./src
+RUN mkdir -p ./rtz/src
+RUN mkdir -p ./rtz-core/src
+RUN mkdir -p ./rtz-build/src
 
-RUN touch ./src/lib.rs
+COPY ./rtz/Cargo.toml ./rtz/
+COPY ./rtz-core/Cargo.toml ./rtz-core/
+COPY ./rtz-build/Cargo.toml ./rtz-build/
+
+RUN touch ./rtz/src/lib.rs
+RUN touch ./rtz-core/src/lib.rs
+RUN touch ./rtz-build/src/lib.rs
 
 RUN mold -run cargo build --release --lib
-RUN rm -f target/release/deps/librtzlib*
 RUN rm -f target/release/deps/librtz*
-RUN rm -f target/release/deps/rtzlib*
 RUN rm -f target/release/deps/rtz*
 
-RUN rm -f ./src/lib.rs
+RUN rm -f ./rtz/src/lib.rs
+RUN rm -f ./rtz-core/src/lib.rs
+RUN rm -f ./rtz-build/src/lib.rs
 
 # Copy the source and build the application.
 
-COPY ./src ./src
+COPY ./rtz ./rtz
+COPY ./rtz-core ./rtz-core
+COPY ./rtz-build ./rtz-build
 
 RUN mold -run cargo build --features web --release --lib
 RUN mold -run cargo build --features web --release

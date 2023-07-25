@@ -103,13 +103,13 @@ DST Description: Canada (Manitoba), United States (Illinois, most of Texas)
 ### Run with Wasmer
 
 ```bash
-wasmer run twitchax/rtz -- resolve 30,30
+wasmer run twitchax/rtz@latest -- resolve-ned 30,30
 ```
 
 ### Run the Server
 
 ```bash
-$ cargo install rtz --features full --features web
+$ cargo install rtz --features web
 $ rtz serve
 ```
 
@@ -164,7 +164,7 @@ tz.identifier; // "America/Los_Angeles"
 The library and binary both support various feature flags.  Of most important note are:
 * Top-Level:
   * `default = ["cli"]`
-  * `full = ["cli", "tz-ned", "self-contained"]`
+  * `full = ["tz-ned", "self-contained"]`
 * Datasets:
   * `tz-ned`: enables the Natural Earth time zone dataset, and the associated produced library functions.
 * Binary configuration:
