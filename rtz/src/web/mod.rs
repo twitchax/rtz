@@ -63,24 +63,24 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn can_get_timezone() {
+    async fn can_get_ned_timezone_v1() {
         let client = get_client().await;
 
-        let response = client.get("/api/tz/-121.0/46.0").dispatch().await;
+        let response = client.get("/api/v1/ned/tz/-121.0/46.0").dispatch().await;
 
         assert_eq!(response.status(), Status::Ok);
 
         let body = response.into_string().await.unwrap();
-        let expected = r#"{"id":20,"objectid":6,"friendlyName":"America/Los_Angeles","description":"Canada (most of British Columbia), Mexico (Baja California), United States (California, most of Nevada, most of Oregon, Washington (state))","dstDescription":"Canada (most of British Columbia), Mexico (Baja California), United States (California, most of Nevada, most of Oregon, Washington (state))","offsetStr":"UTC-08:00","zoneNum":-8.0,"zoneStr":"-8","rawOffset":-28800}"#;
+        let expected = r#"{"id":20,"identifier":"America/Los_Angeles","description":"Canada (most of British Columbia), Mexico (Baja California), United States (California, most of Nevada, most of Oregon, Washington (state))","dstDescription":"Canada (most of British Columbia), Mexico (Baja California), United States (California, most of Nevada, most of Oregon, Washington (state))","offset":"UTC-08:00","zone":-8.0,"rawOffset":-28800}"#;
 
         assert_eq!(body, expected);
     }
 
     #[tokio::test]
-    async fn can_get_not_found_timezone() {
+    async fn can_get_not_found_ned_timezone_v1() {
         let client = get_client().await;
 
-        let response = client.get("/api/tz/179.9968/-67.0959").dispatch().await;
+        let response = client.get("/api/v1/ned/tz/179.9968/-67.0959").dispatch().await;
 
         assert_eq!(response.status(), Status::NotFound);
 
@@ -91,16 +91,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn can_get_not_modified_timezone() {
+    async fn can_get_not_modified_ned_timezone_v1() {
         let client = get_client().await;
 
-        let response = client.get("/api/tz/-121.0/46.0").dispatch().await;
+        let response = client.get("/api/v1/ned/tz/-121.0/46.0").dispatch().await;
 
         assert_eq!(response.status(), Status::Ok);
 
         let if_modified_since = response.headers().get_one("If-Modified-Since").unwrap().to_string();
 
-        let response = client.get("/api/tz/-121.0/46.0").header(Header::new("If-Modified-Since", if_modified_since)).dispatch().await;
+        let response = client.get("/api/v1/ned/tz/-121.0/46.0").header(Header::new("If-Modified-Since", if_modified_since)).dispatch().await;
 
         assert_eq!(response.status(), Status::NotModified);
     }
@@ -130,7 +130,7 @@ mod bench {
         b.iter(|| {
             for x in xs.clone() {
                 for y in ys.clone() {
-                    let response = client.get(format!("/api/tz/{}/{}", x, y)).dispatch();
+                    let response = client.get(format!("/api/ned/tz/{}/{}", x, y)).dispatch();
                     assert_eq!(response.status(), Status::Ok);
                 }
             }
@@ -144,7 +144,7 @@ mod bench {
         let y = -66.5;
 
         b.iter(|| {
-            let response = client.get(format!("/api/tz/{}/{}", x, y)).dispatch();
+            let response = client.get(format!("/api/ned/tz/{}/{}", x, y)).dispatch();
             assert_eq!(response.status(), Status::Ok);
         });
     }

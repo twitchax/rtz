@@ -1,7 +1,13 @@
 [workspace]
-members = ["rtz-core", "rtz-build", "rtz"]
+members = ["rtz-core", "rtz"]
 
 [profile.dev.build-override]
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+
+[profile.test.build-override]
 opt-level = 3
 debug = false
 debug-assertions = false

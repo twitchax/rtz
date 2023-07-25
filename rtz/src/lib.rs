@@ -11,7 +11,7 @@ use rtzlib::get_timezone_ned;
 assert_eq!(
     get_timezone_ned(-121., 46.)
         .unwrap()
-        .friendly_name
+        .identifier
         .as_ref()
         .unwrap(),
     "America/Los_Angeles"
@@ -26,6 +26,9 @@ assert_eq!(
 #![feature(test)]
 #![feature(string_remove_matches)]
 #![feature(fs_try_exists)]
+
+#![allow(stable_features)]
+#![feature(once_cell)]
 
 // Modules.
 

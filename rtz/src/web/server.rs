@@ -5,11 +5,11 @@ use rocket_okapi::{
     openapi, openapi_get_routes,
     swagger_ui::{make_swagger_ui, SwaggerUIConfig},
 };
-use rtz_core::base::types::{Res, Void};
+use rtz_core::base::types::{Res, Void, Float};
 
 use super::{
     config::Config,
-    types::{get_last_modified_time, IfModifiedSince, RocketState, TimezoneResponse, WebResult},
+    types::{get_last_modified_time, IfModifiedSince, RocketState, LookupResponse, WebResult, NedTimezoneResponseRefv1},
 };
 
 /// Starts the web server.
@@ -40,7 +40,7 @@ pub fn create_rocket(config: &Config) -> Res<Rocket<Build>> {
 
     let rocket = rocket::custom(rocket_config)
         .manage(state)
-        .mount("/api", openapi_get_routes![get_timezone])
+        .mount("/api", openapi_get_routes![get_timezone_ned, get_timezone_ned_v1])
         .mount(
             "/app-docs",
             make_swagger_ui(&SwaggerUIConfig {
@@ -53,25 +53,35 @@ pub fn create_rocket(config: &Config) -> Res<Rocket<Build>> {
     Ok(rocket)
 }
 
-/// Returns the time zone information for the given `(lng,lat)`.
+/// Returns the time zone information for the given `(lng,lat)` from the [Natural Earth Data](https://www.naturalearthdata.com/) dataset.
 ///
 /// This API endpoint is provided under the same [license](https://github.com/twitchax/rtz/blob/main/LICENSE) as the
 /// [project](https://github.com/twitchax/rtz) itself.  It is provided as-is, with no warranty (as of today).
-#[openapi(tag = "API")]
-#[get("/tz/<lng>/<lat>")]
-async fn get_timezone(lng: f64, lat: f64, if_modified_since: IfModifiedSince<'_>) -> WebResult<TimezoneResponse> {
+#[openapi(tag = "TZ")]
+#[get("/ned/tz/<lng>/<lat>")]
+async fn get_timezone_ned(lng: Float, lat: Float, if_modified_since: IfModifiedSince<'_>) -> WebResult<LookupResponse<NedTimezoneResponseRefv1>> {
+    get_timezone_ned_v1(lng, lat, if_modified_since).await
+}
+
+/// Returns the time zone information for the given `(lng,lat)` from the [Natural Earth Data](https://www.naturalearthdata.com/) dataset.
+///
+/// This API endpoint is provided under the same [license](https://github.com/twitchax/rtz/blob/main/LICENSE) as the
+/// [project](https://github.com/twitchax/rtz) itself.  It is provided as-is, with no warranty (as of today).
+#[openapi(tag = "TZv1")]
+#[get("/v1/ned/tz/<lng>/<lat>")]
+async fn get_timezone_ned_v1(lng: Float, lat: Float, if_modified_since: IfModifiedSince<'_>) -> WebResult<LookupResponse<NedTimezoneResponseRefv1>> {
     if Into::<&str>::into(if_modified_since) == get_last_modified_time() {
         log::warn!("Not modified.");
-        return Ok(TimezoneResponse::NotModified);
+        return Ok(LookupResponse::NotModified);
     }
 
     let tz = match crate::get_timezone_ned(lng, lat) {
         Some(tz) => tz.into(),
         None => {
             log::warn!("Not found.");
-            return Ok(TimezoneResponse::NotFound);
+            return Ok(LookupResponse::NotFound);
         }
     };
 
-    Ok(TimezoneResponse::Ok(Json(tz)))
+    Ok(LookupResponse::Ok(Json(tz)))
 }

@@ -5,11 +5,11 @@ use std::{collections::HashMap, sync::OnceLock};
 use geo::{Contains, Coord};
 use rtz_core::{
     base::types::{Float, Res},
-    geo::tz::ned::{ConcreteTimezones, RoundLngLat, TimezoneIds, TimezoneRef, TimezoneRefs},
+    geo::tz::ned::{ConcreteTimezones, RoundLngLat, NedTimezoneIds, NedTimezoneRef, NedTimezoneRefs, i16_vec_to_tomezoneids},
 };
 
 /// Get the cache-driven timezone for a given longitude (x) and latitude (y).
-pub fn get_timezone(xf: Float, yf: Float) -> Option<TimezoneRef> {
+pub fn get_timezone(xf: Float, yf: Float) -> Option<NedTimezoneRef> {
     let x = xf.floor() as i16;
     let y = yf.floor() as i16;
 
@@ -26,20 +26,20 @@ pub fn get_timezone(xf: Float, yf: Float) -> Option<TimezoneRef> {
 }
 
 /// Get the exact timezone for a given longitude (x) and latitude (y).
-pub fn get_timezone_via_full_lookup(xf: Float, yf: Float) -> Option<TimezoneRef> {
+pub fn get_timezone_via_full_lookup(xf: Float, yf: Float) -> Option<NedTimezoneRef> {
     get_timezones().into_iter().find(|&tz| tz.geometry.contains(&Coord { x: xf, y: yf }))
 }
 
 /// Get value from the 100km cache.
-pub(crate) fn get_from_cache(x: i16, y: i16) -> Option<TimezoneRefs> {
+pub(crate) fn get_from_cache(x: i16, y: i16) -> Option<NedTimezoneRefs> {
     let cache = get_cache();
 
     cache.get(&(x, y)).map_timezones()
 }
 
 /// Get the 100km cache.
-fn get_cache() -> &'static HashMap<RoundLngLat, TimezoneIds> {
-    static CACHE: OnceLock<HashMap<RoundLngLat, TimezoneIds>> = OnceLock::new();
+fn get_cache() -> &'static HashMap<RoundLngLat, NedTimezoneIds> {
+    static CACHE: OnceLock<HashMap<RoundLngLat, NedTimezoneIds>> = OnceLock::new();
 
     #[cfg(feature = "self-contained")]
     {
@@ -51,19 +51,7 @@ fn get_cache() -> &'static HashMap<RoundLngLat, TimezoneIds> {
             cache
                 .into_iter()
                 .map(|(key, value)| {
-                    let value = [
-                        #[allow(clippy::get_first)]
-                        value.get(0).cloned().unwrap_or(-1),
-                        value.get(1).cloned().unwrap_or(-1),
-                        value.get(2).cloned().unwrap_or(-1),
-                        value.get(3).cloned().unwrap_or(-1),
-                        value.get(4).cloned().unwrap_or(-1),
-                        value.get(5).cloned().unwrap_or(-1),
-                        value.get(6).cloned().unwrap_or(-1),
-                        value.get(7).cloned().unwrap_or(-1),
-                        value.get(8).cloned().unwrap_or(-1),
-                        value.get(9).cloned().unwrap_or(-1),
-                    ];
+                    let value = i16_vec_to_tomezoneids(value);
 
                     (key, value)
                 })
@@ -81,19 +69,7 @@ fn get_cache() -> &'static HashMap<RoundLngLat, TimezoneIds> {
             cache
                 .into_iter()
                 .map(|(key, value)| {
-                    let value = [
-                        #[allow(clippy::get_first)]
-                        value.get(0).cloned().unwrap_or(-1),
-                        value.get(1).cloned().unwrap_or(-1),
-                        value.get(2).cloned().unwrap_or(-1),
-                        value.get(3).cloned().unwrap_or(-1),
-                        value.get(4).cloned().unwrap_or(-1),
-                        value.get(5).cloned().unwrap_or(-1),
-                        value.get(6).cloned().unwrap_or(-1),
-                        value.get(7).cloned().unwrap_or(-1),
-                        value.get(8).cloned().unwrap_or(-1),
-                        value.get(9).cloned().unwrap_or(-1),
-                    ];
+                    let value = i16_vec_to_tomezoneids(value);
 
                     (key, value)
                 })
@@ -148,22 +124,22 @@ static CACHE_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\ne_time_zo
 
 /// Trait that allows converting a [`u16`] into a [`Timezone`] reference (from the global list).
 pub(crate) trait IntoTimezone {
-    fn into_timezone(self) -> Res<TimezoneRef>;
+    fn into_timezone(self) -> Res<NedTimezoneRef>;
 }
 
 impl IntoTimezone for u16 {
-    fn into_timezone(self) -> Res<TimezoneRef> {
+    fn into_timezone(self) -> Res<NedTimezoneRef> {
         Some(&self).map_timezone().ok_or_else(|| anyhow::Error::msg("Timezone not found."))
     }
 }
 
 /// Trait that allows converting a [`u16`] into a [`Timezone`] reference (from the global list).
 pub(crate) trait MapIntoTimezone {
-    fn map_timezone(self) -> Option<TimezoneRef>;
+    fn map_timezone(self) -> Option<NedTimezoneRef>;
 }
 
 impl MapIntoTimezone for Option<&u16> {
-    fn map_timezone(self) -> Option<TimezoneRef> {
+    fn map_timezone(self) -> Option<NedTimezoneRef> {
         let Some(value) = self else {
             return None;
         };
@@ -176,11 +152,11 @@ impl MapIntoTimezone for Option<&u16> {
 
 /// Trait that allows converting a [`u16`] into a [`Timezone`] reference (from the global list).
 pub(crate) trait MapIntoTimezones {
-    fn map_timezones(self) -> Option<TimezoneRefs>;
+    fn map_timezones(self) -> Option<NedTimezoneRefs>;
 }
 
-impl MapIntoTimezones for Option<&TimezoneIds> {
-    fn map_timezones(self) -> Option<TimezoneRefs> {
+impl MapIntoTimezones for Option<&NedTimezoneIds> {
+    fn map_timezones(self) -> Option<NedTimezoneRefs> {
         let Some(value) = self else {
             return None;
         };
@@ -234,7 +210,7 @@ mod tests {
     #[test]
     fn can_perform_exact_lookup() {
         assert_eq!(get_timezone_via_full_lookup(-177.0, -15.0), None);
-        assert_eq!(get_timezone_via_full_lookup(-121.0, 46.0).unwrap().friendly_name.as_ref().unwrap(), "America/Los_Angeles");
+        assert_eq!(get_timezone_via_full_lookup(-121.0, 46.0).unwrap().identifier.as_ref().unwrap(), "America/Los_Angeles");
 
         assert_eq!(get_timezone_via_full_lookup(179.9968, -67.0959), None);
     }
@@ -246,7 +222,7 @@ mod tests {
         assert_eq!(cache.get(&(-177, -15)).map_timezones().unwrap().len(), 2);
 
         assert_eq!(cache.get(&(-121, 46)).map_timezones().unwrap().len(), 1);
-        assert_eq!(cache.get(&(-121, 46)).map_timezones().unwrap()[0].friendly_name.as_ref().unwrap(), "America/Los_Angeles");
+        assert_eq!(cache.get(&(-121, 46)).map_timezones().unwrap()[0].identifier.as_ref().unwrap(), "America/Los_Angeles");
 
         assert_eq!(cache.get(&(-68, -67)).map_timezones().unwrap().len(), 5);
     }

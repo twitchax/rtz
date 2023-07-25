@@ -26,10 +26,10 @@ required-features = ["cli"]
 
 [features]
 default = ["cli"]
-full = ["cli", "tz-ned", "self-contained"]
+full = ["tz-ned", "self-contained"]
 
-self-contained = []
-tz-ned = []
+self-contained = ["rtz-core/self-contained", "rtz-build/self-contained"]
+tz-ned = ["rtz-core/tz-ned", "rtz-build/tz-ned"]
 
 cli = ["clap"]
 web = ["full", "tokio", "rocket", "rocket_okapi", "rocket_cors", "config", "log", "simple_logger", "schemars", "chrono"]
@@ -44,7 +44,7 @@ geojson = "0.24.1"
 geo = "0.26.0"
 chashmap = "2.2.2"
 async-trait = "0.1.71"
-reqwest = { version = "0.11.18", features = ["blocking"]}
+reqwest = { version = "0.11.18", features = ["blocking"] }
 
 rand = "0.8.5"
 getrandom = { version = "0.2", features = ["js"] }

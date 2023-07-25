@@ -16,7 +16,7 @@ use rocket_okapi::{
     response::OpenApiResponderInner,
     JsonSchema, OpenApiError,
 };
-use rtz_core::{base::types::Err, geo::tz::ned::Timezone};
+use rtz_core::{base::types::Err, geo::tz::ned::NedTimezone};
 use serde::{Deserialize, Serialize};
 
 use super::config::Config;
@@ -38,18 +38,21 @@ pub fn get_last_modified_time() -> &'static str {
 // Primary types.
 
 /// The response type for the [`get_timezone`] endpoint.
-pub enum TimezoneResponse {
-    Ok(Json<TimezoneResponseRef>),
+pub enum LookupResponse<T> {
+    Ok(Json<T>),
     NotModified,
     NotFound,
 }
 
-impl<'r, 'o: 'r> Responder<'r, 'o> for TimezoneResponse {
+impl<'r, 'o: 'r, T> Responder<'r, 'o> for LookupResponse<T>
+where
+    T: Serialize,
+{
     fn respond_to(self, req: &'r Request<'_>) -> response::Result<'o> {
         let mut response = match self {
-            TimezoneResponse::Ok(json) => json.respond_to(req)?,
-            TimezoneResponse::NotModified => Response::build().status(Status::NotModified).finalize(),
-            TimezoneResponse::NotFound => {
+            LookupResponse::Ok(json) => json.respond_to(req)?,
+            LookupResponse::NotModified => Response::build().status(Status::NotModified).finalize(),
+            LookupResponse::NotFound => {
                 let body = r#"{"status": 404,"message": "No timezone results: location likely resides on a boundary."}"#;
                 Response::build()
                     .status(Status::NotFound)
@@ -67,13 +70,16 @@ impl<'r, 'o: 'r> Responder<'r, 'o> for TimezoneResponse {
     }
 }
 
-impl OpenApiResponderInner for TimezoneResponse {
+impl<T> OpenApiResponderInner for LookupResponse<T>
+where
+    T: Serialize + JsonSchema,
+{
     fn responses(generator: &mut OpenApiGenerator) -> Result<Responses, OpenApiError> {
         use rocket_okapi::okapi::openapi3::{RefOr, Response as OpenApiReponse};
 
         let mut responses = rocket_okapi::okapi::Map::new();
 
-        let json_responses = Json::<TimezoneResponseRef>::responses(generator)?;
+        let json_responses = Json::<NedTimezoneResponseRefv1>::responses(generator)?;
 
         responses.extend(json_responses.responses);
 
@@ -94,7 +100,7 @@ impl OpenApiResponderInner for TimezoneResponse {
             RefOr::Object(OpenApiReponse {
                 description: "\
                 #### [404 Not Found](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404)\n\
-                This response is given when you request a time zone that does not exist (possibly on the edge of a boundary). \
+                This response is given when you request a lookup that does not produce any results (possibly on the edge of a boundary). \
                 "
                 .to_string(),
                 ..Default::default()
@@ -108,15 +114,15 @@ impl OpenApiResponderInner for TimezoneResponse {
 /// The response type for the [`get_timezone`] endpoint when found.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct TimezoneResponseRef {
+pub struct NedTimezoneResponseRefv1 {
     /// The index of the [`Timezone`] in the global static cache.
+    /// 
+    /// This is is not stable across builds or new data sets.  It is merely unique during a single build.
     pub id: usize,
-    /// The `objectid` of the [`Timezone`].
-    pub objectid: u64,
-    /// The `friendly_name` of the [`Timezone`] (e.g., `America/Los_Angeles`).
+    /// The `identifier` of the [`Timezone`] (e.g., `America/Los_Angeles`).
     ///
     /// Essentially, it is the IANA TZ identifier.
-    pub friendly_name: Option<&'static str>,
+    pub identifier: Option<&'static str>,
 
     /// The `description` of the [`Timezone`] (e.g., the countries affected).
     pub description: &'static str,
@@ -124,27 +130,23 @@ pub struct TimezoneResponseRef {
     pub dst_description: Option<&'static str>,
 
     /// The `offset_str` of the [`Timezone`] (e.g., `UTC-8:00`).
-    pub offset_str: &'static str,
+    pub offset: &'static str,
 
     /// The `zone_num` of the [`Timezone`] (e.g., `-8`).
-    pub zone_num: f64,
-    /// The `zone_str` of the [`Timezone`] (e.g., `"-9.5"`).
-    pub zone_str: &'static str,
+    pub zone: f32,
     /// The `raw_offset` of the [`Timezone`] (e.g., `-28800`).
-    pub raw_offset: i64,
+    pub raw_offset: i32,
 }
 
-impl From<&'static Timezone> for TimezoneResponseRef {
-    fn from(value: &'static Timezone) -> TimezoneResponseRef {
-        TimezoneResponseRef {
+impl From<&'static NedTimezone> for NedTimezoneResponseRefv1 {
+    fn from(value: &'static NedTimezone) -> NedTimezoneResponseRefv1 {
+        NedTimezoneResponseRefv1 {
             id: value.id,
-            objectid: value.objectid,
-            friendly_name: value.friendly_name.as_deref(),
+            identifier: value.identifier.as_deref(),
             description: value.description.as_ref(),
             dst_description: value.dst_description.as_deref(),
-            offset_str: value.offset_str.as_ref(),
-            zone_num: value.zone_num,
-            zone_str: value.zone_str.as_ref(),
+            offset: value.offset.as_ref(),
+            zone: value.zone,
             raw_offset: value.raw_offset,
         }
     }

@@ -10,5 +10,6 @@ fn main() {
         println!("cargo:rustc-cfg=wasm");
     }
 
+    #[cfg(not(target_family = "wasm"))]
     rtz_build::main();
 }

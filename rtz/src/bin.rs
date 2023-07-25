@@ -63,8 +63,8 @@ fn start(args: Args) -> Void {
             let tz = get_timezone_ned(lng, lat).ok_or_else(|| anyhow::Error::msg("Failed to resolve timezone."))?;
 
             println!();
-            println!("Friendly Name:   {}", tz.friendly_name.as_deref().unwrap_or(""));
-            println!("UTC Offset:      {}", tz.offset_str);
+            println!("Identifier:      {}", tz.identifier.as_deref().unwrap_or(""));
+            println!("UTC Offset:      {}", tz.offset);
             println!("Offset Seconds:  {}", tz.raw_offset);
             println!("Description:     {}", tz.description);
             println!("DST Description: {}", tz.dst_description.as_deref().unwrap_or(""));
@@ -85,6 +85,7 @@ fn start(args: Args) -> Void {
         }
     }
 
+    #[allow(unreachable_code)]
     Ok(())
 }
 

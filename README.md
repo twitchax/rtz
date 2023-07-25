@@ -10,21 +10,23 @@
 
 # rtz
 
-A self-contained timezone library / binary / server for Rust / JS (via WASM) ([free server](http://tz.twitchax.com/api/tz/30/30)) using data from the [Natural Earth](https://www.naturalearthdata.com/) dataset.
+A self-contained timezone library / binary / server for Rust / JS (via WASM) ([free server](http://tz.twitchax.com/api/v1/ned/tz/30/30)) using data from the [Natural Earth](https://www.naturalearthdata.com/) dataset.
 
 ## Free Server
 
-Server is deployed to four regions across the globe, and is available at [tz.twitchax.com](http://tz.twitchax.com/api/tz/30/30).  Each region is currently 
+Server is deployed to four regions across the globe, and is available at [tz.twitchax.com](http://tz.twitchax.com/api/v1/ned/tz/30/30).  Each region is currently 
 capable of supporting around 8,000 RPS, and is deployed to the following regions: sea, iad, ams, hkg.
 
-Requests take the form of `http://tz.twitchax.com/api/tz/{lng}/{lat}`.
+In addition, the server will now generally attempt to not break backwards compatibility within an api version.  This means that the server will (attempt to) not change the response format for a given api version, and will (attempt to) not remove any fields from the response.  This does not mean that the server will not add fields to the response, but it will (attempt to) not remove them.
+
+Requests take the form of `http://tz.twitchax.com/api/v1/ned/tz/{lng}/{lat}`.  You can also check out the [swagger docs](http://tz.twitchax.com/app-docs).
 
 Example request:
 
 ```bash
-$ curl http://tz.twitchax.com/api/tz/30/30
+$ curl http://tz.twitchax.com/api/v1/ned/tz/30/30
 
-{"id":65,"objectid":17,"friendlyName":"Europe/Mariehamn","description":"Libya, Egypt, Bulgaria, Cyprus, Greece, Israel, Jordan, Lebanon, Moldova, Palestine, Romania, Syria, Turkey, Ukraine","dstDescription":"Bulgaria, Cyprus, Greece, Israel, Jordan, Lebanon, Moldova, Palestine, Romania, Syria, Turkey, Ukraine","offsetStr":"UTC+02:00","zoneNum":2,"zoneStr":"+2","rawOffset":7200}
+{"id":65,"identifier":"Europe/Mariehamn","description":"Libya, Egypt, Bulgaria, Cyprus, Greece, Israel, Jordan, Lebanon, Moldova, Palestine, Romania, Syria, Turkey, Ukraine","dstDescription":"Bulgaria, Cyprus, Greece, Israel, Jordan, Lebanon, Moldova, Palestine, Romania, Syria, Turkey, Ukraine","offset":"UTC+02:00","zone":2.0,"rawOffset":7200}
 ```
 
 HTTPS is also available, but is not recommended due to the performance overhead for the client and the server, and the lack of sensitive data being transmitted.
@@ -91,7 +93,7 @@ Options:
 ```bash
 $ rtz resolve-ned "-87.62,41.88"
 
-Friendly Name:   America/Chicago
+Identifier:   America/Chicago
 UTC Offset:      UTC-06:00
 Offset Seconds:  -21600
 Description:     Canada (almost all of Saskatchewan), Costa Rica, El Salvador, Ecuador (Galapagos Islands), Guatemala, Honduras, Mexico (most), Nicaragua,
@@ -107,7 +109,7 @@ wasmer run twitchax/rtz -- resolve 30,30
 ### Run the Server
 
 ```bash
-$ cargo install rtz --features web
+$ cargo install rtz --features full --features web
 $ rtz serve
 ```
 
@@ -133,7 +135,7 @@ use rtzlib::get_timezone_ned;
 assert_eq!(
     get_timezone_ned(-121., 46.)
         .unwrap()
-        .friendly_name
+        .identifier
         .as_ref()
         .unwrap(),
     "America/Los_Angeles"
@@ -154,7 +156,7 @@ Then, you can use the library similarly as you would in Rust.
 
 ```js
 let tz = rtz.getTimezoneNed(-121, 46);
-tz.friendly_name; // "America/Los_Angeles"
+tz.identifier; // "America/Los_Angeles"
 ```
 
 ## Feature Flags
@@ -166,11 +168,12 @@ The library and binary both support various feature flags.  Of most important no
 * Datasets:
   * `tz-ned`: enables the Natural Earth time zone dataset, and the associated produced library functions.
 * Binary configuration:
-  * `self-contained`: enables the self-contained features, which build with datasets embedded into the binary.
   * `cli`: enables the CLI features, and can be removed if only compiling the library.
+  * `self-contained`: enables the self-contained features, which build with datasets embedded into the binary.
+  * `double-precision`: uses `f64`s every for `Geometry` and `Polygon` data types, which is more accurate but fatter than `f32`s.
 * Special Modifiers:
   * `wasm`: enables the WASM features, and is required to build an NPM package via `wasm-pack`.
-  * `web`: enables the `serve` subcommand, which starts a Rocket web server that can respond to time zone requests.
+  * `web = ["full"]`: enables the `serve` subcommand, which starts a Rocket web server that can respond to time zone requests.
 
 ## Performance
 
@@ -193,13 +196,13 @@ Below is the sample performance to resolve a time zone from a `(lng,lat)` pair t
 ## Test
 
 ```bash
-cargo test
+cargo test --features full --features web
 ```
 
 ## Bench
 
 ```bash
-cargo bench
+cargo bench --features full --features web
 ```
 
 ## License

@@ -90,6 +90,8 @@ pub fn get_geojson_features_from_string(geojson_input: &str) -> FeatureCollectio
 // Statics.
 
 pub static GEOJSON_ADDRESS: &str = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_time_zones.geojson";
+pub static TIMEZONE_BINCODE_DESTINATION_NAME: &str = "ne_10m_time_zones.bincode";
+pub static CACHE_BINCODE_DESTINATION_NAME: &str = "ne_time_zone_cache.bincode";
 
 // Types.
 
@@ -97,21 +99,26 @@ pub type RoundInt = i16;
 pub type RoundLngLat = (RoundInt, RoundInt);
 //pub type LngLat = (f64, f64);
 
+/// This number is selected based on the existing data, and may need to be increased
+/// across dataset versions.  However, it is helpful to keep this as an array
+/// for cache locality in the map.
+const TIMEZONE_LIST_LENGTH: usize = 5;
+
 /// A collection of `id`s into the global time zone static cache.
-pub type TimezoneIds = [RoundInt; 10];
+pub type NedTimezoneIds = [RoundInt; TIMEZONE_LIST_LENGTH];
 /// A [`Timezone`] static reference.
-pub type TimezoneRef = &'static Timezone;
+pub type NedTimezoneRef = &'static NedTimezone;
 /// A collection of [`Timezone`] static references.
-pub type TimezoneRefs = Vec<TimezoneRef>;
+pub type NedTimezoneRefs = Vec<NedTimezoneRef>;
 
 // Geo Types.
 
 /// A concrete collection of [`Timezone`]s.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ConcreteTimezones(Vec<Timezone>);
+pub struct ConcreteTimezones(Vec<NedTimezone>);
 
 impl Deref for ConcreteTimezones {
-    type Target = Vec<Timezone>;
+    type Target = Vec<NedTimezone>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -120,13 +127,13 @@ impl Deref for ConcreteTimezones {
 
 impl From<&geojson::FeatureCollection> for ConcreteTimezones {
     fn from(value: &geojson::FeatureCollection) -> ConcreteTimezones {
-        ConcreteTimezones(value.features.iter().enumerate().map(Timezone::from).collect())
+        ConcreteTimezones(value.features.iter().enumerate().map(NedTimezone::from).collect())
     }
 }
 
 impl IntoIterator for ConcreteTimezones {
-    type IntoIter = std::vec::IntoIter<Timezone>;
-    type Item = Timezone;
+    type IntoIter = std::vec::IntoIter<NedTimezone>;
+    type Item = NedTimezone;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -134,8 +141,8 @@ impl IntoIterator for ConcreteTimezones {
 }
 
 impl<'a> IntoIterator for &'a ConcreteTimezones {
-    type IntoIter = std::slice::Iter<'a, Timezone>;
-    type Item = &'a Timezone;
+    type IntoIter = std::slice::Iter<'a, NedTimezone>;
+    type Item = &'a NedTimezone;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.iter()
@@ -146,26 +153,26 @@ impl<'a> IntoIterator for &'a ConcreteTimezones {
 /// [geojson](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_10m_time_zones.geojson)
 /// [`geojson::Feature`]s.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Timezone {
+pub struct NedTimezone {
     /// The index of the [`Timezone`] in the global static cache.
+    /// 
+    /// This is is not stable across builds or new data sets.  It is merely unique during a single build.
     pub id: usize,
-    /// The `friendly_name` of the [`Timezone`] (e.g., `America/Los_Angeles`).
+    /// The `identifier` of the [`Timezone`] (e.g., `America/Los_Angeles`).
     ///
     /// Essentially, it is the IANA TZ identifier.
-    pub friendly_name: Option<String>,
+    pub identifier: Option<String>,
 
     /// The `description` of the [`Timezone`] (e.g., the countries affected).
     pub description: String,
     /// The `dst_description` of the [`Timezone`] (i.e., daylight savings time information).
     pub dst_description: Option<String>,
 
-    /// The `offset_str` of the [`Timezone`] (e.g., `UTC-8:00`).
-    pub offset_str: String,
+    /// The `offset` of the [`Timezone`] (e.g., `UTC-8:00`).
+    pub offset: String,
 
     /// The `zone_num` of the [`Timezone`] (e.g., `-8.0`).
-    pub zone_num: f32,
-    /// The `zone_str` of the [`Timezone`] (e.g., `"-9.5"`).
-    pub zone_str: String,
+    pub zone: f32,
     /// The `raw_offset` of the [`Timezone`] (e.g., `-28800`).
     pub raw_offset: i32,
 
@@ -175,21 +182,20 @@ pub struct Timezone {
     pub geometry: Geometry<Float>,
 }
 
-impl PartialEq for Timezone {
+impl PartialEq for NedTimezone {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
     }
 }
 
-impl From<(usize, &geojson::Feature)> for Timezone {
-    fn from(value: (usize, &geojson::Feature)) -> Timezone {
+impl From<(usize, &geojson::Feature)> for NedTimezone {
+    fn from(value: (usize, &geojson::Feature)) -> NedTimezone {
         let id = value.0;
         let bbox = value.1.bbox.as_ref().unwrap();
         let properties = value.1.properties.as_ref().unwrap();
         let geometry = value.1.geometry.as_ref().unwrap();
 
         let dst_places = properties.get("dst_places").unwrap().as_str().map(ToOwned::to_owned);
-        let name = properties.get("name").unwrap().as_str().unwrap().to_owned();
         let places = properties.get("places").unwrap().as_str().unwrap().to_owned();
 
         let time_zone = properties.get("time_zone").unwrap().as_str().unwrap().to_owned();
@@ -200,18 +206,15 @@ impl From<(usize, &geojson::Feature)> for Timezone {
 
         let geometry: Geometry<Float> = geometry.value.clone().try_into().unwrap();
 
-        //let mut parsable_offset = time_zone.clone();
-        //parsable_offset.remove_matches('+');
-        let raw_offset = (name.parse::<f64>().unwrap() * 3600.0).round() as i32;
+        let raw_offset = (zone * 3600.0).round() as i32;
 
-        Timezone {
+        NedTimezone {
             id,
             dst_description: dst_places,
-            zone_str: name,
             description: places,
-            offset_str: time_zone,
-            friendly_name: tz_name1st,
-            zone_num: zone,
+            offset: time_zone,
+            identifier: tz_name1st,
+            zone,
             raw_offset,
             bbox,
             geometry,
@@ -221,9 +224,9 @@ impl From<(usize, &geojson::Feature)> for Timezone {
 
 // Helper methods.
 
-pub fn i16_vec_to_tomezoneids(value: Vec<i16>) -> TimezoneIds {
-    if value.len() > 10 {
-        panic!("Cannot convert a Vec<i16> with more than 10 elements into a TimezoneIds.");
+pub fn i16_vec_to_tomezoneids(value: Vec<i16>) -> NedTimezoneIds {
+    if value.len() > TIMEZONE_LIST_LENGTH {
+        panic!("Cannot convert a Vec<i16> with more than `TIMEZONE_LIST_LENGTH` elements into a TimezoneIds.");
     }
 
     [
@@ -233,10 +236,5 @@ pub fn i16_vec_to_tomezoneids(value: Vec<i16>) -> TimezoneIds {
         value.get(2).cloned().unwrap_or(-1),
         value.get(3).cloned().unwrap_or(-1),
         value.get(4).cloned().unwrap_or(-1),
-        value.get(5).cloned().unwrap_or(-1),
-        value.get(6).cloned().unwrap_or(-1),
-        value.get(7).cloned().unwrap_or(-1),
-        value.get(8).cloned().unwrap_or(-1),
-        value.get(9).cloned().unwrap_or(-1),
     ]
 }
