@@ -5,10 +5,10 @@ edition = "2021"
 authors = ["Aaron Roney <twitchax@gmail.com>"]
 license = "MIT"
 description = "A tool to easily work with time zones via a binary, a library, or a server."
-readme = "README.md"
+readme = "../README.md"
 homepage = "https://github.com/twitchax/rtz"
 repository = "https://github.com/twitchax/rtz"
-keywords = ["cli", "time", "zone", "timezone"]
+keywords = ["cli", "time", "zone", "timezone", "geospatial"]
 categories = ["command-line-utilities"]
 
 [package.metadata."docs.rs"]
