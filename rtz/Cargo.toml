@@ -36,7 +36,7 @@ web = ["full", "tokio", "rocket", "rocket_okapi", "rocket_cors", "config", "log"
 wasm = ["wasm-bindgen", "wasm-bindgen-futures", "wee_alloc", "js-sys"]
 
 [dependencies]
-rtz-core = { path = "../rtz-core" }
+rtz-core = { path = "../rtz-core", version = "*"}
 
 anyhow = { version = "1.0.72", features = ["backtrace"] }
 rayon = "1.7.0"
@@ -78,4 +78,4 @@ js-sys = { version = "0.3.61", optional = true }
 pretty_assertions = "1.4.0"
 
 [build-dependencies]
-rtz-build = { path = "../rtz-build" }
+rtz-build = { path = "../rtz-build", version = "*"}
