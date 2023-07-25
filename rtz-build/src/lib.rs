@@ -5,8 +5,9 @@
 #![allow(incomplete_features)]
 
 /// Main entry point for build script.
-#[cfg(feature = "self-contained")]
+
 pub fn main() {
+    #[cfg(feature = "self-contained")]
     generate_self_contained_bincodes();
 }
 

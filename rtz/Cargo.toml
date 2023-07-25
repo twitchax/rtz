@@ -85,4 +85,4 @@ js-sys = { version = "0.3.61", optional = true }
 pretty_assertions = "1.4.0"
 
 [build-dependencies]
-rtz-build = { path = "../rtz-build", version = "0.2.1"}
+rtz-build = { path = "../rtz-build", version = "0.2.2"}
