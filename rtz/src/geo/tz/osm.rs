@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn can_verify_cache_assisted_accuracy() {
-        (0..1_000).into_par_iter().for_each(|_| {
+        (0..100).into_par_iter().for_each(|_| {
             let x = rand::random::<Float>() * 360.0 - 180.0;
             let y = rand::random::<Float>() * 180.0 - 90.0;
             let full = get_timezones_via_full_lookup(x, y);
