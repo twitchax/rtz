@@ -120,9 +120,18 @@ mod tests {
 
     #[test]
     #[cfg(feature = "tz-ned")]
-    fn can_resolve() {
+    fn can_resolve_ned() {
         start(Args {
             command: Some(Command::ResolveNed { lng_lat: "-87.62,41.88".to_string() }),
+        })
+        .unwrap();
+    }
+
+    #[test]
+    #[cfg(feature = "tz-osm")]
+    fn can_resolve_osm() {
+        start(Args {
+            command: Some(Command::ResolveOsm { lng_lat: "-87.62,41.88".to_string() }),
         })
         .unwrap();
     }
