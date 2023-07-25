@@ -20,7 +20,7 @@ self-contained = ["reqwest"]
 tz-ned = []
 
 [dependencies]
-rtz-core = { path = "../rtz-core" }
+rtz-core = { path = "../rtz-core", version = "0.1.0" }
 
 # self-contained
 reqwest = { version = "0.11.18", optional = true, features = ["blocking"] }
