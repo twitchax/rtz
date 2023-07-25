@@ -1,10 +1,10 @@
 [package]
 name = "rtz"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2021"
 authors = ["Aaron Roney <twitchax@gmail.com>"]
 license = "MIT"
-description = "A tool to easily work with time zones via a binary, a library, or a server."
+description = "A tool to easily work with geo lookups via a binary, a library, or a server."
 readme = "../README.md"
 homepage = "https://github.com/twitchax/rtz"
 repository = "https://github.com/twitchax/rtz"
@@ -12,7 +12,7 @@ keywords = ["cli", "time", "zone", "timezone", "geospatial"]
 categories = ["command-line-utilities"]
 
 [package.metadata."docs.rs"]
-all-features = true
+features = ["tz-ned", "tz-osm"]
 
 [lib]
 name = "rtzlib"
@@ -26,17 +26,21 @@ required-features = ["cli"]
 
 [features]
 default = ["cli"]
-full = ["tz-ned", "self-contained"]
+full = ["tz-ned", "tz-osm", "self-contained", "rtz-core/full", "rtz-build/full"]
 
+double-precision = ["rtz-core/double-precision"]
+unsimplified = ["rtz-core/unsimplified"]
 self-contained = ["rtz-core/self-contained", "rtz-build/self-contained"]
+
 tz-ned = ["rtz-core/tz-ned", "rtz-build/tz-ned"]
+tz-osm = ["rtz-core/tz-osm", "rtz-build/tz-osm", "chrono-tz"]
 
 cli = ["clap"]
 web = ["full", "tokio", "rocket", "rocket_okapi", "rocket_cors", "config", "log", "simple_logger", "schemars", "chrono"]
 wasm = ["wasm-bindgen", "wasm-bindgen-futures", "wee_alloc", "js-sys"]
 
 [dependencies]
-rtz-core = { path = "../rtz-core", version = "0.1.0"}
+rtz-core = { path = "../rtz-core", version = "0.1.1"}
 
 anyhow = { version = "1.0.72", features = ["backtrace"] }
 rayon = "1.7.0"
@@ -56,6 +60,9 @@ bincode = { version = "2.0.0-rc.3", git = "https://github.com/bincode-org/bincod
 
 # cli
 clap = { version = "4.0.29", features = ["derive"], optional = true }
+
+# tz-osm
+chrono-tz ={ version = "0.8.3", features = ["serde"], optional = true }
 
 # web
 tokio = { version = "1.29.1", features = ["rt"], optional = true }
@@ -78,4 +85,4 @@ js-sys = { version = "0.3.61", optional = true }
 pretty_assertions = "1.4.0"
 
 [build-dependencies]
-rtz-build = { path = "../rtz-build", version = "0.2.0"}
+rtz-build = { path = "../rtz-build", version = "0.2.1"}

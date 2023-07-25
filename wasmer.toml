@@ -1,7 +1,7 @@
 [package]
 name = 'twitchax/rtz'
 version = '0.4.0'
-description = 'A tool to easily work with time zones via a binary, a library, or a server.'
+description = 'A tool to easily work with geo lookups via a binary, a library, or a server.'
 license = 'MIT'
 readme = 'README.md'
 repository = 'https://github.com/twitchax/rtz'

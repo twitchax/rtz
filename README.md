@@ -10,23 +10,23 @@
 
 # rtz
 
-A self-contained timezone library / binary / server for Rust / JS (via WASM) ([free server](http://tz.twitchax.com/api/v1/ned/tz/30/30)) using data from the [Natural Earth](https://www.naturalearthdata.com/) dataset.
+A self-contained geo lookup library / binary / server for Rust / JS (via WASM) ([free server](http://tz.twitchax.com/api/v1/osm/tz/30/30)) using data from the [Natural Earth](https://www.naturalearthdata.com/) and [OpenStreetMap](https://www.openstreetmap.org/) datasets.
 
 ## Free Server
 
-Server is deployed to four regions across the globe, and is available at [tz.twitchax.com](http://tz.twitchax.com/api/v1/ned/tz/30/30).  Each region is currently 
+Server is deployed to four regions across the globe, and is available at [tz.twitchax.com](http://tz.twitchax.com/api/v1/osm/tz/30/30).  Each region is currently 
 capable of supporting around 8,000 RPS, and is deployed to the following regions: sea, iad, ams, hkg.
 
 In addition, the server will now generally attempt to not break backwards compatibility within an api version.  This means that the server will (attempt to) not change the response format for a given api version, and will (attempt to) not remove any fields from the response.  This does not mean that the server will not add fields to the response, but it will (attempt to) not remove them.
 
-Requests take the form of `http://tz.twitchax.com/api/v1/ned/tz/{lng}/{lat}`.  You can also check out the [swagger docs](http://tz.twitchax.com/app-docs).
+Requests take the form of `http://tz.twitchax.com/api/v1/osm/tz/{lng}/{lat}`.  You can also check out the [swagger docs](http://tz.twitchax.com/app-docs) to explore other endpoints and versioning strategy.
 
 Example request:
 
 ```bash
-$ curl http://tz.twitchax.com/api/v1/ned/tz/30/30
+$ curl http://tz.twitchax.com/api/v1/osm/tz/30/30
 
-{"id":65,"identifier":"Europe/Mariehamn","description":"Libya, Egypt, Bulgaria, Cyprus, Greece, Israel, Jordan, Lebanon, Moldova, Palestine, Romania, Syria, Turkey, Ukraine","dstDescription":"Bulgaria, Cyprus, Greece, Israel, Jordan, Lebanon, Moldova, Palestine, Romania, Syria, Turkey, Ukraine","offset":"UTC+02:00","zone":2.0,"rawOffset":7200}
+[{"id":12,"identifier":"Africa/Cairo","shortIdentifier":"EEST","offset":"UTC+03:00","rawOffset":10800,"rawBaseOffset":7200,"rawDstOffset":3600,"zone":3.0,"currentTime":"2023-07-25T23:39:59.385469400+03:00"}]
 ```
 
 HTTPS is also available, but is not recommended due to the performance overhead for the client and the server, and the lack of sensitive data being transmitted.
@@ -75,13 +75,15 @@ $ npm install --save rtzweb
 ```bash
 $ rtz
 
-A tool to easily work with time zones via a binary, a library, or a server.
+A tool to easily work with geo lookups via a binary, a library, or a server.
 
 Usage: rtz [COMMAND]
 
 Commands:
-  resolve-ned   Resolve a timezone from a lng,lat pair
-  help      Print this message or the help of the given subcommand(s)
+  resolve-ned  Resolve a timezone from a lng,lat pair using the NED dataset
+  resolve-osm  Resolve a timezone from a lng,lat pair using the OSM dataset
+  serve        Serve the timezone API
+  help         Print this message or the help of the given subcommand(s)
 
 Options:
   -h, --help     Print help
@@ -166,11 +168,13 @@ The library and binary both support various feature flags.  Of most important no
   * `default = ["cli"]`
   * `full = ["tz-ned", "self-contained"]`
 * Datasets:
-  * `tz-ned`: enables the Natural Earth time zone dataset, and the associated produced library functions.
+  * `tz-ned`: enables the [Natural Earth](https://www.naturalearthdata.com/) time zone dataset, and the associated produced library functions.
+  * `tz-osm`: enables the [OpenStreetMap](https://www.openstreetmap.org/) time zone dataset, and the associated produced library functions.
 * Binary configuration:
   * `cli`: enables the CLI features, and can be removed if only compiling the library.
   * `self-contained`: enables the self-contained features, which build with datasets embedded into the binary.
   * `double-precision`: uses `f64`s every for `Geometry` and `Polygon` data types, which is more accurate but fatter than `f32`s.
+  * `unsimplified`: produces unsimplified data caches.  Requires more binary / memory overhead, but is more accurate.
 * Special Modifiers:
   * `wasm`: enables the WASM features, and is required to build an NPM package via `wasm-pack`.
   * `web = ["full"]`: enables the `serve` subcommand, which starts a Rocket web server that can respond to time zone requests.

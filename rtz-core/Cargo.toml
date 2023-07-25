@@ -1,6 +1,6 @@
 [package]
 name = "rtz-core"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Aaron Roney <twitchax@gmail.com>"]
 license = "MIT"
@@ -13,12 +13,14 @@ categories = ["command-line-utilities"]
 
 [features]
 default = []
-full = ["tz-ned", "self-contained"]
+full = ["tz-ned", "tz-osm", "self-contained"]
 
 double-precision = []
+unsimplified = []
 self-contained = ["bincode"]
 
 tz-ned = []
+tz-osm = []
 
 [dependencies]
 anyhow = { version = "1.0.72", features = ["backtrace"] }

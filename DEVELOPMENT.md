@@ -2,6 +2,8 @@
 
 ## Publish to Cargo
 
+Make sure `rtz` references the correct versions of `rtz-core` and `rtz-build` in `Cargo.toml`.
+
 ```bash
 $ cargo publish -p rtz-core
 $ cargo publish -p rtz-build

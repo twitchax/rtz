@@ -37,6 +37,9 @@ pub mod geo;
 #[cfg(feature = "tz-ned")]
 pub use crate::geo::tz::ned::get_timezone as get_timezone_ned;
 
+#[cfg(feature = "tz-osm")]
+pub use crate::geo::tz::osm::get_timezones as get_timezones_osm;
+
 #[cfg(feature = "wasm")]
 pub mod wasm;
 

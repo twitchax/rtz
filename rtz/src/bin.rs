@@ -12,9 +12,16 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Command {
-    /// Resolve a timezone from a lng,lat pair.
+    /// Resolve a timezone from a lng,lat pair using the NED dataset.
     #[cfg(feature = "tz-ned")]
     ResolveNed {
+        /// The lng,lat pair for which to lookup timezone information.
+        lng_lat: String,
+    },
+
+    /// Resolve a timezone from a lng,lat pair using the OSM dataset.
+    #[cfg(feature = "tz-osm")]
+    ResolveOsm {
         /// The lng,lat pair for which to lookup timezone information.
         lng_lat: String,
     },
@@ -69,6 +76,24 @@ fn start(args: Args) -> Void {
             println!("Description:     {}", tz.description);
             println!("DST Description: {}", tz.dst_description.as_deref().unwrap_or(""));
             println!();
+        }
+        #[cfg(feature = "tz-osm")]
+        Some(Command::ResolveOsm { lng_lat }) => {
+            use rtz_core::base::types::Float;
+            use rtzlib::get_timezones_osm;
+
+            let Some((lng, lat)) = lng_lat.split_once(',') else {
+                return Err(anyhow::Error::msg("Invalid lng,lat pair."));
+            };
+
+            let (lng, lat) = (lng.parse::<Float>()?, lat.parse::<Float>()?);
+            let tzs = get_timezones_osm(lng, lat);
+
+            for tz in tzs {
+                println!();
+                println!("Identifier:      {}", tz.identifier);
+                println!();
+            }
         }
         #[cfg(feature = "web")]
         Some(Command::Serve {

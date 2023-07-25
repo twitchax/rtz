@@ -1,13 +1,13 @@
-use std::{fmt::Display, io::Cursor, sync::OnceLock};
+use std::{fmt::Display, sync::OnceLock};
 
 use async_trait::async_trait;
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use rocket::{
-    http::{ContentType, Status},
+    http::Status,
     request::{FromRequest, Outcome},
     response::{self, status::Custom, Responder},
     serde::json::Json,
-    Request, Response,
+    Request,
 };
 use rocket_okapi::{
     gen::OpenApiGenerator,
@@ -16,7 +16,7 @@ use rocket_okapi::{
     response::OpenApiResponderInner,
     JsonSchema, OpenApiError,
 };
-use rtz_core::{base::types::Err, geo::tz::ned::NedTimezone};
+use rtz_core::base::types::Err;
 use serde::{Deserialize, Serialize};
 
 use super::config::Config;
@@ -33,123 +33,6 @@ pub fn get_last_modified_time() -> &'static str {
 
         DateTime::<Utc>::from(exe_modified).to_rfc2822().replace("+0000", "GMT")
     })
-}
-
-// Primary types.
-
-/// The response type for the [`get_timezone`] endpoint.
-pub enum LookupResponse<T> {
-    Ok(Json<T>),
-    NotModified,
-    NotFound,
-}
-
-impl<'r, 'o: 'r, T> Responder<'r, 'o> for LookupResponse<T>
-where
-    T: Serialize,
-{
-    fn respond_to(self, req: &'r Request<'_>) -> response::Result<'o> {
-        let mut response = match self {
-            LookupResponse::Ok(json) => json.respond_to(req)?,
-            LookupResponse::NotModified => Response::build().status(Status::NotModified).finalize(),
-            LookupResponse::NotFound => {
-                let body = r#"{"status": 404,"message": "No timezone results: location likely resides on a boundary."}"#;
-                Response::build()
-                    .status(Status::NotFound)
-                    .header(ContentType::JSON)
-                    .sized_body(body.len(), Cursor::new(body))
-                    .finalize()
-            }
-        };
-
-        response.set_raw_header("Last-Modified", get_last_modified_time());
-        response.set_raw_header("If-Modified-Since", get_last_modified_time());
-        response.set_raw_header("Expires", (Utc::now() + Duration::days(10)).to_rfc2822().replace("+0000", "GMT"));
-
-        Ok(response)
-    }
-}
-
-impl<T> OpenApiResponderInner for LookupResponse<T>
-where
-    T: Serialize + JsonSchema,
-{
-    fn responses(generator: &mut OpenApiGenerator) -> Result<Responses, OpenApiError> {
-        use rocket_okapi::okapi::openapi3::{RefOr, Response as OpenApiReponse};
-
-        let mut responses = rocket_okapi::okapi::Map::new();
-
-        let json_responses = Json::<NedTimezoneResponseRefv1>::responses(generator)?;
-
-        responses.extend(json_responses.responses);
-
-        responses.insert(
-            "304".to_string(),
-            RefOr::Object(OpenApiReponse {
-                description: "\
-                #### [304 Not Modified](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/304)\n\
-                The request result has not been modified. \
-                "
-                .to_string(),
-                ..Default::default()
-            }),
-        );
-
-        responses.insert(
-            "404".to_string(),
-            RefOr::Object(OpenApiReponse {
-                description: "\
-                #### [404 Not Found](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404)\n\
-                This response is given when you request a lookup that does not produce any results (possibly on the edge of a boundary). \
-                "
-                .to_string(),
-                ..Default::default()
-            }),
-        );
-
-        Ok(Responses { responses, ..Default::default() })
-    }
-}
-
-/// The response type for the [`get_timezone`] endpoint when found.
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct NedTimezoneResponseRefv1 {
-    /// The index of the [`Timezone`] in the global static cache.
-    /// 
-    /// This is is not stable across builds or new data sets.  It is merely unique during a single build.
-    pub id: usize,
-    /// The `identifier` of the [`Timezone`] (e.g., `America/Los_Angeles`).
-    ///
-    /// Essentially, it is the IANA TZ identifier.
-    pub identifier: Option<&'static str>,
-
-    /// The `description` of the [`Timezone`] (e.g., the countries affected).
-    pub description: &'static str,
-    /// The `dst_description` of the [`Timezone`] (i.e., daylight savings time information).
-    pub dst_description: Option<&'static str>,
-
-    /// The `offset_str` of the [`Timezone`] (e.g., `UTC-8:00`).
-    pub offset: &'static str,
-
-    /// The `zone_num` of the [`Timezone`] (e.g., `-8`).
-    pub zone: f32,
-    /// The `raw_offset` of the [`Timezone`] (e.g., `-28800`).
-    pub raw_offset: i32,
-}
-
-impl From<&'static NedTimezone> for NedTimezoneResponseRefv1 {
-    fn from(value: &'static NedTimezone) -> NedTimezoneResponseRefv1 {
-        NedTimezoneResponseRefv1 {
-            id: value.id,
-            identifier: value.identifier.as_deref(),
-            description: value.description.as_ref(),
-            dst_description: value.dst_description.as_deref(),
-            offset: value.offset.as_ref(),
-            zone: value.zone,
-            raw_offset: value.raw_offset,
-        }
-    }
 }
 
 /// Holds the application-wide state for the Rocket web application.

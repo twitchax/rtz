@@ -1,6 +1,6 @@
 [package]
 name = "rtz-build"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Aaron Roney <twitchax@gmail.com>"]
 license = "MIT"
@@ -18,9 +18,13 @@ full = ["tz-ned", "self-contained"]
 force-rebuild = []
 self-contained = ["reqwest"]
 tz-ned = []
+tz-osm = ["zip"]
 
 [dependencies]
 rtz-core = { path = "../rtz-core", version = "0.1.0" }
 
 # self-contained
 reqwest = { version = "0.11.18", optional = true, features = ["blocking"] }
+
+# tz-osm
+zip = { version = "0.6.6", optional = true }

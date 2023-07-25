@@ -4,12 +4,14 @@ use std::{collections::HashMap, sync::OnceLock};
 
 use geo::{Contains, Coord};
 use rtz_core::{
-    base::types::{Float, Res},
-    geo::tz::ned::{ConcreteTimezones, RoundLngLat, NedTimezoneIds, NedTimezoneRef, NedTimezoneRefs, i16_vec_to_tomezoneids},
+    base::types::Float,
+    geo::tz::{shared::{i16_vec_to_tomezoneids, RoundLngLat, TimezoneIds, ConcreteVec}, ned::NedTimezone},
 };
 
+use super::shared::{MapIntoTimezones, HasCachedData};
+
 /// Get the cache-driven timezone for a given longitude (x) and latitude (y).
-pub fn get_timezone(xf: Float, yf: Float) -> Option<NedTimezoneRef> {
+pub fn get_timezone(xf: Float, yf: Float) -> Option<&'static NedTimezone> {
     let x = xf.floor() as i16;
     let y = yf.floor() as i16;
 
@@ -26,85 +28,86 @@ pub fn get_timezone(xf: Float, yf: Float) -> Option<NedTimezoneRef> {
 }
 
 /// Get the exact timezone for a given longitude (x) and latitude (y).
-pub fn get_timezone_via_full_lookup(xf: Float, yf: Float) -> Option<NedTimezoneRef> {
-    get_timezones().into_iter().find(|&tz| tz.geometry.contains(&Coord { x: xf, y: yf }))
+#[allow(dead_code)]
+fn get_timezone_via_full_lookup(xf: Float, yf: Float) -> Option<&'static NedTimezone> {
+    NedTimezone::get_timezones().into_iter().find(|&tz| tz.geometry.contains(&Coord { x: xf, y: yf }))
 }
 
-/// Get value from the 100km cache.
-pub(crate) fn get_from_cache(x: i16, y: i16) -> Option<NedTimezoneRefs> {
-    let cache = get_cache();
+/// Get value from the cache.
+fn get_from_cache(x: i16, y: i16) -> Option<Vec<&'static NedTimezone>> {
+    let cache = NedTimezone::get_cache();
 
     cache.get(&(x, y)).map_timezones()
 }
 
-/// Get the 100km cache.
-fn get_cache() -> &'static HashMap<RoundLngLat, NedTimezoneIds> {
-    static CACHE: OnceLock<HashMap<RoundLngLat, NedTimezoneIds>> = OnceLock::new();
+// Trait impls.
 
-    #[cfg(feature = "self-contained")]
-    {
-        use rtz_core::geo::tz::ned::RoundInt;
+impl HasCachedData for NedTimezone {
+    fn get_timezones() -> &'static ConcreteVec<NedTimezone> {
+        static TIMEZONES: OnceLock<ConcreteVec<NedTimezone>> = OnceLock::new();
 
-        CACHE.get_or_init(|| {
-            let (cache, _len): (HashMap<RoundLngLat, Vec<RoundInt>>, usize) = bincode::serde::decode_from_slice(CACHE_BINCODE, bincode::config::standard()).unwrap();
+        #[cfg(feature = "self-contained")]
+        {
+            TIMEZONES.get_or_init(|| {
+                let (timezones, _len): (ConcreteVec<NedTimezone>, usize) = bincode::serde::decode_from_slice(TZ_BINCODE, bincode::config::standard()).expect("Failed to decode timezones from binary: likely caused by precision difference between generated assets and current build.  Please rebuild the assets with `feature = \"force-rebuild\"` enabled.");
 
-            cache
-                .into_iter()
-                .map(|(key, value)| {
-                    let value = i16_vec_to_tomezoneids(value);
+                timezones
+            })
+        }
 
-                    (key, value)
-                })
-                .collect::<HashMap<_, _>>()
-        })
+        #[cfg(not(feature = "self-contained"))]
+        {
+            use rtz_core::geo::tz::ned::{get_geojson_features_from_string, get_timezones_from_features, GEOJSON_ADDRESS};
+
+            TIMEZONES.get_or_init(|| {
+                let response = reqwest::blocking::get(GEOJSON_ADDRESS).unwrap();
+                let geojson_input = response.text().unwrap();
+
+                let features = get_geojson_features_from_string(&geojson_input);
+
+                get_timezones_from_features(features)
+            })
+        }
     }
 
-    #[cfg(not(feature = "self-contained"))]
-    {
-        use rtz_core::geo::tz::ned::get_cache_from_timezones;
+    fn get_cache() -> &'static HashMap<RoundLngLat, TimezoneIds> {
+        static CACHE: OnceLock<HashMap<RoundLngLat, TimezoneIds>> = OnceLock::new();
 
-        CACHE.get_or_init(|| {
-            let cache = get_cache_from_timezones(get_timezones());
+        #[cfg(feature = "self-contained")]
+        {
+            use rtz_core::geo::tz::shared::RoundInt;
 
-            cache
-                .into_iter()
-                .map(|(key, value)| {
-                    let value = i16_vec_to_tomezoneids(value);
+            CACHE.get_or_init(|| {
+                let (cache, _len): (HashMap<RoundLngLat, Vec<RoundInt>>, usize) = bincode::serde::decode_from_slice(CACHE_BINCODE, bincode::config::standard()).unwrap();
 
-                    (key, value)
-                })
-                .collect::<HashMap<_, _>>()
-        })
-    }
-}
+                cache
+                    .into_iter()
+                    .map(|(key, value)| {
+                        let value = i16_vec_to_tomezoneids(value);
 
-/// Get the timezones from the binary assets.
-pub(crate) fn get_timezones() -> &'static ConcreteTimezones {
-    #[cfg(feature = "self-contained")]
-    {
-        static TIMEZONES: OnceLock<ConcreteTimezones> = OnceLock::new();
+                        (key, value)
+                    })
+                    .collect::<HashMap<_, _>>()
+            })
+        }
 
-        TIMEZONES.get_or_init(|| {
-            let (timezones, _len): (ConcreteTimezones, usize) = bincode::serde::decode_from_slice(TZ_BINCODE, bincode::config::standard()).expect("Failed to decode timezones from binary: likely caused by precision difference between generated assets and current build.  Please rebuild the assets with `feature = \"force-rebuild\"` enabled.");
+        #[cfg(not(feature = "self-contained"))]
+        {
+            use rtz_core::geo::tz::ned::get_cache_from_timezones;
 
-            timezones
-        })
-    }
+            CACHE.get_or_init(|| {
+                let cache = get_cache_from_timezones(get_timezones());
 
-    #[cfg(not(feature = "self-contained"))]
-    {
-        use rtz_core::geo::tz::ned::{get_geojson_features_from_string, get_timezones_from_features, GEOJSON_ADDRESS};
+                cache
+                    .into_iter()
+                    .map(|(key, value)| {
+                        let value = i16_vec_to_tomezoneids(value);
 
-        static TIMEZONES: OnceLock<ConcreteTimezones> = OnceLock::new();
-
-        TIMEZONES.get_or_init(|| {
-            let response = reqwest::blocking::get(GEOJSON_ADDRESS).unwrap();
-            let geojson_input = response.text().unwrap();
-
-            let features = get_geojson_features_from_string(&geojson_input);
-
-            get_timezones_from_features(features)
-        })
+                        (key, value)
+                    })
+                    .collect::<HashMap<_, _>>()
+            })
+        }
     }
 }
 
@@ -120,84 +123,25 @@ static CACHE_BINCODE: &[u8] = include_bytes!("../../../../assets/ne_time_zone_ca
 #[cfg(all(host_family_windows, feature = "self-contained"))]
 static CACHE_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\ne_time_zone_cache.bincode");
 
-// Types.
-
-/// Trait that allows converting a [`u16`] into a [`Timezone`] reference (from the global list).
-pub(crate) trait IntoTimezone {
-    fn into_timezone(self) -> Res<NedTimezoneRef>;
-}
-
-impl IntoTimezone for u16 {
-    fn into_timezone(self) -> Res<NedTimezoneRef> {
-        Some(&self).map_timezone().ok_or_else(|| anyhow::Error::msg("Timezone not found."))
-    }
-}
-
-/// Trait that allows converting a [`u16`] into a [`Timezone`] reference (from the global list).
-pub(crate) trait MapIntoTimezone {
-    fn map_timezone(self) -> Option<NedTimezoneRef>;
-}
-
-impl MapIntoTimezone for Option<&u16> {
-    fn map_timezone(self) -> Option<NedTimezoneRef> {
-        let Some(value) = self else {
-            return None;
-        };
-
-        let timezones = get_timezones();
-
-        timezones.get(*value as usize)
-    }
-}
-
-/// Trait that allows converting a [`u16`] into a [`Timezone`] reference (from the global list).
-pub(crate) trait MapIntoTimezones {
-    fn map_timezones(self) -> Option<NedTimezoneRefs>;
-}
-
-impl MapIntoTimezones for Option<&NedTimezoneIds> {
-    fn map_timezones(self) -> Option<NedTimezoneRefs> {
-        let Some(value) = self else {
-            return None;
-        };
-
-        let timezones = get_timezones();
-
-        let mut result = Vec::with_capacity(10);
-        for id in value {
-            if *id == -1 {
-                continue;
-            }
-
-            let tz = timezones.get(*id as usize);
-
-            if let Some(tz) = tz {
-                result.push(tz);
-            }
-        }
-
-        Some(result)
-    }
-}
-
 // Tests.
 
 #[cfg(test)]
 mod tests {
 
     use super::*;
+    use super::super::shared::MapIntoTimezones;
     use pretty_assertions::assert_eq;
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
     #[test]
     fn can_get_timezones() {
-        let timezones = get_timezones();
+        let timezones = NedTimezone::get_timezones();
         assert_eq!(timezones.len(), 120);
     }
 
     #[test]
     fn can_get_cache() {
-        let cache = get_cache();
+        let cache = NedTimezone::get_cache();
         assert_eq!(cache.len(), 64_800);
     }
 
@@ -216,15 +160,20 @@ mod tests {
     }
 
     #[test]
-    fn can_access_100km_cache() {
-        let cache = get_cache();
+    fn can_access_cache() {
+        let cache = NedTimezone::get_cache();
 
-        assert_eq!(cache.get(&(-177, -15)).map_timezones().unwrap().len(), 2);
+        let tzs = cache.get(&(-177, -15)).map_timezones().unwrap() as Vec<&NedTimezone>;
+        assert_eq!(tzs.len(), 2);
 
-        assert_eq!(cache.get(&(-121, 46)).map_timezones().unwrap().len(), 1);
-        assert_eq!(cache.get(&(-121, 46)).map_timezones().unwrap()[0].identifier.as_ref().unwrap(), "America/Los_Angeles");
+        let tzs = cache.get(&(-121, 46)).map_timezones().unwrap() as Vec<&NedTimezone>;
+        assert_eq!(tzs.len(), 1);
 
-        assert_eq!(cache.get(&(-68, -67)).map_timezones().unwrap().len(), 5);
+        let tz = cache.get(&(-121, 46)).map_timezones().unwrap()[0] as &NedTimezone;
+        assert_eq!(tz.identifier.as_ref().unwrap(), "America/Los_Angeles");
+
+        let tzs = cache.get(&(-68, -67)).map_timezones().unwrap() as Vec<&NedTimezone>;
+        assert_eq!(tzs.len(), 5);
     }
 
     #[test]
