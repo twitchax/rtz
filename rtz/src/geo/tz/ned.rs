@@ -60,7 +60,10 @@ impl HasCachedData for NedTimezone {
 
         #[cfg(not(feature = "self-contained"))]
         {
-            use rtz_core::geo::tz::{shared::{get_geojson_features_from_string, get_timezones_from_features}, ned::GEOJSON_ADDRESS};
+            use rtz_core::geo::tz::{
+                ned::GEOJSON_ADDRESS,
+                shared::{get_geojson_features_from_string, get_timezones_from_features},
+            };
 
             TIMEZONES.get_or_init(|| {
                 let response = reqwest::blocking::get(GEOJSON_ADDRESS).unwrap();

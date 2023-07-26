@@ -64,9 +64,12 @@ impl HasCachedData for OsmTimezone {
 
         #[cfg(not(feature = "self-contained"))]
         {
-            use rtz_core::geo::tz::{shared::{get_geojson_features_from_string, get_timezones_from_features}, osm::GEOJSON_ADDRESS};
-            use zip::ZipArchive;
+            use rtz_core::geo::tz::{
+                osm::GEOJSON_ADDRESS,
+                shared::{get_geojson_features_from_string, get_timezones_from_features},
+            };
             use std::io::Read;
+            use zip::ZipArchive;
 
             TIMEZONES.get_or_init(|| {
                 let response = reqwest::blocking::get(GEOJSON_ADDRESS).unwrap();
