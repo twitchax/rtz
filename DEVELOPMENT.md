@@ -28,7 +28,7 @@ $ wasm-pack publish
 ```bash
 $ # Regenerate the cache.
 $ cargo build --release --no-default-features --features full
-$ cargo wasix build --release --no-default-features --features full --features cli
+$ cargo wasix build --release --features full
 $ # Need `--no-validate` for some reason when pushing a WASIX binary.
 $ wasmer publish --no-validate
 ```

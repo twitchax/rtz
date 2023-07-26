@@ -52,14 +52,14 @@ where
 
 impl<T> OpenApiResponderInner for LookupResponse<T>
 where
-    T: Serialize + JsonSchema,
+    T: Serialize + JsonSchema + Send,
 {
     fn responses(generator: &mut OpenApiGenerator) -> Result<Responses, OpenApiError> {
         use rocket_okapi::okapi::openapi3::{RefOr, Response as OpenApiReponse};
 
         let mut responses = rocket_okapi::okapi::Map::new();
 
-        let json_responses = Json::<NedTimezoneResponse1>::responses(generator)?;
+        let json_responses = Json::<T>::responses(generator)?;
 
         responses.extend(json_responses.responses);
 
