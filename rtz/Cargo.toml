@@ -48,7 +48,6 @@ geojson = "0.24.1"
 geo = "0.26.0"
 chashmap = "2.2.2"
 async-trait = "0.1.71"
-reqwest = { version = "0.11.18", features = ["blocking"] }
 
 rand = "0.8.5"
 getrandom = { version = "0.2", features = ["js"] }
@@ -86,3 +85,7 @@ pretty_assertions = "1.4.0"
 
 [build-dependencies]
 rtz-build = { path = "../rtz-build", version = "0.2.3"}
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+reqwest = { version = "0.11.18", features = ["blocking"] }
+zip = { version = "0.6.6" }

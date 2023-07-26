@@ -1,6 +1,10 @@
 [workspace]
 members = ["rtz-core", "rtz"]
 
+# These sections allow for the build steps to be optimized.
+# The build steps often generate the buncode caches, and
+# we want that to be fast.
+
 [profile.dev.build-override]
 opt-level = 3
 debug = false

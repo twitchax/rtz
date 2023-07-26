@@ -1,5 +1,9 @@
 //! The `shared` module.  Contains types and helpers pertinent to all TZ implementations.
 
+// This module is mostly used for cache preprocessing, which is expensive during coverage, so 
+// it is not included in the coverage report.
+#![cfg(not(tarpaulin_include))]
+
 // Types.
 
 use std::{collections::HashMap, ops::Deref, path::Path};
@@ -8,10 +12,9 @@ use chashmap::CHashMap;
 use geo::{Coord, Geometry, Intersects, Rect};
 use geojson::{FeatureCollection, GeoJson};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-use serde::{
-    de::DeserializeOwned,
-    {Deserialize, Serialize},
-};
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "self-contained")]
+use serde::de::DeserializeOwned;
 
 use crate::base::types::Float;
 

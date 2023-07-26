@@ -64,11 +64,16 @@ impl HasCachedData for OsmTimezone {
 
         #[cfg(not(feature = "self-contained"))]
         {
-            use rtz_core::geo::tz::ned::{get_geojson_features_from_string, get_timezones_from_features, GEOJSON_ADDRESS};
+            use rtz_core::geo::tz::{shared::{get_geojson_features_from_string, get_timezones_from_features}, osm::GEOJSON_ADDRESS};
+            use zip::ZipArchive;
+            use std::io::Read;
 
             TIMEZONES.get_or_init(|| {
                 let response = reqwest::blocking::get(GEOJSON_ADDRESS).unwrap();
-                let geojson_input = response.text().unwrap();
+                let geojson_zip = response.bytes().unwrap();
+                let mut zip = ZipArchive::new(std::io::Cursor::new(geojson_zip)).unwrap();
+                let mut geojson_input = String::new();
+                zip.by_index(0).unwrap().read_to_string(&mut geojson_input).unwrap();
 
                 let features = get_geojson_features_from_string(&geojson_input);
 
@@ -100,10 +105,10 @@ impl HasCachedData for OsmTimezone {
 
         #[cfg(not(feature = "self-contained"))]
         {
-            use rtz_core::geo::tz::ned::get_cache_from_timezones;
+            use rtz_core::geo::tz::shared::get_cache_from_timezones;
 
             CACHE.get_or_init(|| {
-                let cache = get_cache_from_timezones(get_timezones());
+                let cache = get_cache_from_timezones(OsmTimezone::get_timezones());
 
                 cache
                     .into_iter()

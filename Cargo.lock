@@ -2281,6 +2281,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wee_alloc",
+ "zip",
 ]
 
 [[package]]

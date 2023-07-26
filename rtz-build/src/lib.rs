@@ -76,3 +76,15 @@ fn generate_osm_bincodes() {
     let features = get_geojson_features_from_string(&geojson_input);
     generate_bincodes::<OsmTimezone>(features, timezone_bincode_destination, cache_bincode_destination);
 }
+
+// Tests.
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+
+//     #[test]
+//     fn test_generate() {
+//         generate_self_contained_bincodes();
+//     }
+// }

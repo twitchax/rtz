@@ -1,5 +1,9 @@
 //! All of the geo-specific functions for NED TZ lookups.
 
+// This module is mostly used for cache preprocessing, which is expensive during coverage, so 
+// it is not included in the coverage report.
+#![cfg(not(tarpaulin_include))]
+
 use geo::{Coord, Geometry, Rect};
 use serde::{Deserialize, Serialize};
 

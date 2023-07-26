@@ -178,6 +178,8 @@ The library and binary both support various feature flags.  Of most important no
 * Special Modifiers:
   * `wasm`: enables the WASM features, and is required to build an NPM package via `wasm-pack`.
   * `web = ["full"]`: enables the `serve` subcommand, which starts a Rocket web server that can respond to time zone requests.
+* Other Considerations:
+  * `wasm` / `wasi` builds currently do not play nice with `reqwest` and `zip`, so the `wasm` / `wasi` builds require the `self-contained` feature.
 
 ## Performance
 

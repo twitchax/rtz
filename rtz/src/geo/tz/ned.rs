@@ -60,7 +60,7 @@ impl HasCachedData for NedTimezone {
 
         #[cfg(not(feature = "self-contained"))]
         {
-            use rtz_core::geo::tz::ned::{get_geojson_features_from_string, get_timezones_from_features, GEOJSON_ADDRESS};
+            use rtz_core::geo::tz::{shared::{get_geojson_features_from_string, get_timezones_from_features}, ned::GEOJSON_ADDRESS};
 
             TIMEZONES.get_or_init(|| {
                 let response = reqwest::blocking::get(GEOJSON_ADDRESS).unwrap();
@@ -96,10 +96,10 @@ impl HasCachedData for NedTimezone {
 
         #[cfg(not(feature = "self-contained"))]
         {
-            use rtz_core::geo::tz::ned::get_cache_from_timezones;
+            use rtz_core::geo::tz::shared::get_cache_from_timezones;
 
             CACHE.get_or_init(|| {
-                let cache = get_cache_from_timezones(get_timezones());
+                let cache = get_cache_from_timezones(NedTimezone::get_timezones());
 
                 cache
                     .into_iter()
