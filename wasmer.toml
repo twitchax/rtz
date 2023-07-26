@@ -1,6 +1,6 @@
 [package]
 name = 'twitchax/rtz'
-version = '0.4.2'
+version = '0.4.3'
 description = 'A tool to easily work with geo lookups via a binary, a library, or a server.'
 license = 'MIT'
 readme = 'README.md'
