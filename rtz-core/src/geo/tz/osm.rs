@@ -4,16 +4,12 @@
 // it is not included in the coverage report.
 #![cfg(not(tarpaulin_include))]
 
-use geo::{algorithm::simplify_vw::SimplifyVw, Geometry};
+use geo::Geometry;
 use serde::{Deserialize, Serialize};
 
-use crate::base::types::Float;
+use crate::{base::types::Float, geo::shared::simplify_geometry};
 
 use super::shared::IsTimezone;
-
-// Statics.
-
-const SIMPLIFICATION_EPSILON: Float = 0.0001;
 
 /// The address of the GeoJSON file.
 pub static GEOJSON_ADDRESS: &str = "https://github.com/evansiroky/timezone-boundary-builder/releases/download/2023b/timezones-with-oceans.geojson.zip";
@@ -58,18 +54,7 @@ impl From<(usize, geojson::Feature)> for OsmTimezone {
 
         let geometry: Geometry<Float> = geometry.value.clone().try_into().unwrap();
 
-        #[cfg(not(feature = "unsimplified"))]
-        let geometry = match geometry {
-            Geometry::Polygon(polygon) => {
-                let simplified = polygon.simplify_vw(&SIMPLIFICATION_EPSILON);
-                Geometry::Polygon(simplified)
-            }
-            Geometry::MultiPolygon(multi_polygon) => {
-                let simplified = multi_polygon.simplify_vw(&SIMPLIFICATION_EPSILON);
-                Geometry::MultiPolygon(simplified)
-            }
-            _ => panic!("Unexpected geometry type!"),
-        };
+        let geometry = simplify_geometry(geometry);
 
         OsmTimezone { id, identifier, geometry }
     }

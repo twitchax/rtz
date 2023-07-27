@@ -17,6 +17,7 @@ full = ["tz-ned", "tz-osm", "self-contained"]
 
 double-precision = []
 unsimplified = []
+extrasimplified = []
 self-contained = ["bincode"]
 
 tz-ned = []

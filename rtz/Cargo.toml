@@ -30,6 +30,7 @@ full = ["tz-ned", "tz-osm", "self-contained", "rtz-core/full", "rtz-build/full"]
 
 double-precision = ["rtz-core/double-precision"]
 unsimplified = ["rtz-core/unsimplified"]
+extrasimplified = ["rtz-core/extrasimplified"]
 self-contained = ["rtz-core/self-contained", "rtz-build/self-contained"]
 
 tz-ned = ["rtz-core/tz-ned", "rtz-build/tz-ned"]

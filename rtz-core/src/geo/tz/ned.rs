@@ -7,7 +7,7 @@
 use geo::{Coord, Geometry, Rect};
 use serde::{Deserialize, Serialize};
 
-use crate::base::types::Float;
+use crate::{base::types::Float, geo::shared::simplify_geometry};
 
 use super::shared::IsTimezone;
 
@@ -78,6 +78,7 @@ impl From<(usize, geojson::Feature)> for NedTimezone {
         let bbox = Rect::<Float>::new(Coord { x: bbox[0] as Float, y: bbox[1] as Float }, Coord { x: bbox[2] as Float, y: bbox[3] as Float });
 
         let geometry: Geometry<Float> = geometry.value.clone().try_into().unwrap();
+        let geometry = simplify_geometry(geometry);
 
         let raw_offset = (zone * 3600.0).round() as i32;
 

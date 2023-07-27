@@ -174,7 +174,8 @@ The library and binary both support various feature flags.  Of most important no
   * `cli`: enables the CLI features, and can be removed if only compiling the library.
   * `self-contained`: enables the self-contained features, which build with datasets embedded into the binary.
   * `double-precision`: uses `f64`s every for `Geometry` and `Polygon` data types, which is more accurate but fatter than `f32`s.
-  * `unsimplified`: produces unsimplified data caches.  Requires more binary / memory overhead, but is more accurate.
+  * `unsimplified`: produces unsimplified data caches.  Requires more binary / memory overhead, but is more accurate.  Uses the level of detail from the original dataset.  The default is to simplify to an epsilon of `0.0001`.
+  * `extrasimplified`: produces extrasimplified data caches.  Requires less binary / memory overhead, but is less accurate.  This sets the simplification epsilon to `0.01`.
 * Special Modifiers:
   * `wasm`: enables the WASM features, and is required to build an NPM package via `wasm-pack`.
   * `web = ["full"]`: enables the `serve` subcommand, which starts a Rocket web server that can respond to time zone requests.
