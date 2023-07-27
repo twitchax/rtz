@@ -4,7 +4,7 @@
 
 use std::ops::Deref;
 
-use geo::{Geometry, SimplifyVw};
+use geo::{Geometry, SimplifyVwPreserve};
 use geojson::GeoJson;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -157,19 +157,19 @@ pub fn simplify_geometry(geometry: Geometry<Float>) -> Geometry<Float> {
     #[cfg(not(feature = "unsimplified"))]
     let geometry = match geometry {
         Geometry::Polygon(polygon) => {
-            let simplified = polygon.simplify_vw(&SIMPLIFICATION_EPSILON);
+            let simplified = polygon.simplify_vw_preserve(&SIMPLIFICATION_EPSILON);
             Geometry::Polygon(simplified)
         }
         Geometry::MultiPolygon(multi_polygon) => {
-            let simplified = multi_polygon.simplify_vw(&SIMPLIFICATION_EPSILON);
+            let simplified = multi_polygon.simplify_vw_preserve(&SIMPLIFICATION_EPSILON);
             Geometry::MultiPolygon(simplified)
         }
         Geometry::LineString(line_string) => {
-            let simplified = line_string.simplify_vw(&SIMPLIFICATION_EPSILON);
+            let simplified = line_string.simplify_vw_preserve(&SIMPLIFICATION_EPSILON);
             Geometry::LineString(simplified)
         }
         Geometry::MultiLineString(multi_line_string) => {
-            let simplified = multi_line_string.simplify_vw(&SIMPLIFICATION_EPSILON);
+            let simplified = multi_line_string.simplify_vw_preserve(&SIMPLIFICATION_EPSILON);
             Geometry::MultiLineString(simplified)
         }
         g => g,
