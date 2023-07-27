@@ -6,8 +6,12 @@
 
 use geo::Geometry;
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 
-use crate::{base::types::Float, geo::shared::simplify_geometry};
+use crate::{
+    base::types::Float,
+    geo::shared::{simplify_geometry, HasGeometry, HasProperties},
+};
 
 use super::shared::IsTimezone;
 
@@ -68,8 +72,20 @@ impl IsTimezone for OsmTimezone {
     fn identifier(&self) -> &str {
         self.identifier.as_str()
     }
+}
 
+impl HasGeometry for OsmTimezone {
     fn geometry(&self) -> &Geometry<Float> {
         &self.geometry
+    }
+}
+
+impl HasProperties for OsmTimezone {
+    fn properties(&self) -> Map<String, Value> {
+        let mut properties = Map::new();
+
+        properties.insert("identifier".to_string(), Value::String(self.identifier.to_string()));
+
+        properties
     }
 }

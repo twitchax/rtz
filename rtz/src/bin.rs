@@ -26,6 +26,12 @@ enum Command {
         lng_lat: String,
     },
 
+    /// Resolve a timezone from a lng,lat pair using the OSM dataset.
+    DumpGeojson {
+        /// The prefix to use on the file names.
+        prefix: String,
+    },
+
     /// Serve the timezone API.
     #[cfg(feature = "web")]
     Serve {
@@ -103,6 +109,25 @@ fn start(args: Args) -> Void {
             should_log,
         }) => {
             rtzlib::server_start(config_path, bind_address, port, should_log)?;
+        }
+        Some(Command::DumpGeojson { prefix }) => {
+            #[cfg(feature = "tz-ned")]
+            {
+                use rtzlib::geo::tz::ned::get_timezones_geojson;
+                
+                let json = get_timezones_geojson();
+
+                std::fs::write(format!("{}-tz-ned.geojson", prefix), json)?;
+            }
+
+            #[cfg(feature = "tz-osm")]
+            {
+                use rtzlib::geo::tz::osm::get_timezones_geojson;
+                
+                let json = get_timezones_geojson();
+
+                std::fs::write(format!("{}-tz-osm.geojson", prefix), json)?;
+            }
         }
         #[allow(unreachable_patterns)]
         Some(_) | None => {

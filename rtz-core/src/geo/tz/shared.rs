@@ -6,25 +6,20 @@
 
 // Types.
 
-use std::{collections::HashMap, ops::Deref, path::Path};
+use std::{collections::HashMap, path::Path};
 
 use chashmap::CHashMap;
-use geo::{Coord, Geometry, Intersects, Rect};
+use geo::{Coord, Intersects, Rect};
 use geojson::{FeatureCollection, GeoJson};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 #[cfg(feature = "self-contained")]
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
-use crate::base::types::Float;
-
-/// A rounded integer.
-pub type RoundInt = i16;
-/// A rounded longitude and latitude.
-pub type RoundLngLat = (RoundInt, RoundInt);
-//pub type LngLat = (f64, f64);
-/// An `(id, Feature)` pair.
-pub type IdFeaturePair = (usize, geojson::Feature);
+use crate::{
+    base::types::Float,
+    geo::shared::{ConcreteVec, HasGeometry, HasProperties, IdFeaturePair, RoundInt, RoundLngLat},
+};
 
 /// This number is selected based on the existing data, and may need to be increased
 /// across dataset versions.  However, it is helpful to keep this as an array
@@ -39,56 +34,11 @@ pub type TimezoneIds = [RoundInt; TIMEZONE_LIST_LENGTH];
 /// A trait for types that are a timezone and have a [`Geometry`].
 ///
 /// Helps abstract away this property so the helper methods can be generalized.
-pub trait IsTimezone {
+pub trait IsTimezone: HasGeometry + HasProperties {
     /// Get the `id` of the [`IsTimezone`].
     fn id(&self) -> usize;
     /// Get the `identifier` of the [`IsTimezone`].
     fn identifier(&self) -> &str;
-    /// Get the [`Geometry`] of the [`IsTimezone`].
-    fn geometry(&self) -> &Geometry<Float>;
-}
-
-// Concrete helpers.
-
-/// A concrete collection of concrete values.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ConcreteVec<T>(Vec<T>);
-
-impl<T> Deref for ConcreteVec<T> {
-    type Target = Vec<T>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<T> From<geojson::FeatureCollection> for ConcreteVec<T>
-where
-    T: From<IdFeaturePair>,
-{
-    fn from(value: geojson::FeatureCollection) -> ConcreteVec<T> {
-        let values = value.features.into_iter().enumerate().map(T::from).collect::<Vec<T>>();
-
-        ConcreteVec(values)
-    }
-}
-
-impl<T> IntoIterator for ConcreteVec<T> {
-    type IntoIter = std::vec::IntoIter<T>;
-    type Item = T;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-impl<'a, T> IntoIterator for &'a ConcreteVec<T> {
-    type IntoIter = std::slice::Iter<'a, T>;
-    type Item = &'a T;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.iter()
-    }
 }
 
 // Helper methods.

@@ -14,7 +14,7 @@ $ cargo publish -p rtz
 
 ```bash
 $ cd rtz
-$ wasm-pack build --target web --no-default-features --features full --features wasm
+$ wasm-pack build --target web --no-default-features --features full --features wasm --features extrasimplified
 ```
 
 Rename package to `rtzweb` in `pkg/package.json`.

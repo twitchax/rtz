@@ -6,8 +6,12 @@
 
 use geo::{Coord, Geometry, Rect};
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 
-use crate::{base::types::Float, geo::shared::simplify_geometry};
+use crate::{
+    base::types::Float,
+    geo::shared::{simplify_geometry, HasGeometry, HasProperties},
+};
 
 use super::shared::IsTimezone;
 
@@ -104,8 +108,24 @@ impl IsTimezone for NedTimezone {
     fn identifier(&self) -> &str {
         self.identifier.as_deref().unwrap_or("")
     }
+}
 
+impl HasGeometry for NedTimezone {
     fn geometry(&self) -> &Geometry<Float> {
         &self.geometry
+    }
+}
+
+impl HasProperties for NedTimezone {
+    fn properties(&self) -> Map<String, Value> {
+        let mut properties = Map::new();
+
+        properties.insert("dst_description".to_string(), Value::String(self.dst_description.as_ref().unwrap_or(&"".to_string()).to_string()));
+        properties.insert("description".to_string(), Value::String(self.description.to_string()));
+        properties.insert("offset".to_string(), Value::String(self.offset.to_string()));
+        properties.insert("zone".to_string(), Value::Number(serde_json::Number::from_f64(self.zone as f64).unwrap()));
+        properties.insert("raw_offset".to_string(), Value::Number(serde_json::Number::from_f64(self.raw_offset as f64).unwrap()));
+
+        properties
     }
 }

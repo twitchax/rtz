@@ -5,9 +5,12 @@ use std::{collections::HashMap, sync::OnceLock};
 use geo::{Contains, Coord};
 use rtz_core::{
     base::types::Float,
-    geo::tz::{
-        ned::NedTimezone,
-        shared::{i16_vec_to_tomezoneids, ConcreteVec, RoundLngLat, TimezoneIds},
+    geo::{
+        shared::{ToGeoJson, RoundLngLat, ConcreteVec},
+        tz::{
+            ned::NedTimezone,
+            shared::{i16_vec_to_tomezoneids, TimezoneIds},
+        },
     },
 };
 
@@ -34,6 +37,12 @@ pub fn get_timezone(xf: Float, yf: Float) -> Option<&'static NedTimezone> {
 #[allow(dead_code)]
 fn get_timezone_via_full_lookup(xf: Float, yf: Float) -> Option<&'static NedTimezone> {
     NedTimezone::get_timezones().into_iter().find(|&tz| tz.geometry.contains(&Coord { x: xf, y: yf }))
+}
+
+/// Gets the geojson representation of the memory cache.
+pub fn get_timezones_geojson() -> String {
+    let geojson = NedTimezone::get_timezones().to_geojson();
+    geojson.to_json_value().to_string()
 }
 
 /// Get value from the cache.
@@ -81,7 +90,7 @@ impl HasCachedData for NedTimezone {
 
         #[cfg(feature = "self-contained")]
         {
-            use rtz_core::geo::tz::shared::RoundInt;
+            use rtz_core::geo::shared::RoundInt;
 
             CACHE.get_or_init(|| {
                 let (cache, _len): (HashMap<RoundLngLat, Vec<RoundInt>>, usize) = bincode::serde::decode_from_slice(CACHE_BINCODE, bincode::config::standard()).unwrap();
