@@ -31,9 +31,9 @@ pub fn get_geojson_features_from_source() -> geojson::FeatureCollection {
 /// The address of the GeoJSON file.
 pub static ADDRESS: &str = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_time_zones.geojson";
 /// The name of the timezone bincode file.
-pub static TIMEZONE_BINCODE_DESTINATION_NAME: &str = "ne_10m_time_zones.bincode";
+pub static TIMEZONE_BINCODE_DESTINATION_NAME: &str = "ned_10m_time_zones.bincode";
 /// The name of the cache bincode file.
-pub static LOOKUP_BINCODE_DESTINATION_NAME: &str = "ne_time_zone_lookup.bincode";
+pub static LOOKUP_BINCODE_DESTINATION_NAME: &str = "ned_time_zone_lookup.bincode";
 
 // Types.
 

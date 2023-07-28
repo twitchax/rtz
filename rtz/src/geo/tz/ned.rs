@@ -125,14 +125,14 @@ impl HasLookupData for NedTimezone {
 // Statics.
 
 #[cfg(all(host_family_unix, feature = "self-contained"))]
-static TZ_BINCODE: &[u8] = include_bytes!("../../../../assets/ne_10m_time_zones.bincode");
+static TZ_BINCODE: &[u8] = include_bytes!("../../../../assets/ned_10m_time_zones.bincode");
 #[cfg(all(host_family_windows, feature = "self-contained"))]
-static TZ_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\ne_10m_time_zones.bincode");
+static TZ_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\ned_10m_time_zones.bincode");
 
 #[cfg(all(host_family_unix, feature = "self-contained"))]
-static CACHE_BINCODE: &[u8] = include_bytes!("../../../../assets/ne_time_zone_lookup.bincode");
+static CACHE_BINCODE: &[u8] = include_bytes!("../../../../assets/ned_time_zone_lookup.bincode");
 #[cfg(all(host_family_windows, feature = "self-contained"))]
-static CACHE_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\ne_time_zone_lookup.bincode");
+static CACHE_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\ned_time_zone_lookup.bincode");
 
 // Tests.
 
