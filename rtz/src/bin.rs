@@ -114,7 +114,7 @@ fn start(args: Args) -> Void {
             #[cfg(feature = "tz-ned")]
             {
                 use rtzlib::geo::tz::ned::get_timezones_geojson;
-                
+
                 let json = get_timezones_geojson();
 
                 std::fs::write(format!("{}-tz-ned.geojson", prefix), json)?;
@@ -123,7 +123,7 @@ fn start(args: Args) -> Void {
             #[cfg(feature = "tz-osm")]
             {
                 use rtzlib::geo::tz::osm::get_timezones_geojson;
-                
+
                 let json = get_timezones_geojson();
 
                 std::fs::write(format!("{}-tz-osm.geojson", prefix), json)?;

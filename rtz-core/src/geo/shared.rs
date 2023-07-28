@@ -2,12 +2,16 @@
 
 // Statics.
 
-use std::ops::Deref;
+use std::{collections::HashMap, ops::Deref};
 
-use geo::{Geometry, SimplifyVw};
-use geojson::GeoJson;
+use chashmap::CHashMap;
+use geo::{Coord, Geometry, Intersects, Rect, SimplifyVw};
+use geojson::{FeatureCollection, GeoJson};
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
+use std::path::Path;
 
 use crate::base::types::Float;
 
@@ -77,7 +81,9 @@ impl<'a, T> IntoIterator for &'a ConcreteVec<T> {
 ///
 /// Helps abstract away this property so the helper methods can be generalized.
 pub trait HasGeometry {
-    /// Get the [`Geometry`] of the [`IsTimezone`].
+    /// Get the `id` of the [`HasGeometry`].
+    fn id(&self) -> usize;
+    /// Get the [`Geometry`] of the [`HasGeometry`].
     fn geometry(&self) -> &Geometry<Float>;
 }
 
@@ -176,4 +182,95 @@ pub fn simplify_geometry(geometry: Geometry<Float>) -> Geometry<Float> {
     };
 
     geometry
+}
+
+/// Get the cache from the timezones.
+pub fn get_cache_from_geometries<T>(geometries: &ConcreteVec<T>) -> HashMap<RoundLngLat, Vec<i16>>
+where
+    T: HasGeometry + Send + Sync,
+{
+    let map = CHashMap::new();
+
+    (-180..180).into_par_iter().for_each(|x| {
+        for y in -90..90 {
+            let xf = x as Float;
+            let yf = y as Float;
+
+            let rect = Rect::new(Coord { x: xf, y: yf }, Coord { x: xf + 1.0, y: yf + 1.0 });
+
+            let mut intersected = Vec::new();
+
+            for g in geometries {
+                if g.geometry().intersects(&rect) {
+                    intersected.push(g.id() as RoundInt);
+                }
+            }
+
+            map.insert((x as RoundInt, y as RoundInt), intersected);
+        }
+    });
+
+    let mut cache = HashMap::new();
+    for (key, value) in map.into_iter() {
+        cache.insert(key, value);
+    }
+
+    cache
+}
+
+/// Generate the bincode representation of the 100km cache.
+///
+/// "100km" is a bit of a misnomer.  This is really 100km _at the equator_, but this
+/// makes it easier to reason about what the caches are doing.
+#[cfg(feature = "self-contained")]
+fn generate_cache_bincode<T>(bincode_input: impl AsRef<Path>, bincode_destination: impl AsRef<Path>)
+where
+    T: HasGeometry + DeserializeOwned + Send + Sync,
+{
+    let data = std::fs::read(bincode_input).unwrap();
+    let (timezones, _len): (ConcreteVec<T>, usize) = bincode::serde::decode_from_slice(&data, bincode::config::standard()).unwrap();
+
+    let cache = get_cache_from_geometries(&timezones);
+
+    std::fs::write(bincode_destination, bincode::serde::encode_to_vec(cache, bincode::config::standard()).unwrap()).unwrap();
+}
+
+/// Get the concrete timezones from features.
+pub fn get_timezones_from_features<T>(features: FeatureCollection) -> ConcreteVec<T>
+where
+    T: HasGeometry + From<IdFeaturePair>,
+{
+    ConcreteVec::from(features)
+}
+
+/// Generate bincode representation of the timezones.
+#[cfg(feature = "self-contained")]
+fn generate_timezone_bincode<T>(geojson_features: FeatureCollection, bincode_destination: impl AsRef<Path>)
+where
+    T: HasGeometry + Serialize + From<IdFeaturePair>,
+{
+    let timezones: ConcreteVec<T> = get_timezones_from_features(geojson_features);
+
+    std::fs::write(bincode_destination, bincode::serde::encode_to_vec(timezones, bincode::config::standard()).unwrap()).unwrap();
+}
+
+/// Get the GeoJSON features from the binary assets.
+pub fn get_geojson_features_from_file(geojson_input: impl AsRef<Path>) -> FeatureCollection {
+    let tz_geojson = std::fs::read_to_string(geojson_input).unwrap();
+    FeatureCollection::try_from(tz_geojson.parse::<GeoJson>().unwrap()).unwrap()
+}
+
+/// Get the GeoJSON features from the binary assets.
+pub fn get_geojson_features_from_string(geojson_input: &str) -> FeatureCollection {
+    FeatureCollection::try_from(geojson_input.parse::<GeoJson>().unwrap()).unwrap()
+}
+
+/// Generates new bincodes for the timezones and the cache from the GeoJSON.
+#[cfg(feature = "self-contained")]
+pub fn generate_bincodes<T>(geojson_features: FeatureCollection, timezone_bincode_destination: impl AsRef<Path>, cache_bincode_destination: impl AsRef<Path>)
+where
+    T: HasGeometry + Serialize + From<IdFeaturePair> + DeserializeOwned + Send + Sync,
+{
+    generate_timezone_bincode::<T>(geojson_features, timezone_bincode_destination.as_ref());
+    generate_cache_bincode::<T>(timezone_bincode_destination, cache_bincode_destination);
 }

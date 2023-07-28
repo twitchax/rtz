@@ -6,7 +6,7 @@ use geo::{Contains, Coord};
 use rtz_core::{
     base::types::Float,
     geo::{
-        shared::{ToGeoJson, RoundLngLat, ConcreteVec},
+        shared::{ConcreteVec, RoundLngLat, ToGeoJson},
         tz::{
             ned::NedTimezone,
             shared::{i16_vec_to_tomezoneids, TimezoneIds},
@@ -69,17 +69,13 @@ impl HasCachedData for NedTimezone {
 
         #[cfg(not(feature = "self-contained"))]
         {
-            use rtz_core::geo::tz::{
-                ned::GEOJSON_ADDRESS,
-                shared::{get_geojson_features_from_string, get_timezones_from_features},
+            use rtz_core::geo::{
+                shared::get_timezones_from_features,
+                tz::ned::get_geojson_features_from_source,
             };
 
             TIMEZONES.get_or_init(|| {
-                let response = reqwest::blocking::get(GEOJSON_ADDRESS).unwrap();
-                let geojson_input = response.text().unwrap();
-
-                let features = get_geojson_features_from_string(&geojson_input);
-
+                let features = get_geojson_features_from_source();
                 get_timezones_from_features(features)
             })
         }
@@ -108,10 +104,10 @@ impl HasCachedData for NedTimezone {
 
         #[cfg(not(feature = "self-contained"))]
         {
-            use rtz_core::geo::tz::shared::get_cache_from_timezones;
+            use rtz_core::geo::shared::get_cache_from_geometries;
 
             CACHE.get_or_init(|| {
-                let cache = get_cache_from_timezones(NedTimezone::get_timezones());
+                let cache = get_cache_from_geometries(NedTimezone::get_timezones());
 
                 cache
                     .into_iter()

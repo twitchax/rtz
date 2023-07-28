@@ -23,9 +23,9 @@ fn generate_self_contained_bincodes() {
 fn generate_ned_bincodes() {
     use std::path::Path;
 
-    use rtz_core::geo::tz::{
-        ned::{NedTimezone, CACHE_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME},
-        shared::{generate_bincodes, get_geojson_features_from_string},
+    use rtz_core::geo::{
+        shared::generate_bincodes,
+        tz::ned::{NedTimezone, CACHE_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME, get_geojson_features_from_source},
     };
 
     let timezone_bincode_destination = &format!("../assets/{}", TIMEZONE_BINCODE_DESTINATION_NAME);
@@ -38,22 +38,18 @@ fn generate_ned_bincodes() {
 
     std::fs::create_dir_all("../assets").unwrap();
 
-    let response = reqwest::blocking::get(rtz_core::geo::tz::ned::GEOJSON_ADDRESS).unwrap();
-    let geojson_input = response.text().unwrap();
-
-    let features = get_geojson_features_from_string(&geojson_input);
+    let features = get_geojson_features_from_source();
     generate_bincodes::<NedTimezone>(features, timezone_bincode_destination, cache_bincode_destination);
 }
 
 #[cfg(all(feature = "tz-osm", feature = "self-contained"))]
 fn generate_osm_bincodes() {
-    use std::{io::Read, path::Path};
+    use std::path::Path;
 
-    use rtz_core::geo::tz::{
-        osm::{OsmTimezone, CACHE_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME},
-        shared::{generate_bincodes, get_geojson_features_from_string},
+    use rtz_core::geo::{
+        shared::generate_bincodes,
+        tz::osm::{OsmTimezone, CACHE_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME, get_geojson_features_from_source},
     };
-    use zip::ZipArchive;
 
     let timezone_bincode_destination = &format!("../assets/{}", TIMEZONE_BINCODE_DESTINATION_NAME);
     let cache_bincode_destination = &format!("../assets/{}", CACHE_BINCODE_DESTINATION_NAME);
@@ -65,15 +61,7 @@ fn generate_osm_bincodes() {
 
     std::fs::create_dir_all("../assets").unwrap();
 
-    let response = reqwest::blocking::get(rtz_core::geo::tz::osm::GEOJSON_ADDRESS).unwrap();
-    let geojson_zip = response.bytes().unwrap();
-    let mut zip = ZipArchive::new(std::io::Cursor::new(geojson_zip)).unwrap();
-    let mut geojson_input = String::new();
-    zip.by_index(0).unwrap().read_to_string(&mut geojson_input).unwrap();
-
-    //let geojson_input = response.text().unwrap();
-
-    let features = get_geojson_features_from_string(&geojson_input);
+    let features = get_geojson_features_from_source();
     generate_bincodes::<OsmTimezone>(features, timezone_bincode_destination, cache_bincode_destination);
 }
 

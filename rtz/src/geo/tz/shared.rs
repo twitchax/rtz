@@ -2,7 +2,10 @@
 
 // Traits.
 
-use rtz_core::geo::{tz::shared::TimezoneIds, shared::{ConcreteVec, RoundLngLat}};
+use rtz_core::geo::{
+    shared::{ConcreteVec, RoundLngLat},
+    tz::shared::TimezoneIds,
+};
 use std::collections::HashMap;
 
 /// Trait that abstracts away getting the in-memory timezones / cache.

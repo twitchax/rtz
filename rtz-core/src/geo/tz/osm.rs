@@ -4,19 +4,35 @@
 // it is not included in the coverage report.
 #![cfg(not(tarpaulin_include))]
 
+use std::io::Read;
+
 use geo::Geometry;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use crate::{
     base::types::Float,
-    geo::shared::{simplify_geometry, HasGeometry, HasProperties},
+    geo::shared::{simplify_geometry, HasGeometry, HasProperties, get_geojson_features_from_string},
 };
 
 use super::shared::IsTimezone;
 
+// Helpers.
+
+/// Get the GeoJSON [`geojson::Feature`]s from the source.
+#[cfg(not(target_family = "wasm"))]
+pub fn get_geojson_features_from_source() -> geojson::FeatureCollection {
+    let response = reqwest::blocking::get(ADDRESS).unwrap();
+    let geojson_zip = response.bytes().unwrap();
+    let mut zip = zip::ZipArchive::new(std::io::Cursor::new(geojson_zip)).unwrap();
+    let mut geojson_input = String::new();
+    zip.by_index(0).unwrap().read_to_string(&mut geojson_input).unwrap();
+
+    get_geojson_features_from_string(&geojson_input)
+}
+
 /// The address of the GeoJSON file.
-pub static GEOJSON_ADDRESS: &str = "https://github.com/evansiroky/timezone-boundary-builder/releases/download/2023b/timezones-with-oceans.geojson.zip";
+pub static ADDRESS: &str = "https://github.com/evansiroky/timezone-boundary-builder/releases/download/2023b/timezones-with-oceans.geojson.zip";
 /// The name of the timezone bincode file.
 pub static TIMEZONE_BINCODE_DESTINATION_NAME: &str = "osm_time_zones.bincode";
 /// The name of the cache bincode file.
@@ -65,16 +81,16 @@ impl From<(usize, geojson::Feature)> for OsmTimezone {
 }
 
 impl IsTimezone for OsmTimezone {
-    fn id(&self) -> usize {
-        self.id
-    }
-
     fn identifier(&self) -> &str {
         self.identifier.as_str()
     }
 }
 
 impl HasGeometry for OsmTimezone {
+    fn id(&self) -> usize {
+        self.id
+    }
+
     fn geometry(&self) -> &Geometry<Float> {
         &self.geometry
     }

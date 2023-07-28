@@ -4,30 +4,17 @@
 // it is not included in the coverage report.
 #![cfg(not(tarpaulin_include))]
 
+use crate::geo::shared::{HasGeometry, HasProperties, RoundInt};
+
 // Types.
-
-use std::{collections::HashMap, path::Path};
-
-use chashmap::CHashMap;
-use geo::{Coord, Intersects, Rect};
-use geojson::{FeatureCollection, GeoJson};
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-#[cfg(feature = "self-contained")]
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-
-use crate::{
-    base::types::Float,
-    geo::shared::{ConcreteVec, HasGeometry, HasProperties, IdFeaturePair, RoundInt, RoundLngLat},
-};
 
 /// This number is selected based on the existing data, and may need to be increased
 /// across dataset versions.  However, it is helpful to keep this as an array
 /// for cache locality in the map.
-const TIMEZONE_LIST_LENGTH: usize = 7;
+const TIMEZONE_LOOKUP_LENGTH: usize = 7;
 
 /// A collection of `id`s into the global time zone static cache.
-pub type TimezoneIds = [RoundInt; TIMEZONE_LIST_LENGTH];
+pub type TimezoneIds = [RoundInt; TIMEZONE_LOOKUP_LENGTH];
 
 // Traits.
 
@@ -35,8 +22,6 @@ pub type TimezoneIds = [RoundInt; TIMEZONE_LIST_LENGTH];
 ///
 /// Helps abstract away this property so the helper methods can be generalized.
 pub trait IsTimezone: HasGeometry + HasProperties {
-    /// Get the `id` of the [`IsTimezone`].
-    fn id(&self) -> usize;
     /// Get the `identifier` of the [`IsTimezone`].
     fn identifier(&self) -> &str;
 }
@@ -45,7 +30,7 @@ pub trait IsTimezone: HasGeometry + HasProperties {
 
 /// Convert a [`Vec`] of [`i16`]s into [`TimezoneIds`].
 pub fn i16_vec_to_tomezoneids(value: Vec<i16>) -> TimezoneIds {
-    if value.len() > TIMEZONE_LIST_LENGTH {
+    if value.len() > TIMEZONE_LOOKUP_LENGTH {
         panic!("Cannot convert a Vec<i16> with more than `TIMEZONE_LIST_LENGTH` elements into a TimezoneIds.");
     }
 
@@ -59,97 +44,4 @@ pub fn i16_vec_to_tomezoneids(value: Vec<i16>) -> TimezoneIds {
         value.get(5).cloned().unwrap_or(-1),
         value.get(6).cloned().unwrap_or(-1),
     ]
-}
-
-// Shared helper methods.
-
-/// Get the cache from the timezones.
-pub fn get_cache_from_timezones<T>(timezones: &ConcreteVec<T>) -> HashMap<RoundLngLat, Vec<i16>>
-where
-    T: IsTimezone + Send + Sync,
-{
-    let map = CHashMap::new();
-
-    (-180..180).into_par_iter().for_each(|x| {
-        for y in -90..90 {
-            let xf = x as Float;
-            let yf = y as Float;
-
-            let rect = Rect::new(Coord { x: xf, y: yf }, Coord { x: xf + 1.0, y: yf + 1.0 });
-
-            let mut intersected = Vec::new();
-
-            for tz in timezones {
-                if tz.geometry().intersects(&rect) {
-                    intersected.push(tz.id() as RoundInt);
-                }
-            }
-
-            map.insert((x as RoundInt, y as RoundInt), intersected);
-        }
-    });
-
-    let mut cache = HashMap::new();
-    for (key, value) in map.into_iter() {
-        cache.insert(key, value);
-    }
-
-    cache
-}
-
-/// Generate the bincode representation of the 100km cache.
-///
-/// "100km" is a bit of a misnomer.  This is really 100km _at the equator_, but this
-/// makes it easier to reason about what the caches are doing.
-#[cfg(feature = "self-contained")]
-fn generate_cache_bincode<T>(bincode_input: impl AsRef<Path>, bincode_destination: impl AsRef<Path>)
-where
-    T: IsTimezone + DeserializeOwned + Send + Sync,
-{
-    let data = std::fs::read(bincode_input).unwrap();
-    let (timezones, _len): (ConcreteVec<T>, usize) = bincode::serde::decode_from_slice(&data, bincode::config::standard()).unwrap();
-
-    let cache = get_cache_from_timezones(&timezones);
-
-    std::fs::write(bincode_destination, bincode::serde::encode_to_vec(cache, bincode::config::standard()).unwrap()).unwrap();
-}
-
-/// Get the concrete timezones from features.
-pub fn get_timezones_from_features<T>(features: FeatureCollection) -> ConcreteVec<T>
-where
-    T: IsTimezone + From<IdFeaturePair>,
-{
-    ConcreteVec::from(features)
-}
-
-/// Generate bincode representation of the timezones.
-#[cfg(feature = "self-contained")]
-fn generate_timezone_bincode<T>(geojson_features: FeatureCollection, bincode_destination: impl AsRef<Path>)
-where
-    T: IsTimezone + Serialize + From<IdFeaturePair>,
-{
-    let timezones: ConcreteVec<T> = get_timezones_from_features(geojson_features);
-
-    std::fs::write(bincode_destination, bincode::serde::encode_to_vec(timezones, bincode::config::standard()).unwrap()).unwrap();
-}
-
-/// Generates new bincodes for the timezones and the cache from the GeoJSON.
-#[cfg(feature = "self-contained")]
-pub fn generate_bincodes<T>(geojson_features: FeatureCollection, timezone_bincode_destination: impl AsRef<Path>, cache_bincode_destination: impl AsRef<Path>)
-where
-    T: IsTimezone + Serialize + From<IdFeaturePair> + DeserializeOwned + Send + Sync,
-{
-    generate_timezone_bincode::<T>(geojson_features, timezone_bincode_destination.as_ref());
-    generate_cache_bincode::<T>(timezone_bincode_destination, cache_bincode_destination);
-}
-
-/// Get the GeoJSON features from the binary assets.
-pub fn get_geojson_features_from_file(geojson_input: impl AsRef<Path>) -> FeatureCollection {
-    let tz_geojson = std::fs::read_to_string(geojson_input).unwrap();
-    FeatureCollection::try_from(tz_geojson.parse::<GeoJson>().unwrap()).unwrap()
-}
-
-/// Get the GeoJSON features from the binary assets.
-pub fn get_geojson_features_from_string(geojson_input: &str) -> FeatureCollection {
-    FeatureCollection::try_from(geojson_input.parse::<GeoJson>().unwrap()).unwrap()
 }

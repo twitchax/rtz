@@ -10,15 +10,26 @@ use serde_json::{Map, Value};
 
 use crate::{
     base::types::Float,
-    geo::shared::{simplify_geometry, HasGeometry, HasProperties},
+    geo::shared::{simplify_geometry, HasGeometry, HasProperties, get_geojson_features_from_string},
 };
 
 use super::shared::IsTimezone;
 
+// Helpers.
+
+/// Get the GeoJSON [`geojson::Feature`]s from the source.
+#[cfg(not(target_family = "wasm"))]
+pub fn get_geojson_features_from_source() -> geojson::FeatureCollection {
+    let response = reqwest::blocking::get(ADDRESS).unwrap();
+    let geojson_input = response.text().unwrap();
+
+    get_geojson_features_from_string(&geojson_input)
+}
+
 // Statics.
 
 /// The address of the GeoJSON file.
-pub static GEOJSON_ADDRESS: &str = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_time_zones.geojson";
+pub static ADDRESS: &str = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_time_zones.geojson";
 /// The name of the timezone bincode file.
 pub static TIMEZONE_BINCODE_DESTINATION_NAME: &str = "ne_10m_time_zones.bincode";
 /// The name of the cache bincode file.
@@ -101,16 +112,16 @@ impl From<(usize, geojson::Feature)> for NedTimezone {
 }
 
 impl IsTimezone for NedTimezone {
-    fn id(&self) -> usize {
-        self.id
-    }
-
     fn identifier(&self) -> &str {
         self.identifier.as_deref().unwrap_or("")
     }
 }
 
 impl HasGeometry for NedTimezone {
+    fn id(&self) -> usize {
+        self.id
+    }
+
     fn geometry(&self) -> &Geometry<Float> {
         &self.geometry
     }

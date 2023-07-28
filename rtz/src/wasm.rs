@@ -24,8 +24,6 @@ pub fn get_timezone_ned(lng: f32, lat: f32) -> JsValue {
 #[cfg(feature = "tz-osm")]
 #[wasm_bindgen(js_name = getTimezoneOsm)]
 pub fn get_timezone_osm(lng: f32, lat: f32) -> JsValue {
-    match crate::get_timezone_osm(lng, lat) {
-        Some(tz) => JsValue::from_str(&serde_json::to_string(&tz).unwrap()),
-        None => JsValue::NULL,
-    }
+    let tzs = crate::get_timezones_osm(lng, lat);
+    JsValue::from_str(&serde_json::to_string(&tzs).unwrap())
 }

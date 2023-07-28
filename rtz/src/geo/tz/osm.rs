@@ -6,7 +6,7 @@ use geo::{Contains, Coord};
 use rtz_core::{
     base::types::Float,
     geo::{
-        shared::{ToGeoJson, RoundLngLat, ConcreteVec},
+        shared::{ConcreteVec, RoundLngLat, ToGeoJson},
         tz::{
             osm::OsmTimezone,
             shared::{i16_vec_to_tomezoneids, TimezoneIds},
@@ -73,21 +73,13 @@ impl HasCachedData for OsmTimezone {
 
         #[cfg(not(feature = "self-contained"))]
         {
-            use rtz_core::geo::tz::{
-                osm::GEOJSON_ADDRESS,
-                shared::{get_geojson_features_from_string, get_timezones_from_features},
+            use rtz_core::geo::{
+                shared::get_timezones_from_features,
+                tz::osm::get_geojson_features_from_source,
             };
-            use std::io::Read;
-            use zip::ZipArchive;
 
             TIMEZONES.get_or_init(|| {
-                let response = reqwest::blocking::get(GEOJSON_ADDRESS).unwrap();
-                let geojson_zip = response.bytes().unwrap();
-                let mut zip = ZipArchive::new(std::io::Cursor::new(geojson_zip)).unwrap();
-                let mut geojson_input = String::new();
-                zip.by_index(0).unwrap().read_to_string(&mut geojson_input).unwrap();
-
-                let features = get_geojson_features_from_string(&geojson_input);
+                let features = get_geojson_features_from_source();
 
                 get_timezones_from_features(features)
             })
@@ -117,10 +109,10 @@ impl HasCachedData for OsmTimezone {
 
         #[cfg(not(feature = "self-contained"))]
         {
-            use rtz_core::geo::tz::shared::get_cache_from_timezones;
+            use rtz_core::geo::shared::get_cache_from_geometries;
 
             CACHE.get_or_init(|| {
-                let cache = get_cache_from_timezones(OsmTimezone::get_timezones());
+                let cache = get_cache_from_geometries(OsmTimezone::get_timezones());
 
                 cache
                     .into_iter()

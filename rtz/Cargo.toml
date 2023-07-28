@@ -1,6 +1,6 @@
 [package]
 name = "rtz"
-version = "0.4.3"
+version = "0.4.4"
 edition = "2021"
 authors = ["Aaron Roney <twitchax@gmail.com>"]
 license = "MIT"
@@ -41,7 +41,7 @@ web = ["full", "tokio", "rocket", "rocket_okapi", "rocket_cors", "config", "log"
 wasm = ["wasm-bindgen", "wasm-bindgen-futures", "wee_alloc", "js-sys"]
 
 [dependencies]
-rtz-core = { path = "../rtz-core", version = "0.1.2"}
+rtz-core = { path = "../rtz-core", version = "0.1.3"}
 
 anyhow = { version = "1.0.72", features = ["backtrace"] }
 rayon = "1.7.0"
@@ -85,7 +85,7 @@ js-sys = { version = "0.3.61", optional = true }
 pretty_assertions = "1.4.0"
 
 [build-dependencies]
-rtz-build = { path = "../rtz-build", version = "0.2.4"}
+rtz-build = { path = "../rtz-build", version = "0.2.5"}
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 reqwest = { version = "0.11.18", features = ["blocking"] }
