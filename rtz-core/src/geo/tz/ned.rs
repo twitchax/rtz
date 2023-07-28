@@ -33,7 +33,7 @@ pub static ADDRESS: &str = "https://raw.githubusercontent.com/nvkelso/natural-ea
 /// The name of the timezone bincode file.
 pub static TIMEZONE_BINCODE_DESTINATION_NAME: &str = "ne_10m_time_zones.bincode";
 /// The name of the cache bincode file.
-pub static CACHE_BINCODE_DESTINATION_NAME: &str = "ne_time_zone_cache.bincode";
+pub static LOOKUP_BINCODE_DESTINATION_NAME: &str = "ne_time_zone_lookup.bincode";
 
 // Types.
 

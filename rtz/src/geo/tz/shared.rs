@@ -9,12 +9,12 @@ use rtz_core::geo::{
 use std::collections::HashMap;
 
 /// Trait that abstracts away getting the in-memory timezones / cache.
-pub(crate) trait HasCachedData
+pub(crate) trait HasLookupData
 where
     Self: Sized,
 {
     fn get_timezones() -> &'static ConcreteVec<Self>;
-    fn get_cache() -> &'static HashMap<RoundLngLat, TimezoneIds>;
+    fn get_lookup() -> &'static HashMap<RoundLngLat, TimezoneIds>;
 }
 
 /// Trait that allows converting a [`u16`] into a [`Timezone`] reference (from the global list).
@@ -24,7 +24,7 @@ pub(crate) trait MapIntoTimezone<T> {
 
 impl<T> MapIntoTimezone<T> for Option<&u16>
 where
-    T: HasCachedData,
+    T: HasLookupData,
 {
     fn map_timezone(self) -> Option<&'static T> {
         let Some(value) = self else {
@@ -44,7 +44,7 @@ pub(crate) trait MapIntoTimezones<T> {
 
 impl<T> MapIntoTimezones<T> for Option<&TimezoneIds>
 where
-    T: HasCachedData,
+    T: HasLookupData,
 {
     fn map_timezones(self) -> Option<Vec<&'static T>> {
         let Some(value) = self else {

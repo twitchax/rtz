@@ -185,7 +185,7 @@ pub fn simplify_geometry(geometry: Geometry<Float>) -> Geometry<Float> {
 }
 
 /// Get the cache from the timezones.
-pub fn get_cache_from_geometries<T>(geometries: &ConcreteVec<T>) -> HashMap<RoundLngLat, Vec<i16>>
+pub fn get_lookup_from_geometries<T>(geometries: &ConcreteVec<T>) -> HashMap<RoundLngLat, Vec<i16>>
 where
     T: HasGeometry + Send + Sync,
 {
@@ -223,14 +223,14 @@ where
 /// "100km" is a bit of a misnomer.  This is really 100km _at the equator_, but this
 /// makes it easier to reason about what the caches are doing.
 #[cfg(feature = "self-contained")]
-fn generate_cache_bincode<T>(bincode_input: impl AsRef<Path>, bincode_destination: impl AsRef<Path>)
+fn generate_lookup_bincode<T>(bincode_input: impl AsRef<Path>, bincode_destination: impl AsRef<Path>)
 where
     T: HasGeometry + DeserializeOwned + Send + Sync,
 {
     let data = std::fs::read(bincode_input).unwrap();
     let (timezones, _len): (ConcreteVec<T>, usize) = bincode::serde::decode_from_slice(&data, bincode::config::standard()).unwrap();
 
-    let cache = get_cache_from_geometries(&timezones);
+    let cache = get_lookup_from_geometries(&timezones);
 
     std::fs::write(bincode_destination, bincode::serde::encode_to_vec(cache, bincode::config::standard()).unwrap()).unwrap();
 }
@@ -272,5 +272,5 @@ where
     T: HasGeometry + Serialize + From<IdFeaturePair> + DeserializeOwned + Send + Sync,
 {
     generate_timezone_bincode::<T>(geojson_features, timezone_bincode_destination.as_ref());
-    generate_cache_bincode::<T>(timezone_bincode_destination, cache_bincode_destination);
+    generate_lookup_bincode::<T>(timezone_bincode_destination, cache_bincode_destination);
 }

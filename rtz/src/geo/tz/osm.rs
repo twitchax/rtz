@@ -14,7 +14,7 @@ use rtz_core::{
     },
 };
 
-use super::shared::{HasCachedData, MapIntoTimezones};
+use super::shared::{HasLookupData, MapIntoTimezones};
 
 /// Get the cache-driven timezone for a given longitude (x) and latitude (y).
 ///
@@ -23,7 +23,7 @@ pub fn get_timezones(xf: Float, yf: Float) -> Vec<&'static OsmTimezone> {
     let x = xf.floor() as i16;
     let y = yf.floor() as i16;
 
-    let Some(timezones) = get_from_cache(x, y) else {
+    let Some(timezones) = get_from_lookup(x, y) else {
         return Vec::new();
     };
 
@@ -50,15 +50,15 @@ pub fn get_timezones_geojson() -> String {
 }
 
 /// Get value from the cache.
-fn get_from_cache(x: i16, y: i16) -> Option<Vec<&'static OsmTimezone>> {
-    let cache = OsmTimezone::get_cache();
+fn get_from_lookup(x: i16, y: i16) -> Option<Vec<&'static OsmTimezone>> {
+    let cache = OsmTimezone::get_lookup();
 
     cache.get(&(x, y)).map_timezones()
 }
 
 // Trait impls.
 
-impl HasCachedData for OsmTimezone {
+impl HasLookupData for OsmTimezone {
     fn get_timezones() -> &'static ConcreteVec<OsmTimezone> {
         static TIMEZONES: OnceLock<ConcreteVec<OsmTimezone>> = OnceLock::new();
 
@@ -86,7 +86,7 @@ impl HasCachedData for OsmTimezone {
         }
     }
 
-    fn get_cache() -> &'static HashMap<RoundLngLat, TimezoneIds> {
+    fn get_lookup() -> &'static HashMap<RoundLngLat, TimezoneIds> {
         static CACHE: OnceLock<HashMap<RoundLngLat, TimezoneIds>> = OnceLock::new();
 
         #[cfg(feature = "self-contained")]
@@ -109,10 +109,10 @@ impl HasCachedData for OsmTimezone {
 
         #[cfg(not(feature = "self-contained"))]
         {
-            use rtz_core::geo::shared::get_cache_from_geometries;
+            use rtz_core::geo::shared::get_lookup_from_geometries;
 
             CACHE.get_or_init(|| {
-                let cache = get_cache_from_geometries(OsmTimezone::get_timezones());
+                let cache = get_lookup_from_geometries(OsmTimezone::get_timezones());
 
                 cache
                     .into_iter()
@@ -135,9 +135,9 @@ static TZ_BINCODE: &[u8] = include_bytes!("../../../../assets/osm_time_zones.bin
 static TZ_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\osm_time_zones.bincode");
 
 #[cfg(all(host_family_unix, feature = "self-contained"))]
-static CACHE_BINCODE: &[u8] = include_bytes!("../../../../assets/osm_time_zone_cache.bincode");
+static CACHE_BINCODE: &[u8] = include_bytes!("../../../../assets/osm_time_zone_lookup.bincode");
 #[cfg(all(host_family_windows, feature = "self-contained"))]
-static CACHE_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\osm_time_zone_cache.bincode");
+static CACHE_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\osm_time_zone_lookup.bincode");
 
 // Tests.
 
@@ -156,18 +156,14 @@ mod tests {
     }
 
     #[test]
-    fn can_get_cache() {
-        let cache = OsmTimezone::get_cache();
+    fn can_get_lookup() {
+        let cache = OsmTimezone::get_lookup();
         assert_eq!(cache.len(), 64_800);
-
-        // let a = cache.into_iter().max_by(|a, b| a.1.iter().filter(|x| **x != -1).collect::<Vec<_>>().len().cmp(&b.1.iter().filter(|x| **x != -1).collect::<Vec<_>>().len())).map(|(key, value)| {
-        //     assert_eq!(format!("({}, {}): {}", key.0, key.1, value.iter().filter(|x| **x != -1).collect::<Vec<_>>().len()), "");
-        // });
     }
 
     #[test]
-    fn can_get_from_cache() {
-        let cache = get_from_cache(-121, 46).unwrap();
+    fn can_get_from_lookup() {
+        let cache = get_from_lookup(-121, 46).unwrap();
         assert_eq!(cache.len(), 1);
     }
 
@@ -180,8 +176,8 @@ mod tests {
     }
 
     #[test]
-    fn can_access_cache() {
-        let cache = OsmTimezone::get_cache();
+    fn can_access_lookup() {
+        let cache = OsmTimezone::get_lookup();
 
         let tzs = cache.get(&(-177, -15)).map_timezones().unwrap() as Vec<&OsmTimezone>;
         assert_eq!(tzs.len(), 1);
@@ -197,7 +193,7 @@ mod tests {
     }
 
     #[test]
-    fn can_verify_cache_assisted_accuracy() {
+    fn can_verify_lookup_assisted_accuracy() {
         (0..100).into_par_iter().for_each(|_| {
             let x = rand::random::<Float>() * 360.0 - 180.0;
             let y = rand::random::<Float>() * 180.0 - 90.0;
@@ -240,7 +236,7 @@ mod bench {
     }
 
     #[bench]
-    fn bench_cache_assisted_sweep(b: &mut Bencher) {
+    fn bench_lookup_assisted_sweep(b: &mut Bencher) {
         let xs = (-179..180).step_by(10);
         let ys = (-89..90).step_by(10);
 
@@ -264,7 +260,7 @@ mod bench {
     }
 
     #[bench]
-    fn bench_worst_case_cache_assisted_single(b: &mut Bencher) {
+    fn bench_worst_case_lookup_assisted_single(b: &mut Bencher) {
         let x = -86.5;
         let y = 38.5;
 

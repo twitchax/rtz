@@ -25,11 +25,11 @@ fn generate_ned_bincodes() {
 
     use rtz_core::geo::{
         shared::generate_bincodes,
-        tz::ned::{NedTimezone, CACHE_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME, get_geojson_features_from_source},
+        tz::ned::{NedTimezone, LOOKUP_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME, get_geojson_features_from_source},
     };
 
     let timezone_bincode_destination = &format!("../assets/{}", TIMEZONE_BINCODE_DESTINATION_NAME);
-    let cache_bincode_destination = &format!("../assets/{}", CACHE_BINCODE_DESTINATION_NAME);
+    let cache_bincode_destination = &format!("../assets/{}", LOOKUP_BINCODE_DESTINATION_NAME);
 
     #[cfg(not(feature = "force-rebuild"))]
     if Path::new(timezone_bincode_destination).exists() && Path::new(cache_bincode_destination).exists() {
@@ -48,11 +48,11 @@ fn generate_osm_bincodes() {
 
     use rtz_core::geo::{
         shared::generate_bincodes,
-        tz::osm::{OsmTimezone, CACHE_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME, get_geojson_features_from_source},
+        tz::osm::{OsmTimezone, LOOKUP_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME, get_geojson_features_from_source},
     };
 
     let timezone_bincode_destination = &format!("../assets/{}", TIMEZONE_BINCODE_DESTINATION_NAME);
-    let cache_bincode_destination = &format!("../assets/{}", CACHE_BINCODE_DESTINATION_NAME);
+    let cache_bincode_destination = &format!("../assets/{}", LOOKUP_BINCODE_DESTINATION_NAME);
 
     #[cfg(not(feature = "force-rebuild"))]
     if Path::new(timezone_bincode_destination).exists() && Path::new(cache_bincode_destination).exists() {
