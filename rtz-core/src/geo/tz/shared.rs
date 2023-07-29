@@ -31,7 +31,7 @@ pub trait IsTimezone: HasGeometry + HasProperties {
 /// Convert a [`Vec`] of [`i16`]s into [`TimezoneIds`].
 pub fn i16_vec_to_timezoneids(value: Vec<i16>) -> TimezoneIds {
     if value.len() > TIMEZONE_LOOKUP_LENGTH {
-        panic!("Cannot convert a Vec<i16> with more than `TIMEZONE_LIST_LENGTH` elements into a TimezoneIds.");
+        panic!("Cannot convert a Vec<i16> with more than `TIMEZONE_LIST_LENGTH` elements into a TimezoneIds: {}.", value.len());
     }
 
     [
