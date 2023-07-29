@@ -10,7 +10,7 @@ use serde_json::{Map, Value};
 
 use crate::{
     base::types::Float,
-    geo::shared::{simplify_geometry, HasGeometry, HasProperties, get_geojson_features_from_string},
+    geo::shared::{get_geojson_features_from_string, simplify_geometry, HasGeometry, HasProperties},
 };
 
 use super::shared::IsTimezone;

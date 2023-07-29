@@ -3,5 +3,6 @@
 //! The intention is that this will expand to support other types of data
 //! sources, but for now it only supports timezone data.
 
+pub mod admin;
 pub mod shared;
 pub mod tz;

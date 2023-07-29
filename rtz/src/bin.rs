@@ -1,7 +1,14 @@
 //! The main binary entrypoint.
 
 use clap::{command, Parser, Subcommand};
-use rtz_core::base::types::Void;
+use rtz_core::{
+    base::types::Void,
+    geo::{
+        admin::osm::OsmAdmin,
+        tz::{ned::NedTimezone, osm::OsmTimezone},
+    },
+};
+use rtzlib::geo::shared::CanPerformGeoLookup;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -66,34 +73,34 @@ fn start(args: Args) -> Void {
         #[cfg(feature = "tz-ned")]
         Some(Command::ResolveNed { lng_lat }) => {
             use rtz_core::base::types::Float;
-            use rtzlib::get_timezone_ned;
 
             let Some((lng, lat)) = lng_lat.split_once(',') else {
                 return Err(anyhow::Error::msg("Invalid lng,lat pair."));
             };
 
             let (lng, lat) = (lng.parse::<Float>()?, lat.parse::<Float>()?);
-            let tz = get_timezone_ned(lng, lat).ok_or_else(|| anyhow::Error::msg("Failed to resolve timezone."))?;
+            let tzs = NedTimezone::lookup(lng, lat);
 
-            println!();
-            println!("Identifier:      {}", tz.identifier.as_deref().unwrap_or(""));
-            println!("UTC Offset:      {}", tz.offset);
-            println!("Offset Seconds:  {}", tz.raw_offset);
-            println!("Description:     {}", tz.description);
-            println!("DST Description: {}", tz.dst_description.as_deref().unwrap_or(""));
-            println!();
+            for tz in tzs {
+                println!();
+                println!("Identifier:      {}", tz.identifier.as_deref().unwrap_or(""));
+                println!("UTC Offset:      {}", tz.offset);
+                println!("Offset Seconds:  {}", tz.raw_offset);
+                println!("Description:     {}", tz.description);
+                println!("DST Description: {}", tz.dst_description.as_deref().unwrap_or(""));
+                println!();
+            }
         }
         #[cfg(feature = "tz-osm")]
         Some(Command::ResolveOsm { lng_lat }) => {
             use rtz_core::base::types::Float;
-            use rtzlib::get_timezones_osm;
 
             let Some((lng, lat)) = lng_lat.split_once(',') else {
                 return Err(anyhow::Error::msg("Invalid lng,lat pair."));
             };
 
             let (lng, lat) = (lng.parse::<Float>()?, lat.parse::<Float>()?);
-            let tzs = get_timezones_osm(lng, lat);
+            let tzs = OsmTimezone::lookup(lng, lat);
 
             for tz in tzs {
                 println!();
@@ -113,20 +120,23 @@ fn start(args: Args) -> Void {
         Some(Command::DumpGeojson { prefix }) => {
             #[cfg(feature = "tz-ned")]
             {
-                use rtzlib::geo::tz::ned::get_timezones_geojson;
-
-                let json = get_timezones_geojson();
+                let json = NedTimezone::memory_data_to_geojson();
 
                 std::fs::write(format!("{}-tz-ned.geojson", prefix), json)?;
             }
 
             #[cfg(feature = "tz-osm")]
             {
-                use rtzlib::geo::tz::osm::get_timezones_geojson;
-
-                let json = get_timezones_geojson();
+                let json = OsmTimezone::memory_data_to_geojson();
 
                 std::fs::write(format!("{}-tz-osm.geojson", prefix), json)?;
+            }
+
+            #[cfg(feature = "admin-osm")]
+            {
+                let json = OsmAdmin::memory_data_to_geojson();
+
+                std::fs::write(format!("{}-admin-osm.geojson", prefix), json)?;
             }
         }
         #[allow(unreachable_patterns)]

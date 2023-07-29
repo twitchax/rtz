@@ -1,12 +1,14 @@
 //! Shared functionality for geo operations.
 
-// Statics.
+// This module is mostly used for cache preprocessing, which is expensive during coverage, so
+// it is not included in the coverage report.
+#![cfg(not(tarpaulin_include))]
 
 use std::{collections::HashMap, ops::Deref};
 
 use chashmap::CHashMap;
 use geo::{Coord, Geometry, Intersects, Rect, SimplifyVw};
-use geojson::{FeatureCollection, GeoJson};
+use geojson::{Feature, FeatureCollection, GeoJson};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -236,7 +238,7 @@ where
 }
 
 /// Get the concrete timezones from features.
-pub fn get_timezones_from_features<T>(features: FeatureCollection) -> ConcreteVec<T>
+pub fn get_items_from_features<T>(features: FeatureCollection) -> ConcreteVec<T>
 where
     T: HasGeometry + From<IdFeaturePair>,
 {
@@ -245,11 +247,11 @@ where
 
 /// Generate bincode representation of the timezones.
 #[cfg(feature = "self-contained")]
-fn generate_timezone_bincode<T>(geojson_features: FeatureCollection, bincode_destination: impl AsRef<Path>)
+fn generate_item_bincode<T>(geojson_features: FeatureCollection, bincode_destination: impl AsRef<Path>)
 where
     T: HasGeometry + Serialize + From<IdFeaturePair>,
 {
-    let timezones: ConcreteVec<T> = get_timezones_from_features(geojson_features);
+    let timezones: ConcreteVec<T> = get_items_from_features(geojson_features);
 
     std::fs::write(bincode_destination, bincode::serde::encode_to_vec(timezones, bincode::config::standard()).unwrap()).unwrap();
 }
@@ -260,17 +262,22 @@ pub fn get_geojson_features_from_file(geojson_input: impl AsRef<Path>) -> Featur
     FeatureCollection::try_from(tz_geojson.parse::<GeoJson>().unwrap()).unwrap()
 }
 
-/// Get the GeoJSON features from the binary assets.
+/// Get the GeoJSON feature from a binary assets.
+pub fn get_geojson_feature_from_string(geojson_input: &str) -> Feature {
+    Feature::try_from(geojson_input.parse::<GeoJson>().unwrap()).unwrap()
+}
+
+/// Get the GeoJSON features a the binary assets.
 pub fn get_geojson_features_from_string(geojson_input: &str) -> FeatureCollection {
     FeatureCollection::try_from(geojson_input.parse::<GeoJson>().unwrap()).unwrap()
 }
 
 /// Generates new bincodes for the timezones and the cache from the GeoJSON.
 #[cfg(feature = "self-contained")]
-pub fn generate_bincodes<T>(geojson_features: FeatureCollection, timezone_bincode_destination: impl AsRef<Path>, cache_bincode_destination: impl AsRef<Path>)
+pub fn generate_bincodes<T>(geojson_features: FeatureCollection, timezone_bincode_destination: impl AsRef<Path>, lookup_bincode_destination: impl AsRef<Path>)
 where
     T: HasGeometry + Serialize + From<IdFeaturePair> + DeserializeOwned + Send + Sync,
 {
-    generate_timezone_bincode::<T>(geojson_features, timezone_bincode_destination.as_ref());
-    generate_lookup_bincode::<T>(timezone_bincode_destination, cache_bincode_destination);
+    generate_item_bincode::<T>(geojson_features, timezone_bincode_destination.as_ref());
+    generate_lookup_bincode::<T>(timezone_bincode_destination, lookup_bincode_destination);
 }

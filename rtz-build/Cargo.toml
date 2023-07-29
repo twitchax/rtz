@@ -13,12 +13,14 @@ categories = ["command-line-utilities"]
 
 [features]
 default = []
-full = ["tz-ned", "tz-osm", "self-contained"]
+full = ["tz-ned", "tz-osm", "admin-osm", "self-contained"]
 
 force-rebuild = []
 self-contained = []
+
 tz-ned = []
 tz-osm = []
+admin-osm = []
 
 [dependencies]
 rtz-core = { path = "../rtz-core", version = "0.1.0" }

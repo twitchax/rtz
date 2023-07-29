@@ -72,7 +72,7 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
 
         let body = response.into_string().await.unwrap();
-        let expected = r#"{"id":20,"identifier":"America/Los_Angeles","description":"Canada (most of British Columbia), Mexico (Baja California), United States (California, most of Nevada, most of Oregon, Washington (state))","dstDescription":"Canada (most of British Columbia), Mexico (Baja California), United States (California, most of Nevada, most of Oregon, Washington (state))","offset":"UTC-08:00","zone":-8.0,"rawOffset":-28800}"#;
+        let expected = r#"[{"id":20,"identifier":"America/Los_Angeles","description":"Canada (most of British Columbia), Mexico (Baja California), United States (California, most of Nevada, most of Oregon, Washington (state))","dstDescription":"Canada (most of British Columbia), Mexico (Baja California), United States (California, most of Nevada, most of Oregon, Washington (state))","offset":"UTC-08:00","zone":-8.0,"rawOffset":-28800}]"#;
 
         assert_eq!(body, expected);
     }
@@ -83,10 +83,10 @@ mod tests {
 
         let response = client.get("/api/v1/ned/tz/179.9968/-67.0959").dispatch().await;
 
-        assert_eq!(response.status(), Status::NotFound);
+        assert_eq!(response.status(), Status::Ok);
 
         let body = response.into_string().await.unwrap();
-        let expected = r#"{"status": 404,"message": "No timezone results: location likely resides on a boundary."}"#;
+        let expected = r#"[]"#;
 
         assert_eq!(body, expected);
     }

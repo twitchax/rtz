@@ -131,12 +131,12 @@ rtz = "*" #choose a version
 ### Examples
 
 ```rust
-use rtzlib::get_timezone_ned;
+use rtzlib::NedTimezone;
+use rtzlib::CanPerformGeoLookup;
 
 // Query a time zone for a given `(lng,lat)`.
 assert_eq!(
-    get_timezone_ned(-121., 46.)
-        .unwrap()
+    NedTimezone::lookup(-121., 46.)[0]
         .identifier
         .as_ref()
         .unwrap(),

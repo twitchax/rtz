@@ -13,7 +13,7 @@ categories = ["command-line-utilities"]
 
 [features]
 default = []
-full = ["tz-ned", "tz-osm", "self-contained"]
+full = ["tz-ned", "tz-osm", "admin-osm", "self-contained"]
 
 double-precision = []
 unsimplified = []
@@ -22,6 +22,7 @@ self-contained = ["bincode"]
 
 tz-ned = []
 tz-osm = []
+admin-osm = []
 
 [dependencies]
 anyhow = { version = "1.0.72", features = ["backtrace"] }

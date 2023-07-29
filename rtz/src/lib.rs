@@ -5,12 +5,12 @@
     feature = "tz-ned",
     doc = r##"
 ```
-use rtzlib::get_timezone_ned;
+use rtzlib::NedTimezone;
+use rtzlib::CanPerformGeoLookup;
 
 // Query a time zone for a given `(lng,lat)`.
 assert_eq!(
-    get_timezone_ned(-121., 46.)
-        .unwrap()
+    NedTimezone::lookup(-121., 46.)[0]
         .identifier
         .as_ref()
         .unwrap(),
@@ -32,12 +32,13 @@ assert_eq!(
 // Modules.
 
 pub mod geo;
+pub use crate::geo::shared::CanPerformGeoLookup;
 
 #[cfg(feature = "tz-ned")]
-pub use crate::geo::tz::ned::get_timezone as get_timezone_ned;
+pub use rtz_core::geo::tz::ned::NedTimezone;
 
 #[cfg(feature = "tz-osm")]
-pub use crate::geo::tz::osm::get_timezones as get_timezones_osm;
+pub use rtz_core::geo::tz::osm::OsmTimezone;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;

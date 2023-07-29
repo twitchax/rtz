@@ -21,6 +21,7 @@ use super::types::get_last_modified_time;
 pub enum LookupResponse<T> {
     Ok(Json<T>),
     NotModified,
+    #[allow(dead_code)]
     NotFound,
 }
 

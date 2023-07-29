@@ -14,65 +14,78 @@ pub fn main() {
 #[cfg(feature = "self-contained")]
 fn generate_self_contained_bincodes() {
     #[cfg(feature = "tz-ned")]
-    generate_ned_bincodes();
+    generate_ned_tz_bincodes();
     #[cfg(feature = "tz-osm")]
-    generate_osm_bincodes();
+    generate_osm_tz_bincodes();
+    #[cfg(feature = "admin-osm")]
+    generate_osm_admin_bincodes();
 }
 
 #[cfg(all(feature = "tz-ned", feature = "self-contained"))]
-fn generate_ned_bincodes() {
+fn generate_ned_tz_bincodes() {
     use std::path::Path;
 
     use rtz_core::geo::{
         shared::generate_bincodes,
-        tz::ned::{NedTimezone, LOOKUP_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME, get_geojson_features_from_source},
+        tz::ned::{get_geojson_features_from_source, NedTimezone, LOOKUP_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME},
     };
 
     let timezone_bincode_destination = &format!("../assets/{}", TIMEZONE_BINCODE_DESTINATION_NAME);
-    let cache_bincode_destination = &format!("../assets/{}", LOOKUP_BINCODE_DESTINATION_NAME);
+    let lookup_bincode_destination = &format!("../assets/{}", LOOKUP_BINCODE_DESTINATION_NAME);
 
     #[cfg(not(feature = "force-rebuild"))]
-    if Path::new(timezone_bincode_destination).exists() && Path::new(cache_bincode_destination).exists() {
+    if Path::new(timezone_bincode_destination).exists() && Path::new(lookup_bincode_destination).exists() {
         return;
     }
 
     std::fs::create_dir_all("../assets").unwrap();
 
     let features = get_geojson_features_from_source();
-    generate_bincodes::<NedTimezone>(features, timezone_bincode_destination, cache_bincode_destination);
+    generate_bincodes::<NedTimezone>(features, timezone_bincode_destination, lookup_bincode_destination);
 }
 
 #[cfg(all(feature = "tz-osm", feature = "self-contained"))]
-fn generate_osm_bincodes() {
+fn generate_osm_tz_bincodes() {
     use std::path::Path;
 
     use rtz_core::geo::{
         shared::generate_bincodes,
-        tz::osm::{OsmTimezone, LOOKUP_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME, get_geojson_features_from_source},
+        tz::osm::{get_geojson_features_from_source, OsmTimezone, LOOKUP_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME},
     };
 
     let timezone_bincode_destination = &format!("../assets/{}", TIMEZONE_BINCODE_DESTINATION_NAME);
-    let cache_bincode_destination = &format!("../assets/{}", LOOKUP_BINCODE_DESTINATION_NAME);
+    let lookup_bincode_destination = &format!("../assets/{}", LOOKUP_BINCODE_DESTINATION_NAME);
 
     #[cfg(not(feature = "force-rebuild"))]
-    if Path::new(timezone_bincode_destination).exists() && Path::new(cache_bincode_destination).exists() {
+    if Path::new(timezone_bincode_destination).exists() && Path::new(lookup_bincode_destination).exists() {
         return;
     }
 
     std::fs::create_dir_all("../assets").unwrap();
 
     let features = get_geojson_features_from_source();
-    generate_bincodes::<OsmTimezone>(features, timezone_bincode_destination, cache_bincode_destination);
+    generate_bincodes::<OsmTimezone>(features, timezone_bincode_destination, lookup_bincode_destination);
 }
 
-// Tests.
+#[cfg(all(feature = "admin-osm", feature = "self-contained"))]
+fn generate_osm_admin_bincodes() {
+    use std::path::Path;
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
+    use rtz_core::geo::{
+        admin::osm::{get_geojson_features_from_source, OsmAdmin, ADMIN_BINCODE_DESTINATION_NAME, LOOKUP_BINCODE_DESTINATION_NAME},
+        shared::generate_bincodes,
+    };
 
-//     #[test]
-//     fn test_generate() {
-//         generate_self_contained_bincodes();
-//     }
-// }
+    let admin_bincode_destination = &format!("../assets/{}", ADMIN_BINCODE_DESTINATION_NAME);
+    let lookup_bincode_destination = &format!("../assets/{}", LOOKUP_BINCODE_DESTINATION_NAME);
+
+    #[cfg(not(feature = "force-rebuild"))]
+    if Path::new(admin_bincode_destination).exists() && Path::new(lookup_bincode_destination).exists() {
+        return;
+    }
+
+    std::fs::create_dir_all("../assets").unwrap();
+
+    let features = get_geojson_features_from_source();
+    generate_bincodes::<OsmAdmin>(features, admin_bincode_destination, lookup_bincode_destination);
+}

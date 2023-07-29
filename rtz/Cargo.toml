@@ -1,6 +1,6 @@
 [package]
 name = "rtz"
-version = "0.4.4"
+version = "0.5.0"
 edition = "2021"
 authors = ["Aaron Roney <twitchax@gmail.com>"]
 license = "MIT"
@@ -26,7 +26,7 @@ required-features = ["cli"]
 
 [features]
 default = ["cli"]
-full = ["tz-ned", "tz-osm", "self-contained", "rtz-core/full", "rtz-build/full"]
+full = ["tz-ned", "tz-osm", "admin-osm", "self-contained", "rtz-core/full", "rtz-build/full"]
 
 double-precision = ["rtz-core/double-precision"]
 unsimplified = ["rtz-core/unsimplified"]
@@ -35,6 +35,7 @@ self-contained = ["rtz-core/self-contained", "rtz-build/self-contained"]
 
 tz-ned = ["rtz-core/tz-ned", "rtz-build/tz-ned"]
 tz-osm = ["rtz-core/tz-osm", "rtz-build/tz-osm", "chrono-tz"]
+admin-osm = ["rtz-core/admin-osm", "rtz-build/admin-osm"]
 
 cli = ["clap"]
 web = ["full", "tokio", "rocket", "rocket_okapi", "rocket_cors", "config", "log", "simple_logger", "schemars", "chrono"]
