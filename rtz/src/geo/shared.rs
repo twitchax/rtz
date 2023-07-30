@@ -10,20 +10,23 @@ use rtz_core::{
 use std::collections::HashMap;
 
 /// Trait that abstracts away getting the in-memory items.
-pub(crate) trait HasItemData
+pub trait HasItemData
 where
     Self: Sized,
 {
+    /// Gets the items from the in-memory cache for the given type.
     fn get_mem_items() -> &'static ConcreteVec<Self>;
 }
 
 /// Trait that abstracts away getting the in-memory timezones / cache.
-pub(crate) trait HasLookupData: HasItemData
+pub trait HasLookupData: HasItemData
 where
     Self: Sized,
 {
+    /// The type to which the lookup hash table resolves.
     type Lookup: AsRef<[RoundInt]>;
 
+    /// Gets the lookup hash table from the in-memory cache for the given type.
     fn get_mem_lookup() -> &'static HashMap<RoundLngLat, Self::Lookup>;
 }
 
@@ -82,56 +85,39 @@ where
 }
 
 /// Trait that abstracts away the primary end-user functionality of geo lookups.
-pub trait CanPerformGeoLookup {
+pub trait CanPerformGeoLookup: HasLookupData + HasGeometry + HasProperties
+where
+    Self: 'static
+{
     /// Get the cache-driven item for a given longitude (x) and latitude (y).
     ///
     /// Some data sources allow for multiple results, so this is a vector.
-    fn lookup(xf: Float, yf: Float) -> Vec<&'static Self>;
-
-    /// Get the exact item for a given longitude (x) and latitude (y).
-    #[allow(dead_code)]
-    fn lookup_slow(xf: Float, yf: Float) -> Vec<&'static Self>;
-
-    /// Gets the geojson representation of the memory cache.
-    fn memory_data_to_geojson() -> String;
-
-    /// Get value from the static memory cache.
-    fn get_lookup_suggestions(x: i16, y: i16) -> Option<Vec<&'static Self>>;
-}
-
-impl<T> CanPerformGeoLookup for T
-where
-    T: HasLookupData + HasGeometry + HasProperties + 'static,
-{
-    fn lookup(xf: Float, yf: Float) -> Vec<&'static T> {
+    fn lookup(xf: Float, yf: Float) -> Vec<&'static Self> {
         let x = xf.floor() as i16;
         let y = yf.floor() as i16;
 
-        let Some(suggestions) = T::get_lookup_suggestions(x, y) else {
+        let Some(suggestions) = Self::get_lookup_suggestions(x, y) else {
             return Vec::new();
         };
-
-        // [ARoney] Optimization: If there is only one item, we can skip the more expensive
-        // intersection check.  Edges are weird, so we still need to check if the point is in the
-        // polygon at thg edges of the polar space.
-        if suggestions.len() == 1 && xf > -179. && xf < 179. && yf > -89. && yf < 89. {
-            return suggestions;
-        }
 
         suggestions.into_iter().filter(|&i| i.geometry().contains(&Coord { x: xf, y: yf })).collect()
     }
 
-    fn lookup_slow(xf: Float, yf: Float) -> Vec<&'static T> {
-        T::get_mem_items().into_iter().filter(|&i| i.geometry().contains(&Coord { x: xf, y: yf })).collect()
+    /// Get the exact item for a given longitude (x) and latitude (y).
+    #[allow(dead_code)]
+    fn lookup_slow(xf: Float, yf: Float) -> Vec<&'static Self> {
+        Self::get_mem_items().into_iter().filter(|&i| i.geometry().contains(&Coord { x: xf, y: yf })).collect()
     }
 
+    /// Gets the geojson representation of the memory cache.
     fn memory_data_to_geojson() -> String {
-        let geojson = T::get_mem_items().to_geojson();
+        let geojson = Self::get_mem_items().to_geojson();
         geojson.to_json_value().to_string()
     }
 
-    fn get_lookup_suggestions(x: i16, y: i16) -> Option<Vec<&'static T>> {
-        let cache = T::get_mem_lookup();
+    /// Get value from the static memory cache.
+    fn get_lookup_suggestions(x: i16, y: i16) -> Option<Vec<&'static Self>> {
+        let cache = Self::get_mem_lookup();
 
         cache.get(&(x, y)).map_into_items()
     }

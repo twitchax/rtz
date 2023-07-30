@@ -2,15 +2,16 @@
 
 use std::{collections::HashMap, sync::OnceLock};
 
-use rtz_core::geo::{
-    shared::{ConcreteVec, RoundLngLat},
+use geo::{Coord, Contains};
+use rtz_core::{geo::{
+    shared::{ConcreteVec, RoundLngLat, HasGeometry},
     tz::{
         ned::NedTimezone,
         shared::{i16_vec_to_timezoneids, TimezoneIds},
     },
-};
+}, base::types::Float};
 
-use crate::geo::shared::{HasItemData, HasLookupData};
+use crate::{geo::shared::{HasItemData, HasLookupData}, CanPerformGeoLookup};
 
 // Trait impls.
 
@@ -68,7 +69,7 @@ impl HasLookupData for NedTimezone {
             use rtz_core::geo::shared::get_lookup_from_geometries;
 
             CACHE.get_or_init(|| {
-                let cache = get_lookup_from_geometries(NedTimezone::get_items());
+                let cache = get_lookup_from_geometries(NedTimezone::get_mem_items());
 
                 cache
                     .into_iter()
@@ -80,6 +81,28 @@ impl HasLookupData for NedTimezone {
                     .collect::<HashMap<_, _>>()
             })
         }
+    }
+}
+
+// Special implementation of this for timezones since our timezone data covers the whole world.
+// Therefore, we can use the special optimization.
+impl CanPerformGeoLookup for NedTimezone {
+    fn lookup(xf: Float, yf: Float) -> Vec<&'static Self> {
+        let x = xf.floor() as i16;
+        let y = yf.floor() as i16;
+
+        let Some(suggestions) = Self::get_lookup_suggestions(x, y) else {
+            return Vec::new();
+        };
+
+        // [ARoney] Optimization: If there is only one item, we can skip the more expensive
+        // intersection check.  Edges are weird, so we still need to check if the point is in the
+        // polygon at thg edges of the polar space.
+        if suggestions.len() == 1 && xf > -179. && xf < 179. && yf > -89. && yf < 89. {
+            return suggestions;
+        }
+
+        suggestions.into_iter().filter(|&i| i.geometry().contains(&Coord { x: xf, y: yf })).collect()
     }
 }
 

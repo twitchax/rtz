@@ -119,6 +119,20 @@ mod tests {
 
         assert!(body.starts_with(expected));
     }
+
+    #[tokio::test]
+    async fn can_get_osm_admin_v1() {
+        let client = get_client().await;
+
+        let response = client.get("/api/v1/osm/admin/30/30").dispatch().await;
+
+        assert_eq!(response.status(), Status::Ok);
+
+        let body = response.into_string().await.unwrap();
+        let expected = r#"[{"id":216,"name":"مصر","level":2}]"#;
+
+        assert_eq!(body, expected);
+    }
 }
 
 #[cfg(test)]
@@ -137,7 +151,7 @@ mod bench {
     }
 
     #[bench]
-    fn bench_server_sweep_ned_v1(b: &mut Bencher) {
+    fn bench_server_sweep_ned_timezone_v1(b: &mut Bencher) {
         let client = get_client();
         let xs = (-179..180).step_by(10);
         let ys = (-89..90).step_by(10);
@@ -153,7 +167,7 @@ mod bench {
     }
 
     #[bench]
-    fn bench_server_worst_case_single_ned_v1(b: &mut Bencher) {
+    fn bench_server_worst_case_single_ned_timezone_v1(b: &mut Bencher) {
         let client = get_client();
         let x = -67.5;
         let y = -66.5;
@@ -165,7 +179,7 @@ mod bench {
     }
 
     #[bench]
-    fn bench_server_sweep_osm_v1(b: &mut Bencher) {
+    fn bench_server_sweep_osm_timezone_v1(b: &mut Bencher) {
         let client = get_client();
         let xs = (-179..180).step_by(10);
         let ys = (-89..90).step_by(10);
@@ -181,13 +195,42 @@ mod bench {
     }
 
     #[bench]
-    fn bench_server_worst_case_single_osm_v1(b: &mut Bencher) {
+    fn bench_server_worst_case_single_osm_timezone_v1(b: &mut Bencher) {
         let client = get_client();
         let x = -86.5;
         let y = 38.5;
 
         b.iter(|| {
             let response = client.get(format!("/api/osm/tz/{}/{}", x, y)).dispatch();
+            assert_eq!(response.status(), Status::Ok);
+        });
+    }
+
+    #[bench]
+    fn bench_server_sweep_osm_admin_v1(b: &mut Bencher) {
+        let client = get_client();
+        let xs = (-179..180).step_by(10);
+        let ys = (-89..90).step_by(10);
+
+        b.iter(|| {
+            for x in xs.clone() {
+                for y in ys.clone() {
+                    let response = client.get(format!("/api/osm/admin/{}/{}", x, y)).dispatch();
+                    assert_eq!(response.status(), Status::Ok);
+                }
+            }
+        });
+    }
+
+    // TODO: Discover the actual worst case location here.
+    #[bench]
+    fn bench_server_worst_case_single_osm_admin_v1(b: &mut Bencher) {
+        let client = get_client();
+        let x = -86.5;
+        let y = 38.5;
+
+        b.iter(|| {
+            let response = client.get(format!("/api/osm/admin/{}/{}", x, y)).dispatch();
             assert_eq!(response.status(), Status::Ok);
         });
     }

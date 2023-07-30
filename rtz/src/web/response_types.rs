@@ -11,7 +11,7 @@ use rocket::{
     Request, Response,
 };
 use rocket_okapi::{gen::OpenApiGenerator, okapi::openapi3::Responses, response::OpenApiResponderInner, OpenApiError};
-use rtz_core::geo::tz::{ned::NedTimezone, osm::OsmTimezone};
+use rtz_core::geo::{tz::{ned::NedTimezone, osm::OsmTimezone}, admin::osm::OsmAdmin};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -92,7 +92,7 @@ where
     }
 }
 
-/// The response type for the [`get_timezone`] endpoint when found.
+/// The response type for the NED timezone endpoint when found.
 ///
 /// Currently ingested version of this data set is [here](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_10m_time_zones.geojson).
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -135,7 +135,7 @@ impl From<&'static NedTimezone> for NedTimezoneResponse1 {
     }
 }
 
-/// The response type for the [`get_timezone`] endpoint when found.
+/// The response type for the OSM timezone endpoint when found.
 ///
 /// Currently ingested version of this data set is [here](https://github.com/evansiroky/timezone-boundary-builder/releases/download/2023b/timezones-with-oceans.geojson.zip).
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -197,6 +197,34 @@ impl From<&'static OsmTimezone> for OsmTimezoneResponse1 {
             raw_dst_offset,
             zone,
             current_time,
+        }
+    }
+}
+
+/// The response type for the [`get_timezone`] endpoint when found.
+///
+/// Currently ingested version of this data set is [here](https://planet.openstreetmap.org/).
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct OsmAdminResponse1 {
+    /// The index of the [`OsmAdminResponse1`] in the global static cache.
+    ///
+    /// This is is not stable across builds or new data sets.  It is merely unique during a single build.
+    pub id: usize,
+
+    /// The `name` of the [`OsmAdminResponse1`] (e.g., `France`).
+    pub name: &'static str,
+    
+    /// The `admin_level` of the [`OsmAdminResponse1`] (e.g., `2`).
+    pub level: u8,
+}
+
+impl From<&'static OsmAdmin> for OsmAdminResponse1 {
+    fn from(value: &'static OsmAdmin) -> OsmAdminResponse1 {
+        OsmAdminResponse1 {
+            id: value.id,
+            name: value.name.as_str(),
+            level: value.level,
         }
     }
 }

@@ -10,7 +10,7 @@ use rtz_core::geo::{
     shared::{ConcreteVec, RoundLngLat},
 };
 
-use crate::geo::shared::{HasItemData, HasLookupData};
+use crate::{geo::shared::{HasItemData, HasLookupData}, CanPerformGeoLookup};
 
 // Trait impls.
 
@@ -84,6 +84,8 @@ impl HasLookupData for OsmAdmin {
     }
 }
 
+impl CanPerformGeoLookup for OsmAdmin {}
+
 // Statics.
 
 #[cfg(all(host_family_unix, feature = "self-contained"))]
@@ -98,131 +100,136 @@ static LOOKUP_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\osm_admin
 
 // Tests.
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::geo::shared::{HasItemData, MapIntoItems};
+#[cfg(test)]
+mod tests {
+    use crate::geo::shared::{CanPerformGeoLookup, HasItemData, MapIntoItems};
 
-//     use super::*;
-//     use pretty_assertions::assert_eq;
-//     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+    use super::*;
+    use pretty_assertions::assert_eq;
+    use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+    use rtz_core::base::types::Float;
 
-//     #[test]
-//     fn can_get_timezones() {
-//         let timezones = OsmTimezone::get_items();
-//         assert_eq!(timezones.len(), 444);
-//     }
+    #[test]
+    fn can_get_timezones() {
+        let admins = OsmAdmin::get_mem_items();
+        assert_eq!(admins.len(), 237);
+    }
 
-//     #[test]
-//     fn can_get_lookup() {
-//         let cache = OsmTimezone::get_lookup();
-//         assert_eq!(cache.len(), 64_800);
-//     }
+    #[test]
+    fn can_get_lookup() {
+        let cache = OsmAdmin::get_mem_lookup();
+        assert_eq!(cache.len(), 64_800);
+    }
 
-//     #[test]
-//     fn can_get_from_lookup() {
-//         let cache = get_from_lookup(-121, 46).unwrap();
-//         assert_eq!(cache.len(), 1);
-//     }
+    #[test]
+    fn can_get_from_lookup() {
+        let lookup = OsmAdmin::get_lookup_suggestions(-121, 46).unwrap();
+        assert_eq!(lookup.len(), 1);
+    }
 
-//     #[test]
-//     fn can_perform_exact_lookup() {
-//         assert_eq!(get_timezones_via_full_lookup(-177.0, -15.0).len(), 1);
-//         assert_eq!(get_timezones_via_full_lookup(-121.0, 46.0)[0].identifier, "America/Los_Angeles");
+    #[test]
+    fn can_perform_exact_lookup() {
+        assert_eq!(OsmAdmin::lookup_slow(-177.0, -15.0).len(), 0);
+        assert_eq!(OsmAdmin::lookup_slow(-121.0, 46.0)[0].name, "United States");
 
-//         assert_eq!(get_timezones_via_full_lookup(179.9968, -67.0959).len(), 1);
-//     }
+        assert_eq!(OsmAdmin::lookup_slow(179.9968, -67.0959).len(), 0);
+    }
 
-//     #[test]
-//     fn can_access_lookup() {
-//         let cache = OsmTimezone::get_lookup();
+    #[test]
+    fn can_access_lookup() {
+        let cache = OsmAdmin::get_mem_lookup();
 
-//         let tzs = cache.get(&(-177, -15)).map_into_items().unwrap() as Vec<&OsmTimezone>;
-//         assert_eq!(tzs.len(), 1);
+        let tzs = cache.get(&(-177, -15)).map_into_items().unwrap() as Vec<&OsmAdmin>;
+        assert_eq!(tzs.len(), 0);
 
-//         let tzs = cache.get(&(-121, 46)).map_into_items().unwrap() as Vec<&OsmTimezone>;
-//         assert_eq!(tzs.len(), 1);
+        let tzs = cache.get(&(-121, 46)).map_into_items().unwrap() as Vec<&OsmAdmin>;
+        assert_eq!(tzs.len(), 1);
 
-//         let tz = cache.get(&(-121, 46)).map_into_items().unwrap()[0] as &OsmTimezone;
-//         assert_eq!(tz.identifier, "America/Los_Angeles");
+        let tz = cache.get(&(-121, 46)).map_into_items().unwrap()[0] as &OsmAdmin;
+        assert_eq!(tz.name, "United States");
 
-//         let tzs = cache.get(&(-87, 38)).map_into_items().unwrap() as Vec<&OsmTimezone>;
-//         assert_eq!(tzs.len(), 7);
-//     }
+        let tzs = cache.get(&(-87, 38)).map_into_items().unwrap() as Vec<&OsmAdmin>;
+        assert_eq!(tzs.len(), 1);
+    }
 
-//     #[test]
-//     fn can_verify_lookup_assisted_accuracy() {
-//         (0..100).into_par_iter().for_each(|_| {
-//             let x = rand::random::<Float>() * 360.0 - 180.0;
-//             let y = rand::random::<Float>() * 180.0 - 90.0;
-//             let full = get_timezones_via_full_lookup(x, y);
-//             let lookup_assisted = get_timezones(x, y);
+    #[test]
+    fn can_verify_lookup_assisted_accuracy() {
+        (0..100).into_par_iter().for_each(|_| {
+            let x = rand::random::<Float>() * 360.0 - 180.0;
+            let y = rand::random::<Float>() * 180.0 - 90.0;
+            let full = OsmAdmin::lookup_slow(x, y);
+            let lookup_assisted = OsmAdmin::lookup(x, y);
 
-//             assert_eq!(
-//                 full.into_iter().map(|t| t.id).collect::<Vec<_>>(),
-//                 lookup_assisted.into_iter().map(|t| t.id).collect::<Vec<_>>(),
-//                 "({}, {})",
-//                 x,
-//                 y
-//             );
-//         });
-//     }
-// }
+            assert_eq!(
+                full.into_iter().map(|t| t.id).collect::<Vec<_>>(),
+                lookup_assisted.into_iter().map(|t| t.id).collect::<Vec<_>>(),
+                "({}, {})",
+                x,
+                y
+            );
+        });
+    }
+}
 
-// #[cfg(test)]
-// mod bench {
-//     extern crate test;
+#[cfg(test)]
+mod bench {
+    extern crate test;
 
-//     use rtz_core::base::types::Float;
-//     use test::{black_box, Bencher};
+    use rtz_core::base::types::Float;
+    use test::{black_box, Bencher};
 
-//     use super::*;
+    use crate::CanPerformGeoLookup;
 
-//     #[bench]
-//     #[ignore]
-//     fn bench_full_lookup_sweep(b: &mut Bencher) {
-//         let xs = (-179..180).step_by(10);
-//         let ys = (-89..90).step_by(10);
+    use super::*;
 
-//         b.iter(|| {
-//             for x in xs.clone() {
-//                 for y in ys.clone() {
-//                     black_box(get_timezones_via_full_lookup(x as Float, y as Float));
-//                 }
-//             }
-//         });
-//     }
+    #[bench]
+    #[ignore]
+    fn bench_full_lookup_sweep(b: &mut Bencher) {
+        let xs = (-179..180).step_by(10);
+        let ys = (-89..90).step_by(10);
 
-//     #[bench]
-//     fn bench_lookup_assisted_sweep(b: &mut Bencher) {
-//         let xs = (-179..180).step_by(10);
-//         let ys = (-89..90).step_by(10);
+        b.iter(|| {
+            for x in xs.clone() {
+                for y in ys.clone() {
+                    black_box(OsmAdmin::lookup_slow(x as Float, y as Float));
+                }
+            }
+        });
+    }
 
-//         b.iter(|| {
-//             for x in xs.clone() {
-//                 for y in ys.clone() {
-//                     black_box(get_timezones(x as Float, y as Float));
-//                 }
-//             }
-//         });
-//     }
+    #[bench]
+    fn bench_lookup_assisted_sweep(b: &mut Bencher) {
+        let xs = (-179..180).step_by(10);
+        let ys = (-89..90).step_by(10);
 
-//     #[bench]
-//     fn bench_worst_case_full_lookup_single(b: &mut Bencher) {
-//         let x = -86.5;
-//         let y = 38.5;
+        b.iter(|| {
+            for x in xs.clone() {
+                for y in ys.clone() {
+                    black_box(OsmAdmin::lookup(x as Float, y as Float));
+                }
+            }
+        });
+    }
 
-//         b.iter(|| {
-//             black_box(get_timezones_via_full_lookup(x as Float, y as Float));
-//         });
-//     }
+    // TODO: Discover the actual worst case location.
+    #[bench]
+    fn bench_worst_case_full_lookup_single(b: &mut Bencher) {
+        let x = -86.5;
+        let y = 38.5;
 
-//     #[bench]
-//     fn bench_worst_case_lookup_assisted_single(b: &mut Bencher) {
-//         let x = -86.5;
-//         let y = 38.5;
+        b.iter(|| {
+            black_box(OsmAdmin::lookup_slow(x as Float, y as Float));
+        });
+    }
 
-//         b.iter(|| {
-//             black_box(get_timezones(x, y));
-//         });
-//     }
-// }
+    // TODO: Discover the actual worst case location.
+    #[bench]
+    fn bench_worst_case_lookup_assisted_single(b: &mut Bencher) {
+        let x = -86.5;
+        let y = 38.5;
+
+        b.iter(|| {
+            black_box(OsmAdmin::lookup(x, y));
+        });
+    }
+}

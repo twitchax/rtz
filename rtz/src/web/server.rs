@@ -7,14 +7,14 @@ use rocket_okapi::{
 };
 use rtz_core::{
     base::types::{Float, Res, Void},
-    geo::tz::{ned::NedTimezone, osm::OsmTimezone},
+    geo::{tz::{ned::NedTimezone, osm::OsmTimezone}, admin::osm::OsmAdmin},
 };
 
 use crate::geo::shared::CanPerformGeoLookup;
 
 use super::{
     config::Config,
-    response_types::{LookupResponse, NedTimezoneResponse1, OsmTimezoneResponse1},
+    response_types::{LookupResponse, NedTimezoneResponse1, OsmTimezoneResponse1, OsmAdminResponse1},
     types::{get_last_modified_time, IfModifiedSince, RocketState, WebResult},
 };
 
@@ -46,7 +46,7 @@ pub fn create_rocket(config: &Config) -> Res<Rocket<Build>> {
 
     let rocket = rocket::custom(rocket_config)
         .manage(state)
-        .mount("/api", openapi_get_routes![get_timezone_ned, get_timezone_ned_v1, get_timezone_osm, get_timezone_osm_v1])
+        .mount("/api", openapi_get_routes![get_timezone_ned, get_timezone_ned_v1, get_timezone_osm, get_timezone_osm_v1, get_admin_osm, get_admin_osm_v1])
         .mount(
             "/app-docs",
             make_swagger_ui(&SwaggerUIConfig {
@@ -104,6 +104,28 @@ async fn get_timezone_osm(lng: Float, lat: Float) -> WebResult<LookupResponse<Ve
 #[get("/v1/osm/tz/<lng>/<lat>")]
 async fn get_timezone_osm_v1(lng: Float, lat: Float) -> WebResult<LookupResponse<Vec<OsmTimezoneResponse1>>> {
     let tzs = OsmTimezone::lookup(lng, lat).into_iter().map(|tz| tz.into()).collect::<Vec<_>>();
+
+    Ok(LookupResponse::Ok(Json(tzs)))
+}
+
+/// Returns the admin information for the given `(lng,lat)` from the [OpenStreetMap](https://www.openstreetmap.org/) dataset.
+///
+/// This API endpoint is provided under the same [license](https://github.com/twitchax/rtz/blob/main/LICENSE) as the
+/// [project](https://github.com/twitchax/rtz) itself.  It is provided as-is, with no warranty (as of today).
+#[openapi(tag = "TZ")]
+#[get("/osm/admin/<lng>/<lat>")]
+async fn get_admin_osm(lng: Float, lat: Float) -> WebResult<LookupResponse<Vec<OsmAdminResponse1>>> {
+    get_admin_osm_v1(lng, lat).await
+}
+
+/// Returns the admin information for the given `(lng,lat)` from the [OpenStreetMap](https://www.openstreetmap.org/) dataset.
+///
+/// This API endpoint is provided under the same [license](https://github.com/twitchax/rtz/blob/main/LICENSE) as the
+/// [project](https://github.com/twitchax/rtz) itself.  It is provided as-is, with no warranty (as of today).
+#[openapi(tag = "TZv1")]
+#[get("/v1/osm/admin/<lng>/<lat>")]
+async fn get_admin_osm_v1(lng: Float, lat: Float) -> WebResult<LookupResponse<Vec<OsmAdminResponse1>>> {
+    let tzs = OsmAdmin::lookup(lng, lat).into_iter().map(|a| a.into()).collect::<Vec<_>>();
 
     Ok(LookupResponse::Ok(Json(tzs)))
 }
