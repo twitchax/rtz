@@ -4,17 +4,21 @@
 // it is not included in the coverage report.
 #![cfg(not(tarpaulin_include))]
 
-use std::{io::Read, borrow::Cow};
+use std::{borrow::Cow, io::Read};
 
 use geo::Geometry;
 use serde_json::{Map, Value};
 
 #[cfg(feature = "self-contained")]
-use bincode::{error::DecodeError, de::{Decoder, BorrowDecoder}, BorrowDecode, Encode, Decode};
+use bincode::{
+    de::{BorrowDecoder, Decoder},
+    error::DecodeError,
+    BorrowDecode, Decode, Encode,
+};
 
 use crate::{
     base::types::Float,
-    geo::shared::{get_geojson_features_from_string, simplify_geometry, HasGeometry, HasProperties, EncodableGeometry, CanGetGeoJsonFeaturesFromSource},
+    geo::shared::{get_geojson_features_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, HasGeometry, HasProperties},
 };
 
 use super::shared::IsTimezone;
@@ -69,8 +73,7 @@ pub struct OsmTimezone {
 }
 
 #[cfg(feature = "self-contained")]
-impl Decode for OsmTimezone
-{
+impl Decode for OsmTimezone {
     fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
         D: Decoder,
@@ -86,7 +89,7 @@ impl Decode for OsmTimezone
 #[cfg(feature = "self-contained")]
 impl<'de> BorrowDecode<'de> for OsmTimezone
 where
-    'de: 'static
+    'de: 'static,
 {
     fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where

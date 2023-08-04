@@ -2,13 +2,19 @@
 
 use std::{collections::HashMap, sync::OnceLock};
 
-use geo::{Coord, Contains};
-use rtz_core::{geo::{
-    shared::{ConcreteVec, RoundLngLat, HasGeometry, EncodableIds},
-    tz::ned::NedTimezone,
-}, base::types::Float};
+use geo::{Contains, Coord};
+use rtz_core::{
+    base::types::Float,
+    geo::{
+        shared::{ConcreteVec, EncodableIds, HasGeometry, RoundLngLat},
+        tz::ned::NedTimezone,
+    },
+};
 
-use crate::{geo::shared::{HasItemData, HasLookupData, decode_binary_data}, CanPerformGeoLookup};
+use crate::{
+    geo::shared::{decode_binary_data, HasItemData, HasLookupData},
+    CanPerformGeoLookup,
+};
 
 // Trait impls.
 
@@ -18,9 +24,7 @@ impl HasItemData for NedTimezone {
 
         #[cfg(feature = "self-contained")]
         {
-            TIMEZONES.get_or_init(|| {
-                decode_binary_data(TZ_BINCODE)
-            })
+            TIMEZONES.get_or_init(|| decode_binary_data(TZ_BINCODE))
         }
 
         #[cfg(not(feature = "self-contained"))]
@@ -43,9 +47,7 @@ impl HasLookupData for NedTimezone {
 
         #[cfg(feature = "self-contained")]
         {
-            CACHE.get_or_init(|| {
-                decode_binary_data(LOOKUP_BINCODE)
-            })
+            CACHE.get_or_init(|| decode_binary_data(LOOKUP_BINCODE))
         }
 
         #[cfg(not(feature = "self-contained"))]

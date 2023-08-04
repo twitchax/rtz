@@ -7,10 +7,16 @@ use rocket_okapi::{
 };
 use rtz_core::{
     base::types::{Float, Res, Void},
-    geo::{tz::{ned::NedTimezone, osm::OsmTimezone}, admin::osm::OsmAdmin},
+    geo::{
+        admin::osm::OsmAdmin,
+        tz::{ned::NedTimezone, osm::OsmTimezone},
+    },
 };
 
-use crate::{geo::shared::CanPerformGeoLookup, shared::{NedTimezoneResponse1, OsmTimezoneResponse1, OsmAdminResponse1}};
+use crate::{
+    geo::shared::CanPerformGeoLookup,
+    shared::{NedTimezoneResponse1, OsmAdminResponse1, OsmTimezoneResponse1},
+};
 
 use super::{
     config::Config,
@@ -46,7 +52,10 @@ pub fn create_rocket(config: &Config) -> Res<Rocket<Build>> {
 
     let rocket = rocket::custom(rocket_config)
         .manage(state)
-        .mount("/api", openapi_get_routes![get_timezone_ned, get_timezone_ned_v1, get_timezone_osm, get_timezone_osm_v1, get_admin_osm, get_admin_osm_v1])
+        .mount(
+            "/api",
+            openapi_get_routes![get_timezone_ned, get_timezone_ned_v1, get_timezone_osm, get_timezone_osm_v1, get_admin_osm, get_admin_osm_v1],
+        )
         .mount(
             "/app-docs",
             make_swagger_ui(&SwaggerUIConfig {

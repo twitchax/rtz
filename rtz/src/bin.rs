@@ -89,84 +89,80 @@ fn main() -> Void {
 
 fn start(args: Args) -> Void {
     match args.command {
-        Some(Command::Ned { ned_command }) => {
-            match ned_command {
-                #[cfg(feature = "tz-ned")]
-                Some(NedCommand::Tz { lng_lat }) => {
-                    use rtz_core::geo::tz::ned::NedTimezone;
-                    use rtz_core::base::types::Float;
+        Some(Command::Ned { ned_command }) => match ned_command {
+            #[cfg(feature = "tz-ned")]
+            Some(NedCommand::Tz { lng_lat }) => {
+                use rtz_core::base::types::Float;
+                use rtz_core::geo::tz::ned::NedTimezone;
 
-                    let Some((lng, lat)) = lng_lat.split_once(',') else {
-                        return Err(anyhow::Error::msg("Invalid lng,lat pair."));
-                    };
+                let Some((lng, lat)) = lng_lat.split_once(',') else {
+                    return Err(anyhow::Error::msg("Invalid lng,lat pair."));
+                };
 
-                    let (lng, lat) = (lng.parse::<Float>()?, lat.parse::<Float>()?);
-                    let tzs = NedTimezone::lookup(lng, lat);
+                let (lng, lat) = (lng.parse::<Float>()?, lat.parse::<Float>()?);
+                let tzs = NedTimezone::lookup(lng, lat);
 
-                    for tz in tzs {
-                        println!();
-                        println!("Identifier:      {}", tz.identifier.as_deref().unwrap_or(""));
-                        println!("UTC Offset:      {}", tz.offset);
-                        println!("Offset Seconds:  {}", tz.raw_offset);
-                        println!("Description:     {}", tz.description);
-                        println!("DST Description: {}", tz.dst_description.as_deref().unwrap_or(""));
-                    }
-
+                for tz in tzs {
                     println!();
+                    println!("Identifier:      {}", tz.identifier.as_deref().unwrap_or(""));
+                    println!("UTC Offset:      {}", tz.offset);
+                    println!("Offset Seconds:  {}", tz.raw_offset);
+                    println!("Description:     {}", tz.description);
+                    println!("DST Description: {}", tz.dst_description.as_deref().unwrap_or(""));
                 }
-                #[allow(unreachable_patterns)]
-                Some(_) | None => {
-                    return Err(anyhow::Error::msg("No command specified."));
-                }
+
+                println!();
             }
-        }
-        Some(Command::Osm { osm_command }) => {
-            match osm_command {
-                #[cfg(feature = "tz-osm")]
-                Some(OsmCommand::Tz { lng_lat }) => {
-                    use rtz_core::geo::tz::osm::OsmTimezone;
-                    use rtz_core::base::types::Float;
-
-                    let Some((lng, lat)) = lng_lat.split_once(',') else {
-                        return Err(anyhow::Error::msg("Invalid lng,lat pair."));
-                    };
-
-                    let (lng, lat) = (lng.parse::<Float>()?, lat.parse::<Float>()?);
-                    let tzs = OsmTimezone::lookup(lng, lat);
-
-                    for tz in tzs {
-                        println!();
-                        println!("Identifier:      {}", tz.identifier);
-                    }
-
-                    println!();
-                }
-                #[cfg(feature = "admin-osm")]
-                Some(OsmCommand::Admin { lng_lat }) => {
-                    use rtz_core::geo::admin::osm::OsmAdmin;
-                    use rtz_core::base::types::Float;
-
-                    let Some((lng, lat)) = lng_lat.split_once(',') else {
-                        return Err(anyhow::Error::msg("Invalid lng,lat pair."));
-                    };
-
-                    let (lng, lat) = (lng.parse::<Float>()?, lat.parse::<Float>()?);
-                    let admins = OsmAdmin::lookup(lng, lat);
-
-                    for admin in admins {
-                        println!();
-                        println!("Name:      {}", admin.name);
-                        println!("Level:     {}", admin.level);
-                    }
-
-                    println!();
-                }
-                #[allow(unreachable_patterns)]
-                Some(_) | None => {
-                    return Err(anyhow::Error::msg("No command specified."));
-                }
+            #[allow(unreachable_patterns)]
+            Some(_) | None => {
+                return Err(anyhow::Error::msg("No command specified."));
             }
-        }
+        },
+        Some(Command::Osm { osm_command }) => match osm_command {
+            #[cfg(feature = "tz-osm")]
+            Some(OsmCommand::Tz { lng_lat }) => {
+                use rtz_core::base::types::Float;
+                use rtz_core::geo::tz::osm::OsmTimezone;
+
+                let Some((lng, lat)) = lng_lat.split_once(',') else {
+                    return Err(anyhow::Error::msg("Invalid lng,lat pair."));
+                };
+
+                let (lng, lat) = (lng.parse::<Float>()?, lat.parse::<Float>()?);
+                let tzs = OsmTimezone::lookup(lng, lat);
+
+                for tz in tzs {
+                    println!();
+                    println!("Identifier:      {}", tz.identifier);
+                }
+
+                println!();
+            }
+            #[cfg(feature = "admin-osm")]
+            Some(OsmCommand::Admin { lng_lat }) => {
+                use rtz_core::base::types::Float;
+                use rtz_core::geo::admin::osm::OsmAdmin;
+
+                let Some((lng, lat)) = lng_lat.split_once(',') else {
+                    return Err(anyhow::Error::msg("Invalid lng,lat pair."));
+                };
+
+                let (lng, lat) = (lng.parse::<Float>()?, lat.parse::<Float>()?);
+                let admins = OsmAdmin::lookup(lng, lat);
+
+                for admin in admins {
+                    println!();
+                    println!("Name:      {}", admin.name);
+                    println!("Level:     {}", admin.level);
+                }
+
+                println!();
+            }
+            #[allow(unreachable_patterns)]
+            Some(_) | None => {
+                return Err(anyhow::Error::msg("No command specified."));
+            }
+        },
         #[cfg(feature = "web")]
         Some(Command::Serve {
             config_path,
@@ -219,7 +215,9 @@ mod tests {
     #[cfg(feature = "tz-ned")]
     fn can_resolve_ned() {
         start(Args {
-            command: Some(Command::Ned { ned_command: Some(NedCommand::Tz { lng_lat: "-87.62,41.88".to_string() }) }),
+            command: Some(Command::Ned {
+                ned_command: Some(NedCommand::Tz { lng_lat: "-87.62,41.88".to_string() }),
+            }),
         })
         .unwrap();
     }
@@ -228,7 +226,9 @@ mod tests {
     #[cfg(feature = "tz-osm")]
     fn can_resolve_osm() {
         start(Args {
-            command: Some(Command::Osm { osm_command: Some(OsmCommand::Tz { lng_lat: "-87.62,41.88".to_string() }) }),
+            command: Some(Command::Osm {
+                osm_command: Some(OsmCommand::Tz { lng_lat: "-87.62,41.88".to_string() }),
+            }),
         })
         .unwrap();
     }

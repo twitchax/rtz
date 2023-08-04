@@ -31,8 +31,8 @@ assert_eq!(
 
 // Modules.
 
-pub mod shared;
 pub mod geo;
+pub mod shared;
 pub use crate::geo::shared::CanPerformGeoLookup;
 
 #[cfg(feature = "tz-ned")]

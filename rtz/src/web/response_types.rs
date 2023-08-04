@@ -1,6 +1,5 @@
 //! Them for supporting the response types of the APIs, and their versions.
 
-use std::io::Cursor;
 use rocket::{
     http::{ContentType, Status},
     response::{self, Responder},
@@ -10,6 +9,7 @@ use rocket::{
 use rocket_okapi::{gen::OpenApiGenerator, okapi::openapi3::Responses, response::OpenApiResponderInner, OpenApiError};
 use schemars::JsonSchema;
 use serde::Serialize;
+use std::io::Cursor;
 
 use super::types::get_last_modified_time;
 

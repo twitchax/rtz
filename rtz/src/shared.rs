@@ -1,10 +1,16 @@
 //! Shared functionality for the `rtz` crate.
 
-use rtz_core::geo::{tz::{ned::NedTimezone, osm::OsmTimezone}, admin::osm::OsmAdmin};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use schemars::JsonSchema;
+
+#[cfg(feature = "admin-osm")]
+use rtz_core::geo::admin::osm::OsmAdmin;
+#[cfg(feature = "tz-ned")]
+use rtz_core::geo::tz::ned::NedTimezone;
+#[cfg(feature = "tz-osm")]
+use rtz_core::geo::tz::osm::OsmTimezone;
 
 /// The response type for the NED timezone endpoint when found.
 ///
@@ -91,8 +97,8 @@ pub struct OsmTimezoneResponse1 {
 #[cfg(feature = "tz-osm")]
 impl From<&'static OsmTimezone> for OsmTimezoneResponse1 {
     fn from(value: &'static OsmTimezone) -> OsmTimezoneResponse1 {
-        use chrono_tz::{Tz, OffsetComponents};
-        use chrono::{Utc, Offset};
+        use chrono::{Offset, Utc};
+        use chrono_tz::{OffsetComponents, Tz};
 
         let tz: Tz = value.identifier.parse().unwrap();
         let time = Utc::now().with_timezone(&tz);
@@ -139,7 +145,7 @@ pub struct OsmAdminResponse1 {
 
     /// The `name` of the [`OsmAdminResponse1`] (e.g., `France`).
     pub name: &'static str,
-    
+
     /// The `admin_level` of the [`OsmAdminResponse1`] (e.g., `2`).
     pub level: u8,
 }

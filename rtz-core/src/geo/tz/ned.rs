@@ -10,11 +10,15 @@ use geo::Geometry;
 use serde_json::{Map, Value};
 
 #[cfg(feature = "self-contained")]
-use bincode::{error::DecodeError, de::{Decoder, BorrowDecoder}, BorrowDecode, Encode, Decode};
+use bincode::{
+    de::{BorrowDecoder, Decoder},
+    error::DecodeError,
+    BorrowDecode, Decode, Encode,
+};
 
 use crate::{
     base::types::Float,
-    geo::shared::{get_geojson_features_from_string, simplify_geometry, HasGeometry, HasProperties, EncodableGeometry, CanGetGeoJsonFeaturesFromSource},
+    geo::shared::{get_geojson_features_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, HasGeometry, HasProperties},
 };
 
 use super::shared::IsTimezone;
@@ -81,8 +85,7 @@ pub struct NedTimezone {
 }
 
 #[cfg(feature = "self-contained")]
-impl Decode for NedTimezone
-{
+impl Decode for NedTimezone {
     fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
         D: Decoder,
@@ -112,7 +115,7 @@ impl Decode for NedTimezone
 #[cfg(feature = "self-contained")]
 impl<'de> BorrowDecode<'de> for NedTimezone
 where
-    'de: 'static
+    'de: 'static,
 {
     fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where

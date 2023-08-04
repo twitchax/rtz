@@ -4,16 +4,20 @@
 // it is not included in the coverage report.
 #![cfg(not(tarpaulin_include))]
 
-use std::borrow::Cow;
 use geo::Geometry;
 use serde_json::{Map, Value};
+use std::borrow::Cow;
 
 #[cfg(feature = "self-contained")]
-use bincode::{error::DecodeError, de::{Decoder, BorrowDecoder}, BorrowDecode, Encode, Decode};
+use bincode::{
+    de::{BorrowDecoder, Decoder},
+    error::DecodeError,
+    BorrowDecode, Decode, Encode,
+};
 
 use crate::{
     base::types::Float,
-    geo::shared::{get_geojson_feature_from_string, simplify_geometry, HasGeometry, HasProperties, EncodableGeometry, CanGetGeoJsonFeaturesFromSource},
+    geo::shared::{get_geojson_feature_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, HasGeometry, HasProperties},
 };
 
 use super::shared::IsAdmin;
@@ -45,15 +49,19 @@ pub fn get_geojson_features_from_source() -> geojson::FeatureCollection {
         files.append(&mut path_files);
     }
 
-    let features = files.into_par_iter().filter(|f| {
-        let md = f.metadata().unwrap();
+    let features = files
+        .into_par_iter()
+        .filter(|f| {
+            let md = f.metadata().unwrap();
 
-        md.len() != 0
-    }).map(|f| {
-        let json = std::fs::read_to_string(f.path()).unwrap();
+            md.len() != 0
+        })
+        .map(|f| {
+            let json = std::fs::read_to_string(f.path()).unwrap();
 
-        get_geojson_feature_from_string(&json)
-    }).collect::<Vec<_>>();
+            get_geojson_feature_from_string(&json)
+        })
+        .collect::<Vec<_>>();
 
     geojson::FeatureCollection {
         bbox: None,
@@ -63,7 +71,7 @@ pub fn get_geojson_features_from_source() -> geojson::FeatureCollection {
 }
 
 /// The address of the GeoJSON file.
-/// 
+///
 /// Hacking to local machine, for now.  Will create a repo at some point.
 pub static ADDRESS: &str = "D://LargeData//admin_data//admin2;D://LargeData//admin_data//admin3;D://LargeData//admin_data//admin4;D://LargeData//admin_data//admin5;D://LargeData//admin_data//admin6;D://LargeData//admin_data//admin7;D://LargeData//admin_data//admin8";
 //pub static ADDRESS: &str = "D://LargeData//admin_data//admin8_small";
@@ -95,8 +103,7 @@ pub struct OsmAdmin {
 }
 
 #[cfg(feature = "self-contained")]
-impl Decode for OsmAdmin
-{
+impl Decode for OsmAdmin {
     fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
         D: Decoder,
@@ -113,7 +120,7 @@ impl Decode for OsmAdmin
 #[cfg(feature = "self-contained")]
 impl<'de> BorrowDecode<'de> for OsmAdmin
 where
-    'de: 'static
+    'de: 'static,
 {
     fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where

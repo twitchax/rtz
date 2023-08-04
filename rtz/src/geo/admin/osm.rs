@@ -4,10 +4,13 @@ use std::{collections::HashMap, sync::OnceLock};
 
 use rtz_core::geo::{
     admin::osm::OsmAdmin,
-    shared::{ConcreteVec, RoundLngLat, EncodableIds},
+    shared::{ConcreteVec, EncodableIds, RoundLngLat},
 };
 
-use crate::{geo::shared::{HasItemData, HasLookupData, decode_binary_data}, CanPerformGeoLookup};
+use crate::{
+    geo::shared::{decode_binary_data, HasItemData, HasLookupData},
+    CanPerformGeoLookup,
+};
 
 // Trait impls.
 
@@ -17,9 +20,7 @@ impl HasItemData for OsmAdmin {
 
         #[cfg(feature = "self-contained")]
         {
-            TIMEZONES.get_or_init(|| {
-                decode_binary_data(ADMIN_BINCODE)
-            })
+            TIMEZONES.get_or_init(|| decode_binary_data(ADMIN_BINCODE))
         }
 
         #[cfg(not(feature = "self-contained"))]
@@ -43,9 +44,7 @@ impl HasLookupData for OsmAdmin {
 
         #[cfg(feature = "self-contained")]
         {
-            CACHE.get_or_init(|| {
-                decode_binary_data(LOOKUP_BINCODE)
-            })
+            CACHE.get_or_init(|| decode_binary_data(LOOKUP_BINCODE))
         }
 
         #[cfg(not(feature = "self-contained"))]

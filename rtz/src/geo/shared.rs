@@ -5,7 +5,7 @@
 use geo::{Contains, Coord};
 use rtz_core::{
     base::types::Float,
-    geo::shared::{ConcreteVec, HasGeometry, HasProperties, RoundDegree, RoundLngLat, ToGeoJson, Id},
+    geo::shared::{ConcreteVec, HasGeometry, HasProperties, Id, RoundDegree, RoundLngLat, ToGeoJson},
 };
 use std::collections::HashMap;
 
@@ -85,9 +85,11 @@ where
     T: bincode::Decode + bincode::BorrowDecode<'static>,
 {
     #[cfg(not(feature = "owned-decode"))]
-    let (value, _len): (T, usize) = bincode::borrow_decode_from_slice(data, rtz_core::geo::shared::get_global_bincode_config()).expect("Could not decode binary data: try rebuilding with `force-rebuild` due to a likely precision difference between the generated assets and the current build.");
+    let (value, _len): (T, usize) = bincode::borrow_decode_from_slice(data, rtz_core::geo::shared::get_global_bincode_config())
+        .expect("Could not decode binary data: try rebuilding with `force-rebuild` due to a likely precision difference between the generated assets and the current build.");
     #[cfg(feature = "owned-decode")]
-    let (value, _len): (T, usize) = bincode::decode_from_slice(data, rtz_core::geo::shared::get_global_bincode_config()).expect("Could not decode binary data: try rebuilding with `force-rebuild` due to a likely precision difference between the generated assets and the current build.");
+    let (value, _len): (T, usize) = bincode::decode_from_slice(data, rtz_core::geo::shared::get_global_bincode_config())
+        .expect("Could not decode binary data: try rebuilding with `force-rebuild` due to a likely precision difference between the generated assets and the current build.");
 
     value
 }
@@ -95,7 +97,7 @@ where
 /// Trait that abstracts away the primary end-user functionality of geo lookups.
 pub trait CanPerformGeoLookup: HasLookupData + HasGeometry + HasProperties
 where
-    Self: 'static
+    Self: 'static,
 {
     /// Get the cache-driven item for a given longitude (x) and latitude (y).
     ///

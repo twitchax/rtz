@@ -7,14 +7,20 @@
 use std::{collections::HashMap, ops::Deref};
 
 use chashmap::CHashMap;
-use geo::{Coord, Geometry, Intersects, Rect, SimplifyVw, Polygon, LineString, MultiPolygon};
+use geo::{Coord, Geometry, Intersects, LineString, MultiPolygon, Polygon, Rect, SimplifyVw};
 use geojson::{Feature, FeatureCollection, GeoJson};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use serde_json::{Map, Value};
 use std::path::Path;
 
 #[cfg(feature = "self-contained")]
-use bincode::{error::{EncodeError, DecodeError}, enc::Encoder, Encode, Decode, de::{Decoder, BorrowDecoder, read::BorrowReader}, BorrowDecode, config::Configuration};
+use bincode::{
+    config::Configuration,
+    de::{read::BorrowReader, BorrowDecoder, Decoder},
+    enc::Encoder,
+    error::{DecodeError, EncodeError},
+    BorrowDecode, Decode, Encode,
+};
 
 use crate::base::types::Float;
 
@@ -300,8 +306,7 @@ pub trait CanGetGeoJsonFeaturesFromSource {
 #[cfg(all(feature = "self-contained", target_endian = "big"))]
 
 pub fn get_global_bincode_config() -> Configuration<bincode::config::BigEndian, bincode::config::Fixint> {
-    bincode::config::legacy()
-        .with_big_endian()
+    bincode::config::legacy().with_big_endian()
 }
 
 /// Computes the best bincode to be used for the target architecture.
@@ -314,7 +319,7 @@ pub fn get_global_bincode_config() -> Configuration<bincode::config::LittleEndia
 
 /// A wrapped [`Geometry`] that can be encoded and decoded via bincode.
 #[derive(Debug)]
-pub struct EncodableGeometry(pub  Geometry<Float>);
+pub struct EncodableGeometry(pub Geometry<Float>);
 
 #[cfg(feature = "self-contained")]
 fn encode_poly<E>(polygon: &Polygon<Float>, encoder: &mut E) -> Result<(), EncodeError>
@@ -364,13 +369,13 @@ impl Encode for EncodableGeometry {
             Geometry::Polygon(polygon) => {
                 // Encode the variant.
                 0u8.encode(encoder)?;
-                
+
                 encode_poly(polygon, encoder)?;
             }
             Geometry::MultiPolygon(multi_polygon) => {
                 // Encode the variant.
                 1u8.encode(encoder)?;
-                
+
                 let polygons = &multi_polygon.0;
 
                 // Encode the number of polygons.
@@ -383,7 +388,7 @@ impl Encode for EncodableGeometry {
             }
             _ => panic!("Unsupported geometry variant."),
         }
-        
+
         Ok(())
     }
 }
@@ -457,8 +462,7 @@ where
 }
 
 #[cfg(feature = "self-contained")]
-impl Decode for EncodableGeometry
-{
+impl Decode for EncodableGeometry {
     fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
         D: Decoder,
@@ -529,7 +533,7 @@ impl<'de> BorrowDecode<'de> for EncodableGeometry {
 #[derive(Debug)]
 pub struct EncodableIds(pub Vec<Id>);
 
-impl  Deref for EncodableIds {
+impl Deref for EncodableIds {
     type Target = Vec<Id>;
 
     fn deref(&self) -> &Self::Target {
@@ -562,8 +566,7 @@ impl Encode for EncodableIds {
 }
 
 #[cfg(feature = "self-contained")]
-impl Decode for EncodableIds
-{
+impl Decode for EncodableIds {
     fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
         D: Decoder,
