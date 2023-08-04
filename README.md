@@ -164,7 +164,7 @@ tz.identifier; // "America/Los_Angeles"
 
 ## Feature Flags
 
-The library and binary both support various feature flags.  Of most important note are:
+The library and binary both support various feature flags.  These are the available flags:
 * Top-Level:
   * `default = ["cli"]`
   * `full = ["tz-ned", "tz-osm", "admin-osm", "self-contained"]`
