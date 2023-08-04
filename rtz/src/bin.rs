@@ -19,7 +19,7 @@ enum Command {
         ned_command: Option<NedCommand>,
     },
 
-    // The OpenStreetMap dataset based operations.
+    /// The OpenStreetMap dataset based operations.
     Osm {
         #[command(subcommand)]
         osm_command: Option<OsmCommand>,

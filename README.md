@@ -81,8 +81,9 @@ Usage: rtz [COMMAND]
 
 Commands:
   ned           The Natural Earth Data dataset based operations
-  osm
+  osm           The OpenStreetMap dataset based operations
   dump-geojson  Resolve a timezone from a lng,lat pair using the OSM dataset
+  serve         Serve the timezone API
   help          Print this message or the help of the given subcommand(s)
 
 Options:
@@ -93,7 +94,7 @@ Options:
 ### Resolve a Time Zone
 
 ```bash
-$ rtz resolve-ned "-87.62,41.88"
+$ rtz ned tz "-87.62,41.88"
 
 Identifier:      America/Chicago
 UTC Offset:      UTC-06:00
@@ -105,7 +106,7 @@ DST Description: Canada (Manitoba), United States (Illinois, most of Texas)
 ### Run with Wasmer
 
 ```bash
-wasmer run twitchax/rtz@latest -- resolve-ned 30,30
+wasmer run twitchax/rtz@latest -- ned tz 30,30
 ```
 
 ### Run the Server
@@ -116,7 +117,7 @@ $ rtz serve
 ```
 
 ```bash
-$ docker run -it --rm -p 8082 twitchax/rtx
+$ docker run -it --rm -p 8082 twitchax/rtz
 ```
 
 ## Library Usage
