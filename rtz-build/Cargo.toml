@@ -23,4 +23,4 @@ tz-osm = []
 admin-osm = []
 
 [dependencies]
-rtz-core = { path = "../rtz-core", version = "0.1.0" }
+rtz-core = { path = "../rtz-core", version = "0.1.4" }
