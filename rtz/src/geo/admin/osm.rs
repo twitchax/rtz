@@ -20,7 +20,7 @@ impl HasItemData for OsmAdmin {
 
         #[cfg(feature = "self-contained")]
         {
-            TIMEZONES.get_or_init(|| decode_binary_data(ADMIN_BINCODE))
+            TIMEZONES.get_or_init(|| crate::geo::shared::decode_binary_data(ADMIN_BINCODE))
         }
 
         #[cfg(not(feature = "self-contained"))]
