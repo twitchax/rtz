@@ -5,7 +5,7 @@
 use geo::{Contains, Coord};
 use rtz_core::{
     base::types::Float,
-    geo::shared::{ConcreteVec, HasGeometry, HasProperties, RoundInt, RoundLngLat, ToGeoJson},
+    geo::shared::{ConcreteVec, HasGeometry, HasProperties, RoundDegree, RoundLngLat, ToGeoJson, Id},
 };
 use std::collections::HashMap;
 
@@ -24,7 +24,7 @@ where
     Self: Sized,
 {
     /// The type to which the lookup hash table resolves.
-    type Lookup: AsRef<[RoundInt]>;
+    type Lookup: AsRef<[Id]>;
 
     /// Gets the lookup hash table from the in-memory cache for the given type.
     fn get_mem_lookup() -> &'static HashMap<RoundLngLat, Self::Lookup>;
@@ -44,9 +44,9 @@ where
             return None;
         };
 
-        let timezones = T::get_mem_items();
+        let items = T::get_mem_items();
 
-        timezones.get(*value as usize)
+        items.get(*value as usize)
     }
 }
 
@@ -57,7 +57,7 @@ pub(crate) trait MapIntoItems<T> {
 
 impl<A, T> MapIntoItems<T> for Option<A>
 where
-    A: AsRef<[RoundInt]>,
+    A: AsRef<[Id]>,
     T: HasItemData,
 {
     fn map_into_items(self) -> Option<Vec<&'static T>> {
@@ -65,23 +65,31 @@ where
             return None;
         };
 
-        let timezones = T::get_mem_items();
+        let source = value.as_ref();
+        let items = T::get_mem_items();
 
-        let mut result = Vec::with_capacity(10);
-        for id in value.as_ref() {
-            if *id == -1 {
-                continue;
-            }
-
-            let tz = timezones.get(*id as usize);
-
-            if let Some(tz) = tz {
-                result.push(tz);
-            }
+        let mut result = Vec::with_capacity(source.len());
+        for id in source {
+            let item = &items[*id as usize];
+            result.push(item);
         }
 
         Some(result)
     }
+}
+
+/// Perform a decode of binary data.
+#[cfg(feature = "self-contained")]
+pub fn decode_binary_data<T>(data: &'static [u8]) -> T
+where
+    T: bincode::Decode + bincode::BorrowDecode<'static>,
+{
+    #[cfg(not(feature = "owned-decode"))]
+    let (value, _len): (T, usize) = bincode::borrow_decode_from_slice(data, rtz_core::geo::shared::get_global_bincode_config()).expect("Could not decode binary data: try rebuilding with `force-rebuild` due to a likely precision difference between the generated assets and the current build.");
+    #[cfg(feature = "owned-decode")]
+    let (value, _len): (T, usize) = bincode::decode_from_slice(data, rtz_core::geo::shared::get_global_bincode_config()).expect("Could not decode binary data: try rebuilding with `force-rebuild` due to a likely precision difference between the generated assets and the current build.");
+
+    value
 }
 
 /// Trait that abstracts away the primary end-user functionality of geo lookups.
@@ -93,8 +101,8 @@ where
     ///
     /// Some data sources allow for multiple results, so this is a vector.
     fn lookup(xf: Float, yf: Float) -> Vec<&'static Self> {
-        let x = xf.floor() as i16;
-        let y = yf.floor() as i16;
+        let x = xf.floor() as RoundDegree;
+        let y = yf.floor() as RoundDegree;
 
         let Some(suggestions) = Self::get_lookup_suggestions(x, y) else {
             return Vec::new();
@@ -116,7 +124,7 @@ where
     }
 
     /// Get value from the static memory cache.
-    fn get_lookup_suggestions(x: i16, y: i16) -> Option<Vec<&'static Self>> {
+    fn get_lookup_suggestions(x: RoundDegree, y: RoundDegree) -> Option<Vec<&'static Self>> {
         let cache = Self::get_mem_lookup();
 
         cache.get(&(x, y)).map_into_items()

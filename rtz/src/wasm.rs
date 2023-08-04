@@ -15,7 +15,7 @@ static ALLOC: wee_alloc::WeeAlloc<'_> = wee_alloc::WeeAlloc::INIT;
 #[cfg(feature = "tz-ned")]
 #[wasm_bindgen(js_name = getTimezoneNed)]
 pub fn get_timezone_ned(lng: f32, lat: f32) -> JsValue {
-    let tzs = crate::NedTimezone::lookup(lng, lat);
+    let tzs = crate::NedTimezone::lookup(lng, lat).into_iter().map(crate::shared::NedTimezoneResponse1::from).collect::<Vec<_>>();
     JsValue::from_str(&serde_json::to_string(&tzs).unwrap())
 }
 
@@ -23,6 +23,16 @@ pub fn get_timezone_ned(lng: f32, lat: f32) -> JsValue {
 #[cfg(feature = "tz-osm")]
 #[wasm_bindgen(js_name = getTimezoneOsm)]
 pub fn get_timezone_osm(lng: f32, lat: f32) -> JsValue {
-    let tzs = crate::OsmTimezone::lookup(lng, lat);
+    let tzs = crate::OsmTimezone::lookup(lng, lat).into_iter().map(crate::shared::OsmTimezoneResponse1::from).collect::<Vec<_>>();
     JsValue::from_str(&serde_json::to_string(&tzs).unwrap())
+}
+
+// Admin ABI.
+
+/// Get the admin for the given `(lng,lat)`.
+#[cfg(feature = "admin-osm")]
+#[wasm_bindgen(js_name = getAdminOsm)]
+pub fn get_admin_osm(lng: f32, lat: f32) -> JsValue {
+    let admins = crate::OsmAdmin::lookup(lng, lat).into_iter().map(crate::shared::OsmAdminResponse1::from).collect::<Vec<_>>();
+    JsValue::from_str(&serde_json::to_string(&admins).unwrap())
 }

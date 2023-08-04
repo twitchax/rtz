@@ -4,14 +4,11 @@ use std::{collections::HashMap, sync::OnceLock};
 
 use geo::{Coord, Contains};
 use rtz_core::{geo::{
-    shared::{ConcreteVec, RoundLngLat, HasGeometry},
-    tz::{
-        osm::OsmTimezone,
-        shared::{i16_vec_to_timezoneids, TimezoneIds},
-    },
+    shared::{ConcreteVec, RoundLngLat, HasGeometry, EncodableIds},
+    tz::osm::OsmTimezone,
 }, base::types::Float};
 
-use crate::{geo::shared::{HasItemData, HasLookupData}, CanPerformGeoLookup};
+use crate::{geo::shared::{HasItemData, HasLookupData, decode_binary_data}, CanPerformGeoLookup};
 
 // Trait impls.
 
@@ -22,9 +19,7 @@ impl HasItemData for OsmTimezone {
         #[cfg(feature = "self-contained")]
         {
             TIMEZONES.get_or_init(|| {
-                let (timezones, _len): (ConcreteVec<OsmTimezone>, usize) = bincode::serde::decode_from_slice(TZ_BINCODE, bincode::config::standard()).expect("Failed to decode timezones from binary: likely caused by precision difference between generated assets and current build.  Please rebuild the assets with `feature = \"force-rebuild\"` enabled.");
-
-                timezones
+                decode_binary_data(TZ_BINCODE)
             })
         }
 
@@ -42,26 +37,15 @@ impl HasItemData for OsmTimezone {
 }
 
 impl HasLookupData for OsmTimezone {
-    type Lookup = TimezoneIds;
+    type Lookup = EncodableIds;
 
     fn get_mem_lookup() -> &'static HashMap<RoundLngLat, Self::Lookup> {
-        static CACHE: OnceLock<HashMap<RoundLngLat, TimezoneIds>> = OnceLock::new();
+        static CACHE: OnceLock<HashMap<RoundLngLat, EncodableIds>> = OnceLock::new();
 
         #[cfg(feature = "self-contained")]
         {
-            use rtz_core::geo::shared::RoundInt;
-
             CACHE.get_or_init(|| {
-                let (cache, _len): (HashMap<RoundLngLat, Vec<RoundInt>>, usize) = bincode::serde::decode_from_slice(LOOKUP_BINCODE, bincode::config::standard()).unwrap();
-
-                cache
-                    .into_iter()
-                    .map(|(key, value)| {
-                        let value = i16_vec_to_timezoneids(value);
-
-                        (key, value)
-                    })
-                    .collect::<HashMap<_, _>>()
+                decode_binary_data(LOOKUP_BINCODE)
             })
         }
 
@@ -73,13 +57,6 @@ impl HasLookupData for OsmTimezone {
                 let cache = get_lookup_from_geometries(OsmTimezone::get_mem_items());
 
                 cache
-                    .into_iter()
-                    .map(|(key, value)| {
-                        let value = i16_vec_to_timezoneids(value);
-
-                        (key, value)
-                    })
-                    .collect::<HashMap<_, _>>()
             })
         }
     }
@@ -175,8 +152,8 @@ mod tests {
 
     #[test]
     fn can_verify_lookup_assisted_accuracy() {
+        let x = rand::random::<Float>() * 360.0 - 180.0;
         (0..100).into_par_iter().for_each(|_| {
-            let x = rand::random::<Float>() * 360.0 - 180.0;
             let y = rand::random::<Float>() * 180.0 - 90.0;
             let full = OsmTimezone::lookup_slow(x, y);
             let lookup_assisted = OsmTimezone::lookup(x, y);

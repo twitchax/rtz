@@ -31,6 +31,7 @@ assert_eq!(
 
 // Modules.
 
+pub mod shared;
 pub mod geo;
 pub use crate::geo::shared::CanPerformGeoLookup;
 
@@ -39,6 +40,9 @@ pub use rtz_core::geo::tz::ned::NedTimezone;
 
 #[cfg(feature = "tz-osm")]
 pub use rtz_core::geo::tz::osm::OsmTimezone;
+
+#[cfg(feature = "admin-osm")]
+pub use rtz_core::geo::admin::osm::OsmAdmin;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;

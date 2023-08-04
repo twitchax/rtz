@@ -129,7 +129,7 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
 
         let body = response.into_string().await.unwrap();
-        let expected = r#"[{"id":216,"name":"مصر","level":2}]"#;
+        let expected = r#"[{"id":216,"name":"مصر","level":2},{"id":2982,"name":"مطروح","level":4}]"#;
 
         assert_eq!(body, expected);
     }

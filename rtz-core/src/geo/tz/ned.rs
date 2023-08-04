@@ -4,16 +4,27 @@
 // it is not included in the coverage report.
 #![cfg(not(tarpaulin_include))]
 
-use geo::{Coord, Geometry, Rect};
-use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
+
+use geo::Geometry;
 use serde_json::{Map, Value};
+
+#[cfg(feature = "self-contained")]
+use bincode::{error::DecodeError, de::{Decoder, BorrowDecoder}, BorrowDecode, Encode, Decode};
 
 use crate::{
     base::types::Float,
-    geo::shared::{get_geojson_features_from_string, simplify_geometry, HasGeometry, HasProperties},
+    geo::shared::{get_geojson_features_from_string, simplify_geometry, HasGeometry, HasProperties, EncodableGeometry, CanGetGeoJsonFeaturesFromSource},
 };
 
 use super::shared::IsTimezone;
+
+// Constants.
+
+#[cfg(not(feature = "extrasimplified"))]
+const SIMPLIFICATION_EPSILON: Float = 0.00001;
+#[cfg(feature = "extrasimplified")]
+const SIMPLIFICATION_EPSILON: Float = 0.001;
 
 // Helpers.
 
@@ -40,7 +51,8 @@ pub static LOOKUP_BINCODE_DESTINATION_NAME: &str = "ned_time_zone_lookup.bincode
 /// A representation of the [Natural Earth Data](https://www.naturalearthdata.com/)
 /// [geojson](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_10m_time_zones.geojson)
 /// [`geojson::Feature`]s.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
+#[cfg_attr(feature = "self-contained", derive(Encode))]
 pub struct NedTimezone {
     /// The index of the [`NedTimezone`] in the global static cache.
     ///
@@ -49,25 +61,83 @@ pub struct NedTimezone {
     /// The `identifier` of the [`NedTimezone`] (e.g., `America/Los_Angeles`).
     ///
     /// Essentially, it is the IANA TZ identifier.
-    pub identifier: Option<String>,
+    pub identifier: Option<Cow<'static, str>>,
 
     /// The `description` of the [`NedTimezone`] (e.g., the countries affected).
     pub description: String,
     /// The `dst_description` of the [`NedTimezone`] (i.e., daylight savings time information).
-    pub dst_description: Option<String>,
+    pub dst_description: Option<Cow<'static, str>>,
 
     /// The `offset` of the [`NedTimezone`] (e.g., `UTC-8:00`).
-    pub offset: String,
+    pub offset: Cow<'static, str>,
 
     /// The `zone_num` of the [`NedTimezone`] (e.g., `-8.0`).
     pub zone: f32,
     /// The `raw_offset` of the [`NedTimezone`] (e.g., `-28800`).
     pub raw_offset: i32,
 
-    /// The bounding box of the [`NedTimezone`].
-    pub bbox: Rect<Float>,
     /// The geometry of the [`NedTimezone`].
-    pub geometry: Geometry<Float>,
+    pub geometry: EncodableGeometry,
+}
+
+#[cfg(feature = "self-contained")]
+impl Decode for NedTimezone
+{
+    fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
+    where
+        D: Decoder,
+    {
+        let id = usize::decode(decoder)?;
+        let identifier = Option::<Cow<'static, str>>::decode(decoder)?;
+        let description = String::decode(decoder)?;
+        let dst_description = Option::<Cow<'static, str>>::decode(decoder)?;
+        let offset = Cow::<'static, str>::decode(decoder)?;
+        let zone = f32::decode(decoder)?;
+        let raw_offset = i32::decode(decoder)?;
+        let geometry = EncodableGeometry::decode(decoder)?;
+
+        Ok(NedTimezone {
+            id,
+            identifier,
+            description,
+            dst_description,
+            offset,
+            zone,
+            raw_offset,
+            geometry,
+        })
+    }
+}
+
+#[cfg(feature = "self-contained")]
+impl<'de> BorrowDecode<'de> for NedTimezone
+where
+    'de: 'static
+{
+    fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
+    where
+        D: BorrowDecoder<'de>,
+    {
+        let id = usize::decode(decoder)?;
+        let identifier = Option::<Cow<'static, str>>::borrow_decode(decoder)?;
+        let description = String::decode(decoder)?;
+        let dst_description = Option::<Cow<'static, str>>::borrow_decode(decoder)?;
+        let offset = Cow::<'static, str>::borrow_decode(decoder)?;
+        let zone = f32::decode(decoder)?;
+        let raw_offset = i32::decode(decoder)?;
+        let geometry = EncodableGeometry::borrow_decode(decoder)?;
+
+        Ok(NedTimezone {
+            id,
+            identifier,
+            description,
+            dst_description,
+            offset,
+            zone,
+            raw_offset,
+            geometry,
+        })
+    }
 }
 
 impl PartialEq for NedTimezone {
@@ -79,21 +149,18 @@ impl PartialEq for NedTimezone {
 impl From<(usize, geojson::Feature)> for NedTimezone {
     fn from(value: (usize, geojson::Feature)) -> NedTimezone {
         let id = value.0;
-        let bbox = value.1.bbox.as_ref().unwrap();
         let properties = value.1.properties.as_ref().unwrap();
         let geometry = value.1.geometry.as_ref().unwrap();
 
-        let dst_places = properties.get("dst_places").unwrap().as_str().map(ToOwned::to_owned);
+        let dst_places = properties.get("dst_places").unwrap().as_str().map(ToOwned::to_owned).map(Cow::Owned);
         let places = properties.get("places").unwrap().as_str().unwrap().to_owned();
 
-        let time_zone = properties.get("time_zone").unwrap().as_str().unwrap().to_owned();
-        let tz_name1st = properties.get("tz_name1st").unwrap().as_str().map(ToOwned::to_owned);
+        let time_zone = Cow::Owned(properties.get("time_zone").unwrap().as_str().unwrap().to_owned());
+        let tz_name1st = properties.get("tz_name1st").unwrap().as_str().map(ToOwned::to_owned).map(Cow::Owned);
         let zone = properties.get("zone").unwrap().as_f64().unwrap() as f32;
 
-        let bbox = Rect::<Float>::new(Coord { x: bbox[0] as Float, y: bbox[1] as Float }, Coord { x: bbox[2] as Float, y: bbox[3] as Float });
-
         let geometry: Geometry<Float> = geometry.value.clone().try_into().unwrap();
-        let geometry = simplify_geometry(geometry);
+        let geometry = EncodableGeometry(simplify_geometry(geometry, SIMPLIFICATION_EPSILON));
 
         let raw_offset = (zone * 3600.0).round() as i32;
 
@@ -105,7 +172,6 @@ impl From<(usize, geojson::Feature)> for NedTimezone {
             identifier: tz_name1st,
             zone,
             raw_offset,
-            bbox,
             geometry,
         }
     }
@@ -123,7 +189,7 @@ impl HasGeometry for NedTimezone {
     }
 
     fn geometry(&self) -> &Geometry<Float> {
-        &self.geometry
+        &self.geometry.0
     }
 }
 
@@ -131,12 +197,19 @@ impl HasProperties for NedTimezone {
     fn properties(&self) -> Map<String, Value> {
         let mut properties = Map::new();
 
-        properties.insert("dst_description".to_string(), Value::String(self.dst_description.as_ref().unwrap_or(&"".to_string()).to_string()));
+        properties.insert("dst_description".to_string(), Value::String(self.dst_description.as_deref().unwrap_or("").to_string()));
         properties.insert("description".to_string(), Value::String(self.description.to_string()));
         properties.insert("offset".to_string(), Value::String(self.offset.to_string()));
         properties.insert("zone".to_string(), Value::Number(serde_json::Number::from_f64(self.zone as f64).unwrap()));
         properties.insert("raw_offset".to_string(), Value::Number(serde_json::Number::from_f64(self.raw_offset as f64).unwrap()));
 
         properties
+    }
+}
+
+#[cfg(not(target_family = "wasm"))]
+impl CanGetGeoJsonFeaturesFromSource for NedTimezone {
+    fn get_geojson_features_from_source() -> geojson::FeatureCollection {
+        get_geojson_features_from_source()
     }
 }

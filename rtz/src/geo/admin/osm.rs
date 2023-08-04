@@ -3,14 +3,11 @@
 use std::{collections::HashMap, sync::OnceLock};
 
 use rtz_core::geo::{
-    admin::{
-        osm::OsmAdmin,
-        shared::{i16_vec_to_adminids, AdminIds},
-    },
-    shared::{ConcreteVec, RoundLngLat},
+    admin::osm::OsmAdmin,
+    shared::{ConcreteVec, RoundLngLat, EncodableIds},
 };
 
-use crate::{geo::shared::{HasItemData, HasLookupData}, CanPerformGeoLookup};
+use crate::{geo::shared::{HasItemData, HasLookupData, decode_binary_data}, CanPerformGeoLookup};
 
 // Trait impls.
 
@@ -21,9 +18,7 @@ impl HasItemData for OsmAdmin {
         #[cfg(feature = "self-contained")]
         {
             TIMEZONES.get_or_init(|| {
-                let (timezones, _len): (ConcreteVec<OsmAdmin>, usize) = bincode::serde::decode_from_slice(ADMIN_BINCODE, bincode::config::standard()).expect("Failed to decode timezones from binary: likely caused by precision difference between generated assets and current build.  Please rebuild the assets with `feature = \"force-rebuild\"` enabled.");
-
-                timezones
+                decode_binary_data(ADMIN_BINCODE)
             })
         }
 
@@ -41,26 +36,15 @@ impl HasItemData for OsmAdmin {
 }
 
 impl HasLookupData for OsmAdmin {
-    type Lookup = AdminIds;
+    type Lookup = EncodableIds;
 
     fn get_mem_lookup() -> &'static HashMap<RoundLngLat, Self::Lookup> {
-        static CACHE: OnceLock<HashMap<RoundLngLat, AdminIds>> = OnceLock::new();
+        static CACHE: OnceLock<HashMap<RoundLngLat, EncodableIds>> = OnceLock::new();
 
         #[cfg(feature = "self-contained")]
         {
-            use rtz_core::geo::shared::RoundInt;
-
             CACHE.get_or_init(|| {
-                let (cache, _len): (HashMap<RoundLngLat, Vec<RoundInt>>, usize) = bincode::serde::decode_from_slice(LOOKUP_BINCODE, bincode::config::standard()).unwrap();
-
-                cache
-                    .into_iter()
-                    .map(|(key, value)| {
-                        let value = i16_vec_to_adminids(value);
-
-                        (key, value)
-                    })
-                    .collect::<HashMap<_, _>>()
+                decode_binary_data(LOOKUP_BINCODE)
             })
         }
 
@@ -69,16 +53,9 @@ impl HasLookupData for OsmAdmin {
             use rtz_core::geo::shared::get_lookup_from_geometries;
 
             CACHE.get_or_init(|| {
-                let cache = get_lookup_from_geometries(OsmAdmin::get_items());
+                let cache = get_lookup_from_geometries(OsmAdmin::get_mem_items());
 
                 cache
-                    .into_iter()
-                    .map(|(key, value)| {
-                        let value = i16_vec_to_adminids(value);
-
-                        (key, value)
-                    })
-                    .collect::<HashMap<_, _>>()
             })
         }
     }
@@ -112,7 +89,7 @@ mod tests {
     #[test]
     fn can_get_timezones() {
         let admins = OsmAdmin::get_mem_items();
-        assert_eq!(admins.len(), 237);
+        assert_eq!(admins.len(), 306278);
     }
 
     #[test]
@@ -124,7 +101,7 @@ mod tests {
     #[test]
     fn can_get_from_lookup() {
         let lookup = OsmAdmin::get_lookup_suggestions(-121, 46).unwrap();
-        assert_eq!(lookup.len(), 1);
+        assert_eq!(lookup.len(), 28);
     }
 
     #[test]
@@ -143,13 +120,13 @@ mod tests {
         assert_eq!(tzs.len(), 0);
 
         let tzs = cache.get(&(-121, 46)).map_into_items().unwrap() as Vec<&OsmAdmin>;
-        assert_eq!(tzs.len(), 1);
+        assert_eq!(tzs.len(), 28);
 
         let tz = cache.get(&(-121, 46)).map_into_items().unwrap()[0] as &OsmAdmin;
         assert_eq!(tz.name, "United States");
 
         let tzs = cache.get(&(-87, 38)).map_into_items().unwrap() as Vec<&OsmAdmin>;
-        assert_eq!(tzs.len(), 1);
+        assert_eq!(tzs.len(), 58);
     }
 
     #[test]

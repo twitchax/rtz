@@ -10,11 +10,11 @@ use rtz_core::{
     geo::{tz::{ned::NedTimezone, osm::OsmTimezone}, admin::osm::OsmAdmin},
 };
 
-use crate::geo::shared::CanPerformGeoLookup;
+use crate::{geo::shared::CanPerformGeoLookup, shared::{NedTimezoneResponse1, OsmTimezoneResponse1, OsmAdminResponse1}};
 
 use super::{
     config::Config,
-    response_types::{LookupResponse, NedTimezoneResponse1, OsmTimezoneResponse1, OsmAdminResponse1},
+    response_types::LookupResponse,
     types::{get_last_modified_time, IfModifiedSince, RocketState, WebResult},
 };
 
@@ -125,7 +125,7 @@ async fn get_admin_osm(lng: Float, lat: Float) -> WebResult<LookupResponse<Vec<O
 #[openapi(tag = "TZv1")]
 #[get("/v1/osm/admin/<lng>/<lat>")]
 async fn get_admin_osm_v1(lng: Float, lat: Float) -> WebResult<LookupResponse<Vec<OsmAdminResponse1>>> {
-    let tzs = OsmAdmin::lookup(lng, lat).into_iter().map(|a| a.into()).collect::<Vec<_>>();
+    let admins = OsmAdmin::lookup(lng, lat).into_iter().map(|a| a.into()).collect::<Vec<_>>();
 
-    Ok(LookupResponse::Ok(Json(tzs)))
+    Ok(LookupResponse::Ok(Json(admins)))
 }

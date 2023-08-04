@@ -1,13 +1,7 @@
 //! The main binary entrypoint.
 
 use clap::{command, Parser, Subcommand};
-use rtz_core::{
-    base::types::Void,
-    geo::{
-        admin::osm::OsmAdmin,
-        tz::{ned::NedTimezone, osm::OsmTimezone},
-    },
-};
+use rtz_core::base::types::Void;
 use rtzlib::geo::shared::CanPerformGeoLookup;
 
 #[derive(Parser, Debug)]
@@ -99,6 +93,7 @@ fn start(args: Args) -> Void {
             match ned_command {
                 #[cfg(feature = "tz-ned")]
                 Some(NedCommand::Tz { lng_lat }) => {
+                    use rtz_core::geo::tz::ned::NedTimezone;
                     use rtz_core::base::types::Float;
 
                     let Some((lng, lat)) = lng_lat.split_once(',') else {
@@ -115,8 +110,9 @@ fn start(args: Args) -> Void {
                         println!("Offset Seconds:  {}", tz.raw_offset);
                         println!("Description:     {}", tz.description);
                         println!("DST Description: {}", tz.dst_description.as_deref().unwrap_or(""));
-                        println!();
                     }
+
+                    println!();
                 }
                 #[allow(unreachable_patterns)]
                 Some(_) | None => {
@@ -128,6 +124,7 @@ fn start(args: Args) -> Void {
             match osm_command {
                 #[cfg(feature = "tz-osm")]
                 Some(OsmCommand::Tz { lng_lat }) => {
+                    use rtz_core::geo::tz::osm::OsmTimezone;
                     use rtz_core::base::types::Float;
 
                     let Some((lng, lat)) = lng_lat.split_once(',') else {
@@ -140,11 +137,13 @@ fn start(args: Args) -> Void {
                     for tz in tzs {
                         println!();
                         println!("Identifier:      {}", tz.identifier);
-                        println!();
                     }
+
+                    println!();
                 }
                 #[cfg(feature = "admin-osm")]
                 Some(OsmCommand::Admin { lng_lat }) => {
+                    use rtz_core::geo::admin::osm::OsmAdmin;
                     use rtz_core::base::types::Float;
 
                     let Some((lng, lat)) = lng_lat.split_once(',') else {
@@ -152,13 +151,15 @@ fn start(args: Args) -> Void {
                     };
 
                     let (lng, lat) = (lng.parse::<Float>()?, lat.parse::<Float>()?);
-                    let tzs = OsmAdmin::lookup(lng, lat);
+                    let admins = OsmAdmin::lookup(lng, lat);
 
-                    for tz in tzs {
+                    for admin in admins {
                         println!();
-                        println!("Name:      {}", tz.name);
-                        println!();
+                        println!("Name:      {}", admin.name);
+                        println!("Level:     {}", admin.level);
                     }
+
+                    println!();
                 }
                 #[allow(unreachable_patterns)]
                 Some(_) | None => {
@@ -178,6 +179,7 @@ fn start(args: Args) -> Void {
         Some(Command::DumpGeojson { prefix }) => {
             #[cfg(feature = "tz-ned")]
             {
+                use rtz_core::geo::tz::ned::NedTimezone;
                 let json = NedTimezone::memory_data_to_geojson();
 
                 std::fs::write(format!("{}-tz-ned.geojson", prefix), json)?;
@@ -185,6 +187,7 @@ fn start(args: Args) -> Void {
 
             #[cfg(feature = "tz-osm")]
             {
+                use rtz_core::geo::tz::osm::OsmTimezone;
                 let json = OsmTimezone::memory_data_to_geojson();
 
                 std::fs::write(format!("{}-tz-osm.geojson", prefix), json)?;
@@ -192,6 +195,7 @@ fn start(args: Args) -> Void {
 
             #[cfg(feature = "admin-osm")]
             {
+                use rtz_core::geo::admin::osm::OsmAdmin;
                 let json = OsmAdmin::memory_data_to_geojson();
 
                 std::fs::write(format!("{}-admin-osm.geojson", prefix), json)?;
@@ -221,7 +225,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "tz-ned")]
+    #[cfg(feature = "tz-osm")]
     fn can_resolve_osm() {
         start(Args {
             command: Some(Command::Osm { osm_command: Some(OsmCommand::Tz { lng_lat: "-87.62,41.88".to_string() }) }),

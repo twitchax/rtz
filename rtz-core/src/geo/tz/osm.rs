@@ -4,18 +4,27 @@
 // it is not included in the coverage report.
 #![cfg(not(tarpaulin_include))]
 
-use std::io::Read;
+use std::{io::Read, borrow::Cow};
 
 use geo::Geometry;
-use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
+
+#[cfg(feature = "self-contained")]
+use bincode::{error::DecodeError, de::{Decoder, BorrowDecoder}, BorrowDecode, Encode, Decode};
 
 use crate::{
     base::types::Float,
-    geo::shared::{get_geojson_features_from_string, simplify_geometry, HasGeometry, HasProperties},
+    geo::shared::{get_geojson_features_from_string, simplify_geometry, HasGeometry, HasProperties, EncodableGeometry, CanGetGeoJsonFeaturesFromSource},
 };
 
 use super::shared::IsTimezone;
+
+// Constants.
+
+#[cfg(not(feature = "extrasimplified"))]
+const SIMPLIFICATION_EPSILON: Float = 0.0001;
+#[cfg(feature = "extrasimplified")]
+const SIMPLIFICATION_EPSILON: Float = 0.01;
 
 // Helpers.
 
@@ -43,7 +52,8 @@ pub static LOOKUP_BINCODE_DESTINATION_NAME: &str = "osm_time_zone_lookup.bincode
 /// A representation of the [OpenStreetMap](https://www.openstreetmap.org/)
 /// [geojson](https://github.com/evansiroky/timezone-boundary-builder)
 /// [`geojson::Feature`]s.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
+#[cfg_attr(feature = "self-contained", derive(Encode))]
 pub struct OsmTimezone {
     /// The index of the [`OsmTimezone`] in the global static cache.
     ///
@@ -52,10 +62,42 @@ pub struct OsmTimezone {
     /// The `identifier` of the [`OsmTimezone`] (e.g., `America/Los_Angeles`).
     ///
     /// Essentially, it is the IANA TZ identifier.
-    pub identifier: String,
+    pub identifier: Cow<'static, str>,
 
     /// The geometry of the [`OsmTimezone`].
-    pub geometry: Geometry<Float>,
+    pub geometry: EncodableGeometry,
+}
+
+#[cfg(feature = "self-contained")]
+impl Decode for OsmTimezone
+{
+    fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
+    where
+        D: Decoder,
+    {
+        let id = usize::decode(decoder)?;
+        let identifier = Cow::<'static, str>::decode(decoder)?;
+        let geometry = EncodableGeometry::decode(decoder)?;
+
+        Ok(OsmTimezone { id, identifier, geometry })
+    }
+}
+
+#[cfg(feature = "self-contained")]
+impl<'de> BorrowDecode<'de> for OsmTimezone
+where
+    'de: 'static
+{
+    fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
+    where
+        D: BorrowDecoder<'de>,
+    {
+        let id = usize::decode(decoder)?;
+        let identifier = Cow::<'static, str>::borrow_decode(decoder)?;
+        let geometry = EncodableGeometry::borrow_decode(decoder)?;
+
+        Ok(OsmTimezone { id, identifier, geometry })
+    }
 }
 
 impl PartialEq for OsmTimezone {
@@ -70,11 +112,11 @@ impl From<(usize, geojson::Feature)> for OsmTimezone {
         let properties = value.1.properties.as_ref().unwrap();
         let geometry = value.1.geometry.as_ref().unwrap();
 
-        let identifier = properties.get("tzid").unwrap().as_str().unwrap().to_string();
+        let identifier = Cow::Owned(properties.get("tzid").unwrap().as_str().unwrap().to_string());
 
         let geometry: Geometry<Float> = geometry.value.clone().try_into().unwrap();
 
-        let geometry = simplify_geometry(geometry);
+        let geometry = EncodableGeometry(simplify_geometry(geometry, SIMPLIFICATION_EPSILON));
 
         OsmTimezone { id, identifier, geometry }
     }
@@ -82,7 +124,7 @@ impl From<(usize, geojson::Feature)> for OsmTimezone {
 
 impl IsTimezone for OsmTimezone {
     fn identifier(&self) -> &str {
-        self.identifier.as_str()
+        self.identifier.as_ref()
     }
 }
 
@@ -92,7 +134,7 @@ impl HasGeometry for OsmTimezone {
     }
 
     fn geometry(&self) -> &Geometry<Float> {
-        &self.geometry
+        &self.geometry.0
     }
 }
 
@@ -103,5 +145,12 @@ impl HasProperties for OsmTimezone {
         properties.insert("identifier".to_string(), Value::String(self.identifier.to_string()));
 
         properties
+    }
+}
+
+#[cfg(not(target_family = "wasm"))]
+impl CanGetGeoJsonFeaturesFromSource for OsmTimezone {
+    fn get_geojson_features_from_source() -> geojson::FeatureCollection {
+        get_geojson_features_from_source()
     }
 }

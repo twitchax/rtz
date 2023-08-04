@@ -7,38 +7,36 @@
 use std::{collections::HashMap, ops::Deref};
 
 use chashmap::CHashMap;
-use geo::{Coord, Geometry, Intersects, Rect, SimplifyVw};
+use geo::{Coord, Geometry, Intersects, Rect, SimplifyVw, Polygon, LineString, MultiPolygon};
 use geojson::{Feature, FeatureCollection, GeoJson};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::path::Path;
 
+#[cfg(feature = "self-contained")]
+use bincode::{error::{EncodeError, DecodeError}, enc::Encoder, Encode, Decode, de::{Decoder, BorrowDecoder, read::BorrowReader}, BorrowDecode, config::Configuration};
+
 use crate::base::types::Float;
-
-// Constants.
-
-#[cfg(not(feature = "extrasimplified"))]
-const SIMPLIFICATION_EPSILON: Float = 0.0001;
-#[cfg(feature = "extrasimplified")]
-const SIMPLIFICATION_EPSILON: Float = 0.01;
 
 // Types.
 
+/// An index into the global static cache.
+pub type Id = u32;
 /// A rounded integer.
-pub type RoundInt = i16;
+pub type RoundDegree = i16;
 /// A rounded longitude and latitude.
-pub type RoundLngLat = (RoundInt, RoundInt);
-//pub type LngLat = (f64, f64);
+pub type RoundLngLat = (RoundDegree, RoundDegree);
 /// An `(id, Feature)` pair.
 pub type IdFeaturePair = (usize, geojson::Feature);
 
 // Concrete helpers.
 
 /// A concrete collection of concrete values.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ConcreteVec<T>(Vec<T>);
+#[derive(Debug)]
+#[cfg_attr(feature = "self-contained", derive(Encode, Decode))]
+pub struct ConcreteVec<T>(Vec<T>)
+where
+    T: 'static;
 
 impl<T> Deref for ConcreteVec<T> {
     type Target = Vec<T>;
@@ -161,23 +159,23 @@ where
 /// Simplifies a [`Geometry`] using the [Visvalingam-Whyatt algorithm](https://bost.ocks.org/mike/simplify/).
 ///
 /// For geometries that cannot be simplified, the original geometry is returned.
-pub fn simplify_geometry(geometry: Geometry<Float>) -> Geometry<Float> {
+pub fn simplify_geometry(geometry: Geometry<Float>, simplification_epsilon: Float) -> Geometry<Float> {
     #[cfg(not(feature = "unsimplified"))]
     let geometry = match geometry {
         Geometry::Polygon(polygon) => {
-            let simplified = polygon.simplify_vw(&SIMPLIFICATION_EPSILON);
+            let simplified = polygon.simplify_vw(&simplification_epsilon);
             Geometry::Polygon(simplified)
         }
         Geometry::MultiPolygon(multi_polygon) => {
-            let simplified = multi_polygon.simplify_vw(&SIMPLIFICATION_EPSILON);
+            let simplified = multi_polygon.simplify_vw(&simplification_epsilon);
             Geometry::MultiPolygon(simplified)
         }
         Geometry::LineString(line_string) => {
-            let simplified = line_string.simplify_vw(&SIMPLIFICATION_EPSILON);
+            let simplified = line_string.simplify_vw(&simplification_epsilon);
             Geometry::LineString(simplified)
         }
         Geometry::MultiLineString(multi_line_string) => {
-            let simplified = multi_line_string.simplify_vw(&SIMPLIFICATION_EPSILON);
+            let simplified = multi_line_string.simplify_vw(&simplification_epsilon);
             Geometry::MultiLineString(simplified)
         }
         g => g,
@@ -187,7 +185,7 @@ pub fn simplify_geometry(geometry: Geometry<Float>) -> Geometry<Float> {
 }
 
 /// Get the cache from the timezones.
-pub fn get_lookup_from_geometries<T>(geometries: &ConcreteVec<T>) -> HashMap<RoundLngLat, Vec<i16>>
+pub fn get_lookup_from_geometries<T>(geometries: &ConcreteVec<T>) -> HashMap<RoundLngLat, EncodableIds>
 where
     T: HasGeometry + Send + Sync,
 {
@@ -204,17 +202,17 @@ where
 
             for g in geometries {
                 if g.geometry().intersects(&rect) {
-                    intersected.push(g.id() as RoundInt);
+                    intersected.push(g.id() as Id);
                 }
             }
 
-            map.insert((x as RoundInt, y as RoundInt), intersected);
+            map.insert((x as RoundDegree, y as RoundDegree), intersected);
         }
     });
 
     let mut cache = HashMap::new();
     for (key, value) in map.into_iter() {
-        cache.insert(key, value);
+        cache.insert(key, EncodableIds(value));
     }
 
     cache
@@ -227,14 +225,14 @@ where
 #[cfg(feature = "self-contained")]
 fn generate_lookup_bincode<T>(bincode_input: impl AsRef<Path>, bincode_destination: impl AsRef<Path>)
 where
-    T: HasGeometry + DeserializeOwned + Send + Sync,
+    T: HasGeometry + Decode + Send + Sync + 'static,
 {
     let data = std::fs::read(bincode_input).unwrap();
-    let (timezones, _len): (ConcreteVec<T>, usize) = bincode::serde::decode_from_slice(&data, bincode::config::standard()).unwrap();
+    let (timezones, _len): (ConcreteVec<T>, usize) = bincode::decode_from_slice(&data, get_global_bincode_config()).unwrap();
 
     let cache = get_lookup_from_geometries(&timezones);
 
-    std::fs::write(bincode_destination, bincode::serde::encode_to_vec(cache, bincode::config::standard()).unwrap()).unwrap();
+    std::fs::write(bincode_destination, bincode::encode_to_vec(cache, get_global_bincode_config()).unwrap()).unwrap();
 }
 
 /// Get the concrete timezones from features.
@@ -249,35 +247,353 @@ where
 #[cfg(feature = "self-contained")]
 fn generate_item_bincode<T>(geojson_features: FeatureCollection, bincode_destination: impl AsRef<Path>)
 where
-    T: HasGeometry + Serialize + From<IdFeaturePair>,
+    T: HasGeometry + Encode + From<IdFeaturePair> + 'static,
 {
-    let timezones: ConcreteVec<T> = get_items_from_features(geojson_features);
+    let items: ConcreteVec<T> = get_items_from_features(geojson_features);
 
-    std::fs::write(bincode_destination, bincode::serde::encode_to_vec(timezones, bincode::config::standard()).unwrap()).unwrap();
+    std::fs::write(bincode_destination, bincode::encode_to_vec(items, get_global_bincode_config()).unwrap()).unwrap();
 }
 
 /// Get the GeoJSON features from the binary assets.
 pub fn get_geojson_features_from_file(geojson_input: impl AsRef<Path>) -> FeatureCollection {
-    let tz_geojson = std::fs::read_to_string(geojson_input).unwrap();
-    FeatureCollection::try_from(tz_geojson.parse::<GeoJson>().unwrap()).unwrap()
+    let geojson = std::fs::read_to_string(geojson_input).unwrap();
+    FeatureCollection::try_from(geojson.parse::<GeoJson>().unwrap()).unwrap()
 }
 
-/// Get the GeoJSON feature from a binary assets.
-pub fn get_geojson_feature_from_string(geojson_input: &str) -> Feature {
-    Feature::try_from(geojson_input.parse::<GeoJson>().unwrap()).unwrap()
-}
-
-/// Get the GeoJSON features a the binary assets.
+/// Get the GeoJSON features from the binary assets.
 pub fn get_geojson_features_from_string(geojson_input: &str) -> FeatureCollection {
     FeatureCollection::try_from(geojson_input.parse::<GeoJson>().unwrap()).unwrap()
+}
+
+/// Get the GeoJSON feature from the binary assets.
+pub fn get_geojson_feature_from_file(geojson_input: impl AsRef<Path>) -> Feature {
+    let geojson = std::fs::read_to_string(geojson_input).unwrap();
+    Feature::try_from(geojson.parse::<GeoJson>().unwrap()).unwrap()
+}
+
+/// Get the GeoJSON feature from the binary assets.
+pub fn get_geojson_feature_from_string(geojson_input: &str) -> Feature {
+    Feature::try_from(geojson_input.parse::<GeoJson>().unwrap()).unwrap()
 }
 
 /// Generates new bincodes for the timezones and the cache from the GeoJSON.
 #[cfg(feature = "self-contained")]
 pub fn generate_bincodes<T>(geojson_features: FeatureCollection, timezone_bincode_destination: impl AsRef<Path>, lookup_bincode_destination: impl AsRef<Path>)
 where
-    T: HasGeometry + Serialize + From<IdFeaturePair> + DeserializeOwned + Send + Sync,
+    T: HasGeometry + Encode + From<IdFeaturePair> + Decode + Send + Sync + 'static,
 {
     generate_item_bincode::<T>(geojson_features, timezone_bincode_destination.as_ref());
     generate_lookup_bincode::<T>(timezone_bincode_destination, lookup_bincode_destination);
+}
+
+// Helpers to get GeoJSON features from a source.
+
+/// Trait that supports getting the GeoJSON features from a source.
+pub trait CanGetGeoJsonFeaturesFromSource {
+    /// Get the GeoJSON features from a source.
+    fn get_geojson_features_from_source() -> geojson::FeatureCollection;
+}
+
+// Bincode helpers.
+
+/// Computes the best bincode to be used for the target architecture.
+#[cfg(all(feature = "self-contained", target_endian = "big"))]
+
+pub fn get_global_bincode_config() -> Configuration<bincode::config::BigEndian, bincode::config::Fixint> {
+    bincode::config::legacy()
+        .with_big_endian()
+}
+
+/// Computes the best bincode to be used for the target architecture.
+#[cfg(all(feature = "self-contained", target_endian = "little"))]
+pub fn get_global_bincode_config() -> Configuration<bincode::config::LittleEndian, bincode::config::Fixint> {
+    bincode::config::legacy()
+}
+
+// Special encoding / decoding logic for geometries.
+
+/// A wrapped [`Geometry`] that can be encoded and decoded via bincode.
+#[derive(Debug)]
+pub struct EncodableGeometry(pub  Geometry<Float>);
+
+#[cfg(feature = "self-contained")]
+fn encode_poly<E>(polygon: &Polygon<Float>, encoder: &mut E) -> Result<(), EncodeError>
+where
+    E: Encoder,
+{
+    let exterior = &polygon.exterior().0;
+
+    // Encode the exterior length.
+    exterior.len().encode(encoder)?;
+
+    // Encode the exterior points.
+    for point in exterior {
+        point.x.encode(encoder)?;
+        point.y.encode(encoder)?;
+    }
+
+    let interiors = polygon.interiors();
+
+    // Encode the number of interiors.
+    interiors.len().encode(encoder)?;
+
+    // Encode the interiors.
+    for interior in interiors {
+        let interior = &interior.0;
+
+        // Encode the interior length.
+        interior.len().encode(encoder)?;
+
+        // Encode the interior points.
+        for point in interior {
+            point.x.encode(encoder)?;
+            point.y.encode(encoder)?;
+        }
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "self-contained")]
+impl Encode for EncodableGeometry {
+    fn encode<E>(&self, encoder: &mut E) -> Result<(), EncodeError>
+    where
+        E: Encoder,
+    {
+        match &self.0 {
+            Geometry::Polygon(polygon) => {
+                // Encode the variant.
+                0u8.encode(encoder)?;
+                
+                encode_poly(polygon, encoder)?;
+            }
+            Geometry::MultiPolygon(multi_polygon) => {
+                // Encode the variant.
+                1u8.encode(encoder)?;
+                
+                let polygons = &multi_polygon.0;
+
+                // Encode the number of polygons.
+                polygons.len().encode(encoder)?;
+
+                // Encode the polygons.
+                for polygon in polygons {
+                    encode_poly(polygon, encoder)?;
+                }
+            }
+            _ => panic!("Unsupported geometry variant."),
+        }
+        
+        Ok(())
+    }
+}
+
+#[cfg(feature = "self-contained")]
+fn decode_poly<D>(decoder: &mut D) -> Result<Polygon<Float>, DecodeError>
+where
+    D: Decoder,
+{
+    let exterior_len = usize::decode(decoder)?;
+
+    let mut exterior = Vec::with_capacity(exterior_len);
+
+    for _ in 0..exterior_len {
+        let x = Float::decode(decoder)?;
+        let y = Float::decode(decoder)?;
+
+        exterior.push(Coord { x, y });
+    }
+
+    let interior_len = usize::decode(decoder)?;
+
+    let mut interiors = Vec::with_capacity(interior_len);
+
+    for _ in 0..interior_len {
+        let interior_len = usize::decode(decoder)?;
+
+        let mut interior = Vec::with_capacity(interior_len);
+
+        for _ in 0..interior_len {
+            let x = Float::decode(decoder)?;
+            let y = Float::decode(decoder)?;
+
+            interior.push(Coord { x, y });
+        }
+
+        interiors.push(LineString(interior));
+    }
+
+    Ok(Polygon::new(LineString(exterior), interiors))
+}
+
+#[cfg(feature = "self-contained")]
+fn borrow_decode_poly<'de, D>(decoder: &mut D) -> Result<Polygon<Float>, DecodeError>
+where
+    D: BorrowDecoder<'de>,
+{
+    let exterior_len = usize::decode(decoder)?;
+    let exterior_slice = decoder.borrow_reader().take_bytes(exterior_len * std::mem::size_of::<Float>() * 2)?;
+
+    // SAFETY: Perform unholy rites, and summon the devil, lol.
+    // Basically, this is an extreme optimization to prevent loading huge amounts of data into memory that are already
+    // in memory as part of the binary assets.
+    let exterior = unsafe { Vec::from_raw_parts(exterior_slice.as_ptr() as *mut Coord<Float>, exterior_len, exterior_len) };
+
+    let interior_len = usize::decode(decoder)?;
+
+    let mut interiors = Vec::with_capacity(interior_len);
+
+    for _ in 0..interior_len {
+        let interior_len = usize::decode(decoder)?;
+        let interior_slice = decoder.borrow_reader().take_bytes(interior_len * std::mem::size_of::<Float>() * 2)?;
+
+        // SAFETY: Perform unholy rites again: see above.
+        let interior = unsafe { Vec::from_raw_parts(interior_slice.as_ptr() as *mut Coord<Float>, interior_len, interior_len) };
+
+        interiors.push(LineString(interior));
+    }
+
+    Ok(Polygon::new(LineString(exterior), interiors))
+}
+
+#[cfg(feature = "self-contained")]
+impl Decode for EncodableGeometry
+{
+    fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
+    where
+        D: Decoder,
+    {
+        let variant = u8::decode(decoder)?;
+
+        let geometry = match variant {
+            0 => {
+                let polygon = decode_poly(decoder)?;
+
+                Geometry::Polygon(polygon)
+            }
+            1 => {
+                let polygon_len = usize::decode(decoder)?;
+
+                let mut polygons = Vec::with_capacity(polygon_len);
+
+                for _ in 0..polygon_len {
+                    let polygon = decode_poly(decoder)?;
+
+                    polygons.push(polygon);
+                }
+
+                Geometry::MultiPolygon(MultiPolygon::new(polygons))
+            }
+            _ => panic!("Unsupported geometry variant."),
+        };
+
+        Ok(EncodableGeometry(geometry))
+    }
+}
+
+#[cfg(feature = "self-contained")]
+impl<'de> BorrowDecode<'de> for EncodableGeometry {
+    fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
+    where
+        D: BorrowDecoder<'de>,
+    {
+        let variant = u8::decode(decoder)?;
+
+        let geometry = match variant {
+            0 => {
+                let polygon = borrow_decode_poly(decoder)?;
+
+                Geometry::Polygon(polygon)
+            }
+            1 => {
+                let polygon_len = usize::decode(decoder)?;
+
+                let mut polygons = Vec::with_capacity(polygon_len);
+
+                for _ in 0..polygon_len {
+                    let polygon = borrow_decode_poly(decoder)?;
+
+                    polygons.push(polygon);
+                }
+
+                Geometry::MultiPolygon(MultiPolygon::new(polygons))
+            }
+            _ => panic!("Unsupported geometry variant."),
+        };
+
+        Ok(EncodableGeometry(geometry))
+    }
+}
+
+/// A wrapped ['Vec`] that can be encoded and decoded via bincode.
+#[derive(Debug)]
+pub struct EncodableIds(pub Vec<Id>);
+
+impl  Deref for EncodableIds {
+    type Target = Vec<Id>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl AsRef<[Id]> for EncodableIds {
+    fn as_ref(&self) -> &[Id] {
+        &self.0
+    }
+}
+
+#[cfg(feature = "self-contained")]
+impl Encode for EncodableIds {
+    fn encode<E>(&self, encoder: &mut E) -> Result<(), EncodeError>
+    where
+        E: Encoder,
+    {
+        // Encode the exterior length.
+        self.0.len().encode(encoder)?;
+
+        // Encode the exterior points.
+        for x in &self.0 {
+            x.encode(encoder)?;
+        }
+
+        Ok(())
+    }
+}
+
+#[cfg(feature = "self-contained")]
+impl Decode for EncodableIds
+{
+    fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
+    where
+        D: Decoder,
+    {
+        let len = usize::decode(decoder)?;
+
+        let mut vec = Vec::with_capacity(len);
+
+        for _ in 0..len {
+            let x = Id::decode(decoder)?;
+
+            vec.push(x);
+        }
+
+        Ok(EncodableIds(vec))
+    }
+}
+
+#[cfg(feature = "self-contained")]
+impl<'de> BorrowDecode<'de> for EncodableIds {
+    fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
+    where
+        D: BorrowDecoder<'de>,
+    {
+        let len = usize::decode(decoder)?;
+        let slice = decoder.borrow_reader().take_bytes(len * std::mem::size_of::<Id>())?;
+
+        // SAFETY: Perform unholy rites again: see above.
+        let vec = unsafe { Vec::from_raw_parts(slice.as_ptr() as *mut Id, len, len) };
+
+        Ok(EncodableIds(vec))
+    }
 }
