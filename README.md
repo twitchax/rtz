@@ -167,20 +167,21 @@ tz.identifier; // "America/Los_Angeles"
 The library and binary both support various feature flags.  Of most important note are:
 * Top-Level:
   * `default = ["cli"]`
-  * `full = ["tz-ned", "self-contained"]`
+  * `full = ["tz-ned", "tz-osm", "admin-osm", "self-contained"]`
 * Datasets:
   * `tz-ned`: enables the [Natural Earth](https://www.naturalearthdata.com/) time zone dataset, and the associated produced library functions.
   * `tz-osm`: enables the [OpenStreetMap](https://www.openstreetmap.org/) time zone dataset, and the associated produced library functions.
+  * `admin-osm`: enables the [OpenStreetMap](https://www.openstreetmap.org/) administrative dataset, and the associated produced library functions.
 * Binary configuration:
   * `cli`: enables the CLI features, and can be removed if only compiling the library.
   * `self-contained`: enables the self-contained features, which build with datasets embedded into the binary.
   * `double-precision`: uses `f64`s every for `Geometry` and `Polygon` data types, which is more accurate but fatter than `f32`s.
-  * `unsimplified`: produces unsimplified data caches.  Requires more binary / memory overhead, but is more accurate.  Uses the level of detail from the original dataset.  The default is to simplify to an epsilon of `0.0001`.
-  * `extrasimplified`: produces extrasimplified data caches.  Requires less binary / memory overhead, but is less accurate.  This sets the simplification epsilon to `0.01`.
-  * `owned-decode`: uses `owned` instead of `borrow` for the `decode` feature of the `decode` crate.  This increases memory footprint by not mapping the data directly from the binary, but is less `unsafe`-y / dark arts-y.
+  * `unsimplified`: produces unsimplified data caches.  Requires more binary / memory overhead, but is more accurate.  Uses the level of detail from the original dataset.  The default is to simplify to an epsilon of `0.0001` (generally).
+  * `extrasimplified`: produces extrasimplified data caches.  Requires less binary / memory overhead, but is less accurate.  This sets the simplification epsilon to `0.01` (generally).
+  * `owned-decode`: uses `owned` instead of `borrow` for the `decode` feature of the `bincode` crate.  This increases memory footprint by not mapping the data directly from the binary, but is less `unsafe`-y / dark arts-y.
 * Special Modifiers:
   * `wasm`: enables the WASM features, and is required to build an NPM package via `wasm-pack`.
-  * `web = ["full", "borrow-decode"]`: enables the `serve` subcommand, which starts a Rocket web server that can respond to time zone requests.
+  * `web = ["full"]`: enables the `serve` subcommand, which starts a Rocket web server that can respond to time zone requests.
 * Other Considerations:
   * `wasm` / `wasi` builds currently do not play nice with `reqwest` and `zip`, so the `wasm` / `wasi` builds require the `self-contained` feature.
 
@@ -205,13 +206,13 @@ Below is the sample performance to resolve a time zone from a `(lng,lat)` pair t
 ## Test
 
 ```bash
-cargo test --features full --features web
+cargo test --features web
 ```
 
 ## Bench
 
 ```bash
-cargo bench --features full --features web
+cargo bench --features web
 ```
 
 ## License
