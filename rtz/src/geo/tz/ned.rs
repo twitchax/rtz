@@ -12,7 +12,7 @@ use rtz_core::{
 };
 
 use crate::{
-    geo::shared::{decode_binary_data, HasItemData, HasLookupData},
+    geo::shared::{HasItemData, HasLookupData},
     CanPerformGeoLookup,
 };
 
@@ -47,7 +47,7 @@ impl HasLookupData for NedTimezone {
 
         #[cfg(feature = "self-contained")]
         {
-            CACHE.get_or_init(|| decode_binary_data(LOOKUP_BINCODE))
+            CACHE.get_or_init(|| crate::geo::shared::decode_binary_data(LOOKUP_BINCODE))
         }
 
         #[cfg(not(feature = "self-contained"))]

@@ -1,6 +1,6 @@
 [package]
 name = "rtz"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2021"
 authors = ["Aaron Roney <twitchax@gmail.com>"]
 license = "MIT"
@@ -12,7 +12,7 @@ keywords = ["cli", "time", "zone", "timezone", "geospatial"]
 categories = ["command-line-utilities"]
 
 [package.metadata."docs.rs"]
-features = ["tz-ned", "tz-osm"]
+features = ["tz-ned", "tz-osm", "admin-osm"]
 
 [lib]
 name = "rtzlib"
