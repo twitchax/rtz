@@ -50,6 +50,8 @@ pub fn create_rocket(config: &Config) -> Res<Rocket<Build>> {
 
     let state = RocketState { config: config.clone() };
 
+    let cors = rocket_cors::CorsOptions::default().to_cors()?;
+
     let rocket = rocket::custom(rocket_config)
         .manage(state)
         .mount(
@@ -63,6 +65,7 @@ pub fn create_rocket(config: &Config) -> Res<Rocket<Build>> {
                 ..Default::default()
             }),
         )
+        .attach(cors)
         .attach(Shield::new());
 
     Ok(rocket)
