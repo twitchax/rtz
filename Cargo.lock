@@ -405,6 +405,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cities-json"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4720186a8069da0585af9ec1e2f9e815d7d1bbe47dc817b8597e31a609f898f"
+dependencies = [
+ "lazy_static",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "clap"
 version = "4.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2266,6 +2278,7 @@ dependencies = [
  "chashmap",
  "chrono",
  "chrono-tz",
+ "cities-json",
  "clap",
  "config",
  "geo",

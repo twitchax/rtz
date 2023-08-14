@@ -224,4 +224,12 @@ mod bench {
             black_box(NedTimezone::lookup(x, y));
         });
     }
+
+    #[bench]
+    fn bench_cities(b: &mut Bencher) {
+        b.iter(|| {
+            let city = cities_json::get_random_cities();
+            black_box(NedTimezone::lookup(city.lng as f32, city.lat as f32));
+        });
+    }
 }

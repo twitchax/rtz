@@ -230,4 +230,12 @@ mod bench {
             black_box(OsmTimezone::lookup(x, y));
         });
     }
+
+    #[bench]
+    fn bench_cities(b: &mut Bencher) {
+        b.iter(|| {
+            let city = cities_json::get_random_cities();
+            black_box(OsmTimezone::lookup(city.lng as f32, city.lat as f32));
+        });
+    }
 }

@@ -13,10 +13,10 @@ categories = ["command-line-utilities"]
 
 [features]
 default = []
-full = ["tz-ned", "tz-osm", "admin-osm", "self-contained"]
+full = ["tz-ned", "tz-osm", "admin-osm", "self-contained", "rtz-core/full"]
 
 force-rebuild = []
-self-contained = []
+self-contained = ["rtz-core/self-contained"]
 
 tz-ned = []
 tz-osm = []

@@ -85,6 +85,7 @@ js-sys = { version = "0.3.61", optional = true }
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
+cities-json = "*"
 
 [build-dependencies]
 rtz-build = { path = "../rtz-build", version = "0.2.6"}
