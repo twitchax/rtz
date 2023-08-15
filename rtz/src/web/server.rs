@@ -1,6 +1,7 @@
 use std::net::IpAddr;
 
 use rocket::{data::Limits, get, log::LogLevel, serde::json::Json, shield::Shield, Build, Rocket};
+use rocket_analytics::Analytics;
 use rocket_okapi::{
     openapi, openapi_get_routes,
     swagger_ui::{make_swagger_ui, SwaggerUIConfig},
@@ -52,7 +53,7 @@ pub fn create_rocket(config: &Config) -> Res<Rocket<Build>> {
 
     let cors = rocket_cors::CorsOptions::default().to_cors()?;
 
-    let rocket = rocket::custom(rocket_config)
+    let mut rocket = rocket::custom(rocket_config)
         .manage(state)
         .mount(
             "/api",
@@ -67,6 +68,10 @@ pub fn create_rocket(config: &Config) -> Res<Rocket<Build>> {
         )
         .attach(cors)
         .attach(Shield::new());
+
+    if let Some(analytics_api_key) = &config.analytics_api_key {
+        rocket = rocket.attach(Analytics::new(analytics_api_key.clone()));
+    }
 
     Ok(rocket)
 }

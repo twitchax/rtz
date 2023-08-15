@@ -9,6 +9,7 @@ struct OptionalConfig {
     bind_address: Option<String>,
     port: Option<u16>,
     should_log: Option<bool>,
+    analytics_api_key: Option<String>,
 }
 
 /// The configuration type.
@@ -17,6 +18,7 @@ pub struct Config {
     pub(crate) bind_address: String,
     pub(crate) port: u16,
     pub(crate) should_log: bool,
+    pub(crate) analytics_api_key: Option<String>,
 }
 
 impl Config {
@@ -50,6 +52,7 @@ impl Config {
                     true
                 })
             }),
+            analytics_api_key: optional_config.analytics_api_key,
         };
 
         Ok(config)

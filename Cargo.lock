@@ -365,6 +365,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "pure-rust-locales",
  "serde",
  "time 0.1.45",
  "wasm-bindgen",
@@ -1887,6 +1888,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "pure-rust-locales"
+version = "0.5.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b45c49fc4f91f35bae654f85ebb3a44d60ac64f11b3166ffa609def390c732d8"
+
+[[package]]
 name = "quote"
 version = "1.0.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2155,6 +2162,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "rocket-analytics"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19f17c5ce472c54eb3cc34c9b803e6888fd619a6dc26246f38e317bef5f73ac2"
+dependencies = [
+ "chrono",
+ "lazy_static",
+ "reqwest",
+ "rocket",
+ "serde",
+]
+
+[[package]]
 name = "rocket_codegen"
 version = "0.5.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2291,6 +2311,7 @@ dependencies = [
  "rayon",
  "reqwest",
  "rocket",
+ "rocket-analytics",
  "rocket_cors",
  "rocket_okapi",
  "rtz-build",
