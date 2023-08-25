@@ -19,7 +19,7 @@ capable of supporting around 8,000 RPS, and is deployed to the following regions
 
 In addition, the server will now generally attempt to not break backwards compatibility within an api version.  This means that the server will (attempt to) not change the response format for a given api version, and will (attempt to) not remove any fields from the response.  This does not mean that the server will not add fields to the response, but it will (attempt to) not remove them.
 
-Requests take the form of `http://tz.twitchax.com/api/v1/osm/tz/{lng}/{lat}`.  You can also check out the [swagger docs](http://tz.twitchax.com/app-docs) to explore other endpoints and versioning strategy.
+Requests take the form of `http://tz.twitchax.com/api/v1/osm/tz/{lng}/{lat}`.  You can also check out the [api docs](http://tz.twitchax.com/rapidoc) to explore other endpoints and versioning strategy.
 
 Example request:
 

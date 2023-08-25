@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
-use schemars::JsonSchema;
+use utoipa::ToSchema;
 
 #[cfg(feature = "admin-osm")]
 use rtz_core::geo::admin::osm::OsmAdmin;
@@ -17,7 +17,7 @@ use rtz_core::geo::tz::osm::OsmTimezone;
 /// Currently ingested version of this data set is [here](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_10m_time_zones.geojson).
 #[cfg(feature = "tz-ned")]
 #[derive(Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "web", derive(JsonSchema))]
+#[cfg_attr(feature = "web", derive(ToSchema))]
 #[serde(rename_all = "camelCase")]
 pub struct NedTimezoneResponse1 {
     /// The index of the [`NedTimezoneResponse1`] in the global static cache.
@@ -63,7 +63,7 @@ impl From<&'static NedTimezone> for NedTimezoneResponse1 {
 /// Currently ingested version of this data set is [here](https://github.com/evansiroky/timezone-boundary-builder/releases/download/2023b/timezones-with-oceans.geojson.zip).
 #[cfg(feature = "tz-osm")]
 #[derive(Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "web", derive(JsonSchema))]
+#[cfg_attr(feature = "web", derive(ToSchema))]
 #[serde(rename_all = "camelCase")]
 pub struct OsmTimezoneResponse1 {
     /// The index of the [`OsmTimezoneResponse1`] in the global static cache.
@@ -135,7 +135,7 @@ impl From<&'static OsmTimezone> for OsmTimezoneResponse1 {
 /// Currently ingested version of this data set is [here](https://planet.openstreetmap.org/).
 #[cfg(feature = "admin-osm")]
 #[derive(Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "web", derive(JsonSchema))]
+#[cfg_attr(feature = "web", derive(ToSchema))]
 #[serde(rename_all = "camelCase")]
 pub struct OsmAdminResponse1 {
     /// The index of the [`OsmAdminResponse1`] in the global static cache.
