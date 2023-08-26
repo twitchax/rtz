@@ -6,6 +6,8 @@ pub(crate) mod config;
 pub(crate) mod response_types;
 pub(crate) mod server;
 pub(crate) mod types;
+pub(crate) mod telemetry;
+pub(crate) mod utilities;
 
 // Imports.
 
