@@ -39,7 +39,7 @@ tz-osm = ["rtz-core/tz-osm", "rtz-build/tz-osm", "chrono-tz", "chrono"]
 admin-osm = ["rtz-core/admin-osm", "rtz-build/admin-osm"]
 
 cli = ["clap"]
-web = ["full", "tokio", "config", "log", "simple_logger", "schemars", "chrono", "axum", "hyper", "tower", "tower-http", "utoipa", "utoipa-swagger-ui", "utoipa-redoc", "utoipa-rapidoc", "tracing", "opentelemetry", "opentelemetry-application-insights", "tracing-opentelemetry", "tracing-subscriber"]
+web = ["full", "tokio", "config", "log", "simple_logger", "schemars", "chrono", "axum", "hyper", "tower", "tower-http", "utoipa", "utoipa-swagger-ui", "utoipa-redoc", "utoipa-rapidoc", "axum-insights", "tracing"]
 wasm = ["wasm-bindgen", "wasm-bindgen-futures", "wee_alloc", "js-sys"]
 
 [dependencies]
@@ -68,7 +68,7 @@ chrono-tz ={ version = "0.8.3", features = ["serde"], optional = true }
 chrono = { version = "0.4.19", features = ["serde"], optional = true }
 
 # web
-tokio = { version = "1.29.1", features = ["rt", "macros", "signal"], optional = true }
+tokio = { version = "1.29.1", features = ["rt", "macros", "signal", "parking_lot"], optional = true }
 config = { version = "0.13.3", optional = true }
 log = { version = "0.4.8", features = ["release_max_level_info"], optional = true }
 simple_logger = { version = "4.2.0", optional = true }
@@ -83,11 +83,8 @@ utoipa-redoc = { version = "0.1.0", features = ["axum"], optional = true }
 utoipa-rapidoc = { version = "0.1.0", features = ["axum"], optional = true }
 
 # telemetry
+axum-insights = { version = "0.2.0", optional = true }
 tracing = { version = "0.1.37", optional = true }
-opentelemetry = { version = "0.20", features = ["rt-tokio"], optional = true }
-opentelemetry-application-insights = { version = "0.27.0", features = ["reqwest-client"], optional = true }
-tracing-opentelemetry = { version = "0.20.0", optional = true}
-tracing-subscriber = { version = "0.3.17", optional = true }
 
 # wasm
 wasm-bindgen = { version = "0.2.84", optional = true }

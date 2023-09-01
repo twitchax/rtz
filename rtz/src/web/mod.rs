@@ -6,7 +6,6 @@ pub(crate) mod config;
 pub(crate) mod response_types;
 pub(crate) mod server;
 pub(crate) mod types;
-pub(crate) mod telemetry;
 pub(crate) mod utilities;
 
 // Imports.
@@ -52,13 +51,13 @@ pub fn server_start(config_path: String, bind_address: Option<String>, port: Opt
 mod tests {
     use super::*;
     use axum::Router;
-    use hyper::{Request, Body, StatusCode};
+    use hyper::{Body, Request, StatusCode};
     use pretty_assertions::assert_eq;
-    use tower::{ServiceExt, Service};
+    use tower::{Service, ServiceExt};
 
     fn get_client() -> Router {
         let config = Config::new("", None, None, Some(false)).unwrap();
-        
+
         server::create_axum_app(&config)
     }
 
@@ -148,14 +147,14 @@ mod bench {
 
     use super::*;
     use axum::Router;
-    use hyper::{Request, Body, StatusCode};
+    use hyper::{Body, Request, StatusCode};
     use pretty_assertions::assert_eq;
     use test::Bencher;
-    use tower::{ServiceExt, Service};
+    use tower::{Service, ServiceExt};
 
     fn get_client() -> Router {
         let config = Config::new("", None, None, Some(false)).unwrap();
-        
+
         server::create_axum_app(&config)
     }
 
@@ -193,7 +192,7 @@ mod bench {
             futures::executor::block_on(async {
                 let request = Request::get(format!("/api/ned/tz/{}/{}", x, y)).body(Body::empty()).unwrap();
                 let response = client.call(request).await.unwrap();
-                
+
                 assert_eq!(response.status(), StatusCode::OK);
             });
         });
@@ -213,7 +212,7 @@ mod bench {
                     for y in ys.clone() {
                         let request = Request::get(format!("/api/osm/tz/{}/{}", x, y)).body(Body::empty()).unwrap();
                         let response = client.call(request).await.unwrap();
-                        
+
                         assert_eq!(response.status(), StatusCode::OK);
                     }
                 }
@@ -233,7 +232,7 @@ mod bench {
             futures::executor::block_on(async {
                 let request = Request::get(format!("/api/osm/tz/{}/{}", x, y)).body(Body::empty()).unwrap();
                 let response = client.call(request).await.unwrap();
-                
+
                 assert_eq!(response.status(), StatusCode::OK);
             });
         });
@@ -253,7 +252,7 @@ mod bench {
                     for y in ys.clone() {
                         let request = Request::get(format!("/api/osm/admin/{}/{}", x, y)).body(Body::empty()).unwrap();
                         let response = client.call(request).await.unwrap();
-                        
+
                         assert_eq!(response.status(), StatusCode::OK);
                     }
                 }
@@ -274,7 +273,7 @@ mod bench {
             futures::executor::block_on(async {
                 let request = Request::get(format!("/api/osm/admin/{}/{}", x, y)).body(Body::empty()).unwrap();
                 let response = client.call(request).await.unwrap();
-                
+
                 assert_eq!(response.status(), StatusCode::OK);
             });
         });

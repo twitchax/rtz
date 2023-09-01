@@ -1,6 +1,11 @@
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    sync::{Arc, OnceLock},
+};
 
-use axum::{extract::Path, routing::get, Json, Router, middleware::from_fn};
+use axum::{extract::Path, routing::get, Json, Router};
+use axum_insights::AppInsights;
+use hyper::Method;
 use rtz_core::{
     base::types::{Float, Void},
     geo::{
@@ -8,7 +13,8 @@ use rtz_core::{
         tz::{ned::NedTimezone, osm::OsmTimezone},
     },
 };
-use tracing::{instrument, Instrument};
+use tower_http::cors::{Any, CorsLayer};
+use tracing::instrument;
 use utoipa::OpenApi;
 use utoipa_rapidoc::RapiDoc;
 use utoipa_redoc::{Redoc, Servable};
@@ -22,19 +28,22 @@ use crate::{
 use super::{
     config::Config,
     response_types::LookupResponse,
-    types::{get_last_modified_time, AppState, IfModifiedSince, WebResult}, utilities::shutdown_signal, telemetry::{telemetry_fn, self},
+    types::{get_last_modified_time, AppState, IfModifiedSince, WebResult, WebError},
+    utilities::shutdown_signal,
 };
+
+// Statics.
+
+static FLY_REGION: OnceLock<String> = OnceLock::new();
+static FLY_ALLOC_ID: OnceLock<String> = OnceLock::new();
+static FLY_PUBLIC_IP: OnceLock<String> = OnceLock::new();
 
 /// Starts the web server.
 pub async fn start(config: &Config) -> Void {
     let app = create_axum_app(config);
 
-    telemetry::init(config.analytics_api_key.as_deref());
-
     let bind_address = format!("{}:{}", config.bind_address, config.port);
-    axum::Server::bind(&bind_address
-        .parse()
-        .unwrap())
+    axum::Server::bind(&bind_address.parse().unwrap())
         .serve(app.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
         .await
@@ -46,7 +55,41 @@ pub async fn start(config: &Config) -> Void {
 pub fn create_axum_app(config: &Config) -> Router {
     let state = AppState { config: Arc::new(config.clone()) };
 
-    let telemetry_layer = from_fn(telemetry_fn);
+    let cors_layer = CorsLayer::new().allow_methods([Method::GET]).allow_origin(Any);
+
+    let name = std::env::var("FLY_REGION").unwrap_or_else(|_| "server".to_string());
+    let _ = FLY_REGION.set(name.clone());
+    let _ = FLY_ALLOC_ID.set(std::env::var("FLY_ALLOC_ID").unwrap_or_else(|_| "unknown".to_string()));
+    let _ = FLY_PUBLIC_IP.set(std::env::var("FLY_PUBLIC_IP").unwrap_or_else(|_| "unknown".to_string()));
+
+    let telemetry_layer = AppInsights::default()
+        .with_connection_string(config.analytics_api_key.clone())
+        .with_service_config("rtz", name)
+        .with_catch_panic(true)
+        .with_field_mapper(|p| {
+            let fly_alloc_id = FLY_ALLOC_ID.get().unwrap().to_owned();
+            let fly_public_ip = FLY_PUBLIC_IP.get().unwrap().to_owned();
+            let fly_region = FLY_REGION.get().unwrap().to_owned();
+            let fly_accept_region = p.headers.get("Fly-Region").map(|v| v.to_str().unwrap_or("unknown").to_owned()).unwrap_or("unknown".to_owned());
+
+            HashMap::from([
+                ("fly.alloc_id".to_string(), fly_alloc_id),
+                ("fly.public_ip".to_string(), fly_public_ip),
+                ("fly.server_region".to_string(), fly_region),
+                ("fly.accept_region".to_string(), fly_accept_region),
+            ])
+        })
+        .with_panic_mapper(|e| {
+            (500, WebError {
+                status: 500,
+                message: format!("A panic occurred: {:?}", e),
+                backtrace: None,
+            })
+        })
+        .with_error_type::<WebError>()
+        .build_and_set_global_default()
+        .unwrap()
+        .layer();
 
     let api_router = Router::new()
         .route("/ned/tz/:lng/:lat", get(timezone_ned))
@@ -61,6 +104,7 @@ pub fn create_axum_app(config: &Config) -> Router {
         .merge(Redoc::with_url("/redoc", ApiDoc::openapi()))
         .merge(RapiDoc::new("/api-docs/openapi.json").path("/rapidoc"))
         .nest("/api", api_router)
+        .layer(cors_layer)
         .layer(telemetry_layer)
         .with_state(state);
 

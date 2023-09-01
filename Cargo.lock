@@ -238,6 +238,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum-insights"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d4671ab9126b6d109c06fe9698485d4602c718e19d7c647e32347c1a7112943"
+dependencies = [
+ "axum",
+ "futures",
+ "http",
+ "hyper",
+ "opentelemetry",
+ "opentelemetry-application-insights",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "axum-macros"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -408,7 +430,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff41a3c2c1e39921b9003de14bf0439c7b63a9039637c291e1a64925d8ddfa45"
 dependencies = [
  "owning_ref",
- "parking_lot",
+ "parking_lot 0.4.8",
 ]
 
 [[package]]
@@ -1653,7 +1675,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "149d8f5b97f3c1133e3cfcd8886449959e856b557ff281e292b733d7c69e005e"
 dependencies = [
  "owning_ref",
- "parking_lot_core",
+ "parking_lot_core 0.2.14",
+]
+
+[[package]]
+name = "parking_lot"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3742b2c103b9f06bc9fff0a37ff4912935851bee6d36f3c02bcc755bcfec228f"
+dependencies = [
+ "lock_api",
+ "parking_lot_core 0.9.8",
 ]
 
 [[package]]
@@ -1666,6 +1698,19 @@ dependencies = [
  "rand 0.4.6",
  "smallvec 0.6.14",
  "winapi",
+]
+
+[[package]]
+name = "parking_lot_core"
+version = "0.9.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93f00c865fe7cabf650081affecd3871070f26767e7b2070a3ffae14c654b447"
+dependencies = [
+ "cfg-if 1.0.0",
+ "libc",
+ "redox_syscall 0.3.5",
+ "smallvec 1.11.0",
+ "windows-targets",
 ]
 
 [[package]]
@@ -2109,6 +2154,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "axum",
+ "axum-insights",
  "bincode",
  "chashmap",
  "chrono",
@@ -2123,8 +2169,6 @@ dependencies = [
  "hyper",
  "js-sys",
  "log",
- "opentelemetry",
- "opentelemetry-application-insights",
  "pretty_assertions",
  "rand 0.8.5",
  "rayon",
@@ -2139,8 +2183,6 @@ dependencies = [
  "tower",
  "tower-http",
  "tracing",
- "tracing-opentelemetry",
- "tracing-subscriber",
  "utoipa",
  "utoipa-rapidoc",
  "utoipa-redoc",
@@ -2679,6 +2721,7 @@ dependencies = [
  "libc",
  "mio",
  "num_cpus",
+ "parking_lot 0.12.1",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2",
@@ -2851,12 +2894,14 @@ dependencies = [
 
 [[package]]
 name = "tracing-opentelemetry"
-version = "0.20.0"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc09e402904a5261e42cf27aea09ccb7d5318c6717a9eec3d8e2e65c56b18f19"
+checksum = "75327c6b667828ddc28f5e3f169036cb793c3f588d83bf0f262a7f062ffed3c8"
 dependencies = [
  "once_cell",
  "opentelemetry",
+ "opentelemetry_sdk",
+ "smallvec 1.11.0",
  "tracing",
  "tracing-core",
  "tracing-log",

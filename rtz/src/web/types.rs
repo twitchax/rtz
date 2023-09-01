@@ -9,6 +9,7 @@ use axum::{
     http::{request::Parts, HeaderValue},
     response::{IntoResponse, Response},
 };
+use axum_insights::AppInsightsError;
 use chrono::{DateTime, Utc};
 use hyper::StatusCode;
 use rtz_core::base::types::Err;
@@ -84,6 +85,26 @@ pub struct WebError {
     pub status: u16,
     pub message: String,
     pub backtrace: Option<String>,
+}
+
+impl Default for WebError {
+    fn default() -> Self {
+        WebError {
+            status: 0,
+            message: "An unknown error occurred.".to_string(),
+            backtrace: None,
+        }
+    }
+}
+
+impl AppInsightsError for WebError {
+    fn message(&self) -> Option<String> {
+        Some(self.message.clone())
+    }
+
+    fn backtrace(&self) -> Option<String> {
+        self.backtrace.clone()
+    }
 }
 
 impl std::error::Error for WebError {}

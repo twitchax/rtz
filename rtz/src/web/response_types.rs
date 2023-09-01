@@ -1,6 +1,9 @@
 //! Them for supporting the response types of the APIs, and their versions.
 
-use axum::{response::{IntoResponse, Response}, http::HeaderValue};
+use axum::{
+    http::HeaderValue,
+    response::{IntoResponse, Response},
+};
 use hyper::StatusCode;
 use serde::Serialize;
 
