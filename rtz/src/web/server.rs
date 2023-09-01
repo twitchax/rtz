@@ -5,7 +5,7 @@ use std::{
 
 use axum::{extract::Path, routing::get, Json, Router};
 use axum_insights::AppInsights;
-use hyper::Method;
+use hyper::{Method, StatusCode};
 use rtz_core::{
     base::types::{Float, Void},
     geo::{
@@ -28,7 +28,7 @@ use crate::{
 use super::{
     config::Config,
     response_types::LookupResponse,
-    types::{get_last_modified_time, AppState, IfModifiedSince, WebResult, WebError},
+    types::{get_last_modified_time, AppState, IfModifiedSince, WebError, WebResult},
     utilities::shutdown_signal,
 };
 
@@ -80,12 +80,17 @@ pub fn create_axum_app(config: &Config) -> Router {
             ])
         })
         .with_panic_mapper(|e| {
-            (500, WebError {
-                status: 500,
-                message: format!("A panic occurred: {:?}", e),
-                backtrace: None,
-            })
+            (
+                500,
+                WebError {
+                    status: 500,
+                    message: format!("A panic occurred: {:?}", e),
+                    backtrace: None,
+                },
+            )
         })
+        .with_noop(config.analytics_api_key.is_none())
+        .with_success_filter(|status| status.is_success() || status.is_redirection() || status.is_informational() || status == StatusCode::NOT_FOUND)
         .with_error_type::<WebError>()
         .build_and_set_global_default()
         .unwrap()

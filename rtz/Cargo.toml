@@ -83,7 +83,8 @@ utoipa-redoc = { version = "0.1.0", features = ["axum"], optional = true }
 utoipa-rapidoc = { version = "0.1.0", features = ["axum"], optional = true }
 
 # telemetry
-axum-insights = { version = "0.2.0", optional = true }
+# axum-insights = { path="../../axum-insights", version = "0.2.2", optional = true }
+axum-insights = { version = "0.2.2", optional = true }
 tracing = { version = "0.1.37", optional = true }
 
 # wasm
