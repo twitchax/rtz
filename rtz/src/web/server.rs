@@ -120,7 +120,7 @@ pub fn create_axum_app(config: &Config) -> Router {
 
 #[derive(OpenApi)]
 #[openapi(
-    paths(timezone_ned, timezone_ned_v1, timezone_osm, timezone_osm_v1, admin_osm, admin_osm_v1),
+    paths(health, timezone_ned, timezone_ned_v1, timezone_osm, timezone_osm_v1, admin_osm, admin_osm_v1),
     components(schemas(NedTimezoneResponse1, OsmTimezoneResponse1, OsmAdminResponse1))
 )]
 struct ApiDoc;
