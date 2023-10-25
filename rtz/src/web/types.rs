@@ -72,7 +72,7 @@ impl IfModifiedSince {
 pub type WebResult<T> = Result<T, WebError>;
 
 /// A simple web result with no return value.
-//pub type WebVoid = WebResult<()>;
+pub type WebVoid = WebResult<()>;
 
 /// A [`WebResult`] where the content is [`Json`].
 //pub type JsonResult<T> = WebResult<Json<T>>;

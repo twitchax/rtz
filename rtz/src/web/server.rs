@@ -28,7 +28,7 @@ use crate::{
 use super::{
     config::Config,
     response_types::LookupResponse,
-    types::{get_last_modified_time, AppState, IfModifiedSince, WebError, WebResult},
+    types::{get_last_modified_time, AppState, IfModifiedSince, WebError, WebResult, WebVoid},
     utilities::shutdown_signal,
 };
 
@@ -98,6 +98,7 @@ pub fn create_axum_app(config: &Config) -> Router {
         .layer();
 
     let api_router = Router::new()
+        .route("/health", get(health))
         .route("/ned/tz/:lng/:lat", get(timezone_ned))
         .route("/v1/ned/tz/:lng/:lat", get(timezone_ned_v1))
         .route("/osm/tz/:lng/:lat", get(timezone_osm))
@@ -123,6 +124,26 @@ pub fn create_axum_app(config: &Config) -> Router {
     components(schemas(NedTimezoneResponse1, OsmTimezoneResponse1, OsmAdminResponse1))
 )]
 struct ApiDoc;
+
+/// Performs a "semi-deep" health check.
+#[utoipa::path(
+    get,
+    context_path = "/api", 
+    path = "/health", 
+    tag = "Health", 
+    responses(
+        (status = 200, description = "List all found timezones successfully.", body = ()),
+        (status = 304, description = "Not modified."),
+        (status = 404, description = "No timezone results: location likely resides on a boundary."),
+        (status = 500, description = "An unwarranted failure."),
+    )
+)]
+#[instrument]
+async fn health(if_modified_since: IfModifiedSince) -> WebVoid {
+    timezone_ned_v1(Path((30.0, 30.0)), if_modified_since).await?;
+
+    Ok(())
+}
 
 /// Gets time zone information from the NED dataset.
 ///
