@@ -239,9 +239,9 @@ dependencies = [
 
 [[package]]
 name = "axum-insights"
-version = "0.2.2"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8d3103af267e26dd1d143b7e40f6ad8ee25648e9eae2327a617761a4a1fd5a1"
+checksum = "7c86b9b19a856cf74e8ff953ebfb9c1b2c53438f02828d06ebf7ccb108070db4"
 dependencies = [
  "axum",
  "futures",
@@ -1445,6 +1445,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ntapi"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8a3895c6391c39d7fe7ebc444a87eb2991b2a0bc718fdabd071eec617fc68e4"
+dependencies = [
+ "winapi",
+]
+
+[[package]]
 name = "nu-ansi-term"
 version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1554,14 +1563,16 @@ dependencies = [
 
 [[package]]
 name = "opentelemetry-application-insights"
-version = "0.27.0"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64120d99ded13fccb5f8bc393a3b1f07d76386bb0b896bbb4fb00058010e02e7"
+checksum = "7d8d396b459e9f3c770e396394cbc4ac840d3f2b61b2e8433eca3e08be012609"
 dependencies = [
  "async-trait",
  "bytes",
  "chrono",
  "flate2",
+ "futures-channel",
+ "futures-util",
  "http",
  "once_cell",
  "opentelemetry",
@@ -1571,6 +1582,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_repr",
+ "sysinfo",
  "thiserror",
 ]
 
@@ -2610,6 +2622,21 @@ name = "sync_wrapper"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2047c6ded9c721764247e62cd3b03c09ffc529b2ba5b10ec482ae507a4a70160"
+
+[[package]]
+name = "sysinfo"
+version = "0.29.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a18d114d420ada3a891e6bc8e96a2023402203296a47cdd65083377dad18ba5"
+dependencies = [
+ "cfg-if 1.0.0",
+ "core-foundation-sys",
+ "libc",
+ "ntapi",
+ "once_cell",
+ "rayon",
+ "winapi",
+]
 
 [[package]]
 name = "tempfile"

@@ -65,6 +65,7 @@ pub fn create_axum_app(config: &Config) -> Router {
     let telemetry_layer = AppInsights::default()
         .with_connection_string(config.analytics_api_key.clone())
         .with_service_config("rtz", name)
+        .with_live_metrics(true)
         .with_catch_panic(true)
         .with_field_mapper(|p| {
             let fly_alloc_id = FLY_ALLOC_ID.get().unwrap().to_owned();
