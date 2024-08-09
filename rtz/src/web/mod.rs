@@ -50,10 +50,11 @@ pub fn server_start(config_path: String, bind_address: Option<String>, port: Opt
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::Router;
-    use hyper::{Body, Request, StatusCode};
+    use axum::{body::Body, Router};
+    use hyper::{Request, StatusCode};
     use pretty_assertions::assert_eq;
     use tower::{Service, ServiceExt};
+    use http_body_util::BodyExt;
 
     fn get_client() -> Router {
         let config = Config::new("", None, None, Some(false)).unwrap();
@@ -70,7 +71,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
 
-        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body = response.into_body().collect().await.unwrap_or_default().to_bytes();
         let expected = r#"[{"id":20,"identifier":"America/Los_Angeles","description":"Canada (most of British Columbia), Mexico (Baja California), United States (California, most of Nevada, most of Oregon, Washington (state))","dstDescription":"Canada (most of British Columbia), Mexico (Baja California), United States (California, most of Nevada, most of Oregon, Washington (state))","offset":"UTC-08:00","zone":-8.0,"rawOffset":-28800}]"#;
 
         assert_eq!(body, expected);
@@ -85,7 +86,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
 
-        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body = response.into_body().collect().await.unwrap_or_default().to_bytes();
         let expected = r#"[]"#;
 
         assert_eq!(body, expected);
@@ -96,14 +97,15 @@ mod tests {
         let mut client = get_client();
 
         let request = Request::get("/api/v1/ned/tz/-121.0/46.0").body(Body::empty()).unwrap();
-        let response = client.ready().await.unwrap().call(request).await.unwrap();
+        // This is required because there are multiple impls of `ready` for `Router`. 🙄
+        let response = <axum::Router as tower::ServiceExt<Request<Body>>>::ready(&mut client).await.unwrap().call(request).await.unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
 
         let if_modified_since = response.headers().get("If-Modified-Since").unwrap().as_bytes();
 
         let request = Request::get("/api/v1/ned/tz/-121.0/46.0").header("If-Modified-Since", if_modified_since).body(Body::empty()).unwrap();
-        let response = client.ready().await.unwrap().call(request).await.unwrap();
+        let response = <axum::Router as tower::ServiceExt<Request<Body>>>::ready(&mut client).await.unwrap().call(request).await.unwrap();
 
         assert_eq!(response.status(), StatusCode::NOT_MODIFIED);
     }
@@ -117,7 +119,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
 
-        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body = response.into_body().collect().await.unwrap_or_default().to_bytes();
         let expected = r#"[{"id":162,"identifier":"America/Phoenix","shortIdentifier":"MST","offset":"UTC-07:00","rawOffset":-25200,"rawBaseOffset":-25200,"rawDstOffset":0,"zone":-7.0"#;
 
         assert!(body.starts_with(expected.as_bytes()));
@@ -132,150 +134,9 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
 
-        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body = response.into_body().collect().await.unwrap_or_default().to_bytes();
         let expected = r#"[{"id":216,"name":"مصر","level":2},{"id":2982,"name":"مطروح","level":4}]"#;
 
         assert_eq!(body, expected);
-    }
-}
-
-// Benches.
-
-#[cfg(test)]
-mod bench {
-    extern crate test;
-
-    use super::*;
-    use axum::Router;
-    use hyper::{Body, Request, StatusCode};
-    use pretty_assertions::assert_eq;
-    use test::Bencher;
-    use tower::{Service, ServiceExt};
-
-    fn get_client() -> Router {
-        let config = Config::new("", None, None, Some(false)).unwrap();
-
-        server::create_axum_app(&config)
-    }
-
-    #[bench]
-    fn bench_server_sweep_ned_timezone_v1(b: &mut Bencher) {
-        let mut client = get_client();
-        let client = futures::executor::block_on(async { client.ready().await.unwrap() });
-
-        let xs = (-179..180).step_by(10);
-        let ys = (-89..90).step_by(10);
-
-        b.iter(|| {
-            futures::executor::block_on(async {
-                for x in xs.clone() {
-                    for y in ys.clone() {
-                        let request = Request::get(format!("/api/ned/tz/{}/{}", x, y)).body(Body::empty()).unwrap();
-                        let response = client.call(request).await.unwrap();
-
-                        assert_eq!(response.status(), StatusCode::OK);
-                    }
-                }
-            });
-        });
-    }
-
-    #[bench]
-    fn bench_server_worst_case_single_ned_timezone_v1(b: &mut Bencher) {
-        let mut client = get_client();
-        let client = futures::executor::block_on(async { client.ready().await.unwrap() });
-
-        let x = -67.5;
-        let y = -66.5;
-
-        b.iter(|| {
-            futures::executor::block_on(async {
-                let request = Request::get(format!("/api/ned/tz/{}/{}", x, y)).body(Body::empty()).unwrap();
-                let response = client.call(request).await.unwrap();
-
-                assert_eq!(response.status(), StatusCode::OK);
-            });
-        });
-    }
-
-    #[bench]
-    fn bench_server_sweep_osm_timezone_v1(b: &mut Bencher) {
-        let mut client = get_client();
-        let client = futures::executor::block_on(async { client.ready().await.unwrap() });
-
-        let xs = (-179..180).step_by(10);
-        let ys = (-89..90).step_by(10);
-
-        b.iter(|| {
-            futures::executor::block_on(async {
-                for x in xs.clone() {
-                    for y in ys.clone() {
-                        let request = Request::get(format!("/api/osm/tz/{}/{}", x, y)).body(Body::empty()).unwrap();
-                        let response = client.call(request).await.unwrap();
-
-                        assert_eq!(response.status(), StatusCode::OK);
-                    }
-                }
-            });
-        });
-    }
-
-    #[bench]
-    fn bench_server_worst_case_single_osm_timezone_v1(b: &mut Bencher) {
-        let mut client = get_client();
-        let client = futures::executor::block_on(async { client.ready().await.unwrap() });
-
-        let x = -86.5;
-        let y = 38.5;
-
-        b.iter(|| {
-            futures::executor::block_on(async {
-                let request = Request::get(format!("/api/osm/tz/{}/{}", x, y)).body(Body::empty()).unwrap();
-                let response = client.call(request).await.unwrap();
-
-                assert_eq!(response.status(), StatusCode::OK);
-            });
-        });
-    }
-
-    #[bench]
-    fn bench_server_sweep_osm_admin_v1(b: &mut Bencher) {
-        let mut client = get_client();
-        let client = futures::executor::block_on(async { client.ready().await.unwrap() });
-
-        let xs = (-179..180).step_by(10);
-        let ys = (-89..90).step_by(10);
-
-        b.iter(|| {
-            futures::executor::block_on(async {
-                for x in xs.clone() {
-                    for y in ys.clone() {
-                        let request = Request::get(format!("/api/osm/admin/{}/{}", x, y)).body(Body::empty()).unwrap();
-                        let response = client.call(request).await.unwrap();
-
-                        assert_eq!(response.status(), StatusCode::OK);
-                    }
-                }
-            });
-        });
-    }
-
-    // TODO: Discover the actual worst case location here.
-    #[bench]
-    fn bench_server_worst_case_single_osm_admin_v1(b: &mut Bencher) {
-        let mut client = get_client();
-        let client = futures::executor::block_on(async { client.ready().await.unwrap() });
-
-        let x = -86.5;
-        let y = 38.5;
-
-        b.iter(|| {
-            futures::executor::block_on(async {
-                let request = Request::get(format!("/api/osm/admin/{}/{}", x, y)).body(Body::empty()).unwrap();
-                let response = client.call(request).await.unwrap();
-
-                assert_eq!(response.status(), StatusCode::OK);
-            });
-        });
     }
 }

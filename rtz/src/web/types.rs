@@ -35,6 +35,7 @@ pub fn get_last_modified_time() -> &'static str {
 /// Holds the application-wide state for the Rocket web application.
 #[derive(Clone, Debug)]
 pub struct AppState {
+    #[allow(dead_code)]
     pub config: Arc<Config>,
 }
 
@@ -207,6 +208,7 @@ pub fn map_too_many_requests(message: impl Into<String>) -> impl FnOnce(Err) -> 
 }
 
 /// Trait that makes it easy to map generic `Result`s into `WebResult`s.
+#[allow(dead_code)]
 pub trait WebResultMapper<T> {
     fn or_bad_req(self, message: impl Into<String>) -> WebResult<T>;
     fn or_internal_err(self, message: impl Into<String>) -> WebResult<T>;

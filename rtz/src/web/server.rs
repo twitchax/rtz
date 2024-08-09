@@ -5,7 +5,6 @@ use std::{
 
 use axum::{extract::Path, routing::get, Json, Router};
 use axum_insights::AppInsights;
-use hyper::{Method, StatusCode};
 use rtz_core::{
     base::types::{Float, Void},
     geo::{
@@ -14,6 +13,7 @@ use rtz_core::{
     },
 };
 use tower_http::cors::{Any, CorsLayer};
+use http::{Method, StatusCode};
 use tracing::instrument;
 use utoipa::OpenApi;
 use utoipa_rapidoc::RapiDoc;
@@ -43,8 +43,8 @@ pub async fn start(config: &Config) -> Void {
     let app = create_axum_app(config);
 
     let bind_address = format!("{}:{}", config.bind_address, config.port);
-    axum::Server::bind(&bind_address.parse().unwrap())
-        .serve(app.into_make_service())
+    let listener = tokio::net::TcpListener::bind(bind_address).await.unwrap();
+    axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await
         .unwrap();
@@ -106,16 +106,14 @@ pub fn create_axum_app(config: &Config) -> Router {
         .route("/osm/admin/:lng/:lat", get(admin_osm))
         .route("/v1/osm/admin/:lng/:lat", get(admin_osm_v1));
 
-    let app = Router::new()
+    Router::new()
         .merge(SwaggerUi::new("/swagger").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .merge(Redoc::with_url("/redoc", ApiDoc::openapi()))
         .merge(RapiDoc::new("/api-docs/openapi.json").path("/rapidoc"))
         .nest("/api", api_router)
         .layer(cors_layer)
         .layer(telemetry_layer)
-        .with_state(state);
-
-    app
+        .with_state(state)
 }
 
 #[derive(OpenApi)]

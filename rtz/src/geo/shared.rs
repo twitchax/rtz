@@ -31,24 +31,22 @@ where
 }
 
 /// Trait that allows converting a [`u16`] into the item to which the id refers (from the global list).
-pub(crate) trait MapIntoItem<T> {
-    fn map_into_item(self) -> Option<&'static T>;
-}
+// pub(crate) trait MapIntoItem<T> {
+//     fn map_into_item(self) -> Option<&'static T>;
+// }
 
-impl<T> MapIntoItem<T> for Option<&u16>
-where
-    T: HasItemData,
-{
-    fn map_into_item(self) -> Option<&'static T> {
-        let Some(value) = self else {
-            return None;
-        };
+// impl<T> MapIntoItem<T> for Option<&u16>
+// where
+//     T: HasItemData,
+// {
+//     fn map_into_item(self) -> Option<&'static T> {
+//         let value = self?;
 
-        let items = T::get_mem_items();
+//         let items = T::get_mem_items();
 
-        items.get(*value as usize)
-    }
-}
+//         items.get(*value as usize)
+//     }
+// }
 
 /// Trait that allows converting a [`u16`] into the items to which the ids refer (from the global list).
 pub(crate) trait MapIntoItems<T> {
@@ -61,9 +59,7 @@ where
     T: HasItemData,
 {
     fn map_into_items(self) -> Option<Vec<&'static T>> {
-        let Some(value) = self else {
-            return None;
-        };
+        let value = self?;
 
         let source = value.as_ref();
         let items = T::get_mem_items();
@@ -105,7 +101,7 @@ where
     fn lookup(xf: Float, yf: Float) -> Vec<&'static Self> {
         let x = xf.floor() as RoundDegree;
         let y = yf.floor() as RoundDegree;
-
+        
         let Some(suggestions) = Self::get_lookup_suggestions(x, y) else {
             return Vec::new();
         };
@@ -128,7 +124,6 @@ where
     /// Get value from the static memory cache.
     fn get_lookup_suggestions(x: RoundDegree, y: RoundDegree) -> Option<Vec<&'static Self>> {
         let cache = Self::get_mem_lookup();
-
         cache.get(&(x, y)).map_into_items()
     }
 }

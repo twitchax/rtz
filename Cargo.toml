@@ -1,8 +1,9 @@
 [workspace]
 members = ["rtz-core", "rtz"]
+resolver = "2"
 
 # These sections allow for the build steps to be optimized.
-# The build steps often generate the buncode caches, and
+# The build steps often generate the bincode caches, and
 # we want that to be fast.
 
 [profile.dev.build-override]

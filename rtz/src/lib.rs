@@ -22,12 +22,12 @@ assert_eq!(
 // Directives.
 #![warn(rustdoc::broken_intra_doc_links, rust_2018_idioms, clippy::all, missing_docs)]
 #![allow(incomplete_features)]
-#![feature(async_closure)]
-#![feature(test)]
-#![feature(string_remove_matches)]
-#![feature(fs_try_exists)]
 #![allow(stable_features)]
-#![feature(once_cell)]
+// #![feature(async_closure)]
+// #![feature(test)]
+// #![feature(string_remove_matches)]
+// #![feature(fs_try_exists)]
+// #![feature(once_cell)]
 
 // Modules.
 

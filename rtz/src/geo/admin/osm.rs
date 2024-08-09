@@ -25,7 +25,7 @@ impl HasItemData for OsmAdmin {
 
         #[cfg(not(feature = "self-contained"))]
         {
-            use rtz_core::geo::{shared::get_items_from_features, tz::osm::get_geojson_features_from_source};
+            use rtz_core::geo::{shared::get_items_from_features, admin::osm::get_geojson_features_from_source};
 
             TIMEZONES.get_or_init(|| {
                 let features = get_geojson_features_from_source();
@@ -143,77 +143,6 @@ mod tests {
                 x,
                 y
             );
-        });
-    }
-}
-
-#[cfg(test)]
-mod bench {
-    extern crate test;
-
-    use rtz_core::base::types::Float;
-    use test::{black_box, Bencher};
-
-    use crate::CanPerformGeoLookup;
-
-    use super::*;
-
-    #[bench]
-    #[ignore]
-    fn bench_full_lookup_sweep(b: &mut Bencher) {
-        let xs = (-179..180).step_by(10);
-        let ys = (-89..90).step_by(10);
-
-        b.iter(|| {
-            for x in xs.clone() {
-                for y in ys.clone() {
-                    black_box(OsmAdmin::lookup_slow(x as Float, y as Float));
-                }
-            }
-        });
-    }
-
-    #[bench]
-    fn bench_lookup_assisted_sweep(b: &mut Bencher) {
-        let xs = (-179..180).step_by(10);
-        let ys = (-89..90).step_by(10);
-
-        b.iter(|| {
-            for x in xs.clone() {
-                for y in ys.clone() {
-                    black_box(OsmAdmin::lookup(x as Float, y as Float));
-                }
-            }
-        });
-    }
-
-    // TODO: Discover the actual worst case location.
-    #[bench]
-    fn bench_worst_case_full_lookup_single(b: &mut Bencher) {
-        let x = -86.5;
-        let y = 38.5;
-
-        b.iter(|| {
-            black_box(OsmAdmin::lookup_slow(x as Float, y as Float));
-        });
-    }
-
-    // TODO: Discover the actual worst case location.
-    #[bench]
-    fn bench_worst_case_lookup_assisted_single(b: &mut Bencher) {
-        let x = -86.5;
-        let y = 38.5;
-
-        b.iter(|| {
-            black_box(OsmAdmin::lookup(x, y));
-        });
-    }
-
-    #[bench]
-    fn bench_cities(b: &mut Bencher) {
-        b.iter(|| {
-            let city = cities_json::get_random_cities();
-            black_box(OsmAdmin::lookup(city.lng as f32, city.lat as f32));
         });
     }
 }

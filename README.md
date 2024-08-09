@@ -5,7 +5,7 @@
 [![GitHub all releases](https://img.shields.io/github/downloads/twitchax/rtz/total?label=binary)](https://github.com/twitchax/rtz/releases)
 [![npm](https://img.shields.io/npm/dt/rtzweb?label=npm)](https://www.npmjs.com/package/rtzweb)
 [![Documentation](https://docs.rs/rtz/badge.svg)](https://docs.rs/rtz)
-[![Rust](https://img.shields.io/badge/rust-nightly-blue.svg?maxAge=3600)](https://github.com/twitchax/rtz)
+[![Rust](https://img.shields.io/crates/msrv/rtz)](https://github.com/twitchax/rtz)
 [![License:MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 # rtz
@@ -184,6 +184,13 @@ The library and binary both support various feature flags.  These are the availa
   * `web = ["full"]`: enables the `serve` subcommand, which starts a Rocket web server that can respond to time zone requests.
 * Other Considerations:
   * `wasm` / `wasi` builds currently do not play nice with `reqwest` and `zip`, so the `wasm` / `wasi` builds require the `self-contained` feature.
+
+## Data Updates
+
+The last updates were made 2024.08.08.  The data sources on that date were as follows:
+* [OSM Admin Data](https://planet.openstreetmap.org/pbf/planet-latest.osm.pbf).  This data is downloaded from the OSM planet file, and is then [processed](https://github.com/AndGem/osm_extract_polygon) to extract the administrative boundaries.
+* [OSM TZ Data](https://github.com/evansiroky/timezone-boundary-builder/releases/download/2024a/timezones-with-oceans.geojson.zip).  This data is downloaded from the latest generated release of the timezone boundary builder, and is processed automatically by this code.
+* [NED TZ Data](https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_time_zones.geojson).  This data us downloaded from the `master` branch of the NED vector repository, and is processed automatically by this code.
 
 ## Performance
 

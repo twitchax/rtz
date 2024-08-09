@@ -10,6 +10,12 @@ $ cargo publish -p rtz-build
 $ cargo publish -p rtz
 ```
 
+## Benchamrks
+
+```bash
+$ cargo bench --features full
+```
+
 ## Publish to NPM
 
 ```bash
