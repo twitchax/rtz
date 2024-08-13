@@ -4,7 +4,12 @@
 // it is not included in the coverage report.
 #![cfg(not(tarpaulin_include))]
 
-use std::{borrow::Cow, collections::HashMap, fmt::{Display, Formatter}, ops::Deref};
+use std::{
+    borrow::Cow,
+    collections::HashMap,
+    fmt::{Display, Formatter},
+    ops::Deref,
+};
 
 use chashmap::CHashMap;
 use geo::{Coord, Geometry, Intersects, LineString, MultiPolygon, Polygon, Rect, SimplifyVw};
@@ -190,7 +195,6 @@ impl Encode for EncodableOptionString {
 
                 data.encode(encoder)
             }
-            
         }
     }
 }

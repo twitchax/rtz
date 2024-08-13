@@ -5,6 +5,7 @@ use std::{
 
 use axum::{extract::Path, routing::get, Json, Router};
 use axum_insights::AppInsights;
+use http::{Method, StatusCode};
 use rtz_core::{
     base::types::{Float, Void},
     geo::{
@@ -13,7 +14,6 @@ use rtz_core::{
     },
 };
 use tower_http::cors::{Any, CorsLayer};
-use http::{Method, StatusCode};
 use tracing::instrument;
 use utoipa::OpenApi;
 use utoipa_rapidoc::RapiDoc;
@@ -44,10 +44,7 @@ pub async fn start(config: &Config) -> Void {
 
     let bind_address = format!("{}:{}", config.bind_address, config.port);
     let listener = tokio::net::TcpListener::bind(bind_address).await.unwrap();
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .unwrap();
+    axum::serve(listener, app).with_graceful_shutdown(shutdown_signal()).await.unwrap();
 
     Ok(())
 }

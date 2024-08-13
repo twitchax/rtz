@@ -1,10 +1,10 @@
 //! Benchmarks for the the Admin OSM features.
 
-use std::hint::black_box;
 use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 
 use rtz_core::base::types::Float;
-use rtzlib::{CanPerformGeoLookup, OsmAdmin, NedTimezone, OsmTimezone};
+use rtzlib::{CanPerformGeoLookup, NedTimezone, OsmAdmin, OsmTimezone};
 
 // Admin OSM features.
 
@@ -44,7 +44,7 @@ fn admin_osm_bench_worst_case_full_lookup_single(c: &mut Criterion) {
     let x = -86.5;
     let y = 38.5;
 
-    c.bench_function("admin_osm_bench_worst_case_full_lookup_single", |b| {   
+    c.bench_function("admin_osm_bench_worst_case_full_lookup_single", |b| {
         b.iter(|| {
             black_box(OsmAdmin::lookup_slow(x as Float, y as Float));
         });
@@ -56,7 +56,7 @@ fn admin_osm_bench_worst_case_lookup_assisted_single(c: &mut Criterion) {
     let x = -86.5;
     let y = 38.5;
 
-    c.bench_function("admin_osm_bench_worst_case_lookup_assisted_single", |b| {   
+    c.bench_function("admin_osm_bench_worst_case_lookup_assisted_single", |b| {
         b.iter(|| {
             black_box(OsmAdmin::lookup(x as Float, y as Float));
         });

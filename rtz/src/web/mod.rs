@@ -51,10 +51,10 @@ pub fn server_start(config_path: String, bind_address: Option<String>, port: Opt
 mod tests {
     use super::*;
     use axum::{body::Body, Router};
+    use http_body_util::BodyExt;
     use hyper::{Request, StatusCode};
     use pretty_assertions::assert_eq;
     use tower::{Service, ServiceExt};
-    use http_body_util::BodyExt;
 
     fn get_client() -> Router {
         let config = Config::new("", None, None, Some(false)).unwrap();

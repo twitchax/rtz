@@ -101,7 +101,7 @@ where
     fn lookup(xf: Float, yf: Float) -> Vec<&'static Self> {
         let x = xf.floor() as RoundDegree;
         let y = yf.floor() as RoundDegree;
-        
+
         let Some(suggestions) = Self::get_lookup_suggestions(x, y) else {
             return Vec::new();
         };

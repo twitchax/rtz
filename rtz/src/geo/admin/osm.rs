@@ -28,7 +28,7 @@ impl HasItemData for OsmAdmin {
 
         #[cfg(not(feature = "self-contained"))]
         {
-            use rtz_core::geo::{shared::get_items_from_features, admin::osm::get_geojson_features_from_source};
+            use rtz_core::geo::{admin::osm::get_geojson_features_from_source, shared::get_items_from_features};
 
             TIMEZONES.get_or_init(|| {
                 let features = get_geojson_features_from_source();

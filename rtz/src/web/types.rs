@@ -11,7 +11,7 @@ use axum::{
 };
 use axum_insights::AppInsightsError;
 use chrono::{DateTime, Utc};
-use hyper::{StatusCode, header};
+use hyper::{header, StatusCode};
 use rtz_core::base::types::Err;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -121,11 +121,7 @@ impl IntoResponse for WebError {
         let code = StatusCode::from_u16(self.status).unwrap();
         let body = serde_json::to_string(&self).unwrap();
 
-        (
-            code,
-            [(header::CONTENT_TYPE, "application/json")],
-            body
-        ).into_response()
+        (code, [(header::CONTENT_TYPE, "application/json")], body).into_response()
     }
 }
 
