@@ -18,7 +18,7 @@ use bincode::{
 
 use crate::{
     base::types::Float,
-    geo::shared::{get_geojson_features_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, HasGeometry, HasProperties},
+    geo::shared::{get_geojson_features_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, EncodableString, HasGeometry, HasProperties},
 };
 
 use super::shared::IsTimezone;
@@ -66,7 +66,7 @@ pub struct OsmTimezone {
     /// The `identifier` of the [`OsmTimezone`] (e.g., `America/Los_Angeles`).
     ///
     /// Essentially, it is the IANA TZ identifier.
-    pub identifier: Cow<'static, str>,
+    pub identifier: EncodableString,
 
     /// The geometry of the [`OsmTimezone`].
     pub geometry: EncodableGeometry,
@@ -79,7 +79,7 @@ impl Decode for OsmTimezone {
         D: Decoder,
     {
         let id = usize::decode(decoder)?;
-        let identifier = Cow::<'static, str>::decode(decoder)?;
+        let identifier = EncodableString::decode(decoder)?;
         let geometry = EncodableGeometry::decode(decoder)?;
 
         Ok(OsmTimezone { id, identifier, geometry })
@@ -96,7 +96,7 @@ where
         D: BorrowDecoder<'de>,
     {
         let id = usize::decode(decoder)?;
-        let identifier = Cow::<'static, str>::borrow_decode(decoder)?;
+        let identifier = EncodableString::borrow_decode(decoder)?;
         let geometry = EncodableGeometry::borrow_decode(decoder)?;
 
         Ok(OsmTimezone { id, identifier, geometry })
@@ -115,7 +115,7 @@ impl From<(usize, geojson::Feature)> for OsmTimezone {
         let properties = value.1.properties.as_ref().unwrap();
         let geometry = value.1.geometry.as_ref().unwrap();
 
-        let identifier = Cow::Owned(properties.get("tzid").unwrap().as_str().unwrap().to_string());
+        let identifier = EncodableString(Cow::Owned(properties.get("tzid").unwrap().as_str().unwrap().to_string()));
 
         let geometry: Geometry<Float> = geometry.value.clone().try_into().unwrap();
 

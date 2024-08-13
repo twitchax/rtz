@@ -16,6 +16,9 @@ use crate::{
     CanPerformGeoLookup,
 };
 
+#[cfg(feature = "self-contained")]
+use include_bytes_aligned::include_bytes_aligned;
+
 // Trait impls.
 
 impl HasItemData for NedTimezone {
@@ -88,14 +91,14 @@ impl CanPerformGeoLookup for NedTimezone {
 // Statics.
 
 #[cfg(all(host_family_unix, feature = "self-contained"))]
-static TZ_BINCODE: &[u8] = include_bytes!("../../../../assets/ned_time_zones.bincode");
+static TZ_BINCODE: &[u8] = include_bytes_aligned!(8, "../../../../assets/ned_time_zones.bincode");
 #[cfg(all(host_family_windows, feature = "self-contained"))]
-static TZ_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\ned_time_zones.bincode");
+static TZ_BINCODE: &[u8] = include_bytes_aligned!(8, "..\\..\\..\\..\\assets\\ned_time_zones.bincode");
 
 #[cfg(all(host_family_unix, feature = "self-contained"))]
-static LOOKUP_BINCODE: &[u8] = include_bytes!("../../../../assets/ned_time_zone_lookup.bincode");
+static LOOKUP_BINCODE: &[u8] = include_bytes_aligned!(8, "../../../../assets/ned_time_zone_lookup.bincode");
 #[cfg(all(host_family_windows, feature = "self-contained"))]
-static LOOKUP_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\ned_time_zone_lookup.bincode");
+static LOOKUP_BINCODE: &[u8] = include_bytes_aligned!(8, "..\\..\\..\\..\\assets\\ned_time_zone_lookup.bincode");
 
 // Tests.
 

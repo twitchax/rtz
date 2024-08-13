@@ -188,9 +188,9 @@ The library and binary both support various feature flags.  These are the availa
 ## Data Updates
 
 The last updates were made 2024.08.08.  The data sources on that date were as follows:
-* [OSM Admin Data](https://planet.openstreetmap.org/pbf/planet-latest.osm.pbf).  This data is downloaded from the OSM planet file, and is then [processed](https://github.com/AndGem/osm_extract_polygon) to extract the administrative boundaries.
+* [OSM Admin Data](https://planet.openstreetmap.org/pbf/planet-latest.osm.pbf).  This data is downloaded from the OSM planet file, and is then [processed](https://github.com/AndGem/osm_extract_polygon) locally to extract the administrative boundaries.
 * [OSM TZ Data](https://github.com/evansiroky/timezone-boundary-builder/releases/download/2024a/timezones-with-oceans.geojson.zip).  This data is downloaded from the latest generated release of the timezone boundary builder, and is processed automatically by this code.
-* [NED TZ Data](https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_time_zones.geojson).  This data us downloaded from the `master` branch of the NED vector repository, and is processed automatically by this code.
+* [NED TZ Data](https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_time_zones.geojson).  This data is downloaded from the `master` branch of the NED vector repository, and is processed automatically by this code.
 
 ## Performance
 

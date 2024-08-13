@@ -18,9 +18,9 @@ full = ["tz-ned", "tz-osm", "admin-osm", "self-contained", "rtz-core/full"]
 force-rebuild = []
 self-contained = ["rtz-core/self-contained"]
 
-tz-ned = []
-tz-osm = []
-admin-osm = []
+tz-ned = ["rtz-core/tz-ned"]
+tz-osm = ["rtz-core/tz-osm"]
+admin-osm = ["rtz-core/admin-osm"]
 
 [dependencies]
 rtz-core = { path = "../rtz-core", version = "0.1.4" }

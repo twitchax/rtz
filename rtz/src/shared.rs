@@ -147,7 +147,7 @@ pub struct OsmAdminResponse1 {
     pub name: &'static str,
 
     /// The `admin_level` of the [`OsmAdminResponse1`] (e.g., `2`).
-    pub level: u8,
+    pub level: usize,
 }
 
 #[cfg(feature = "admin-osm")]

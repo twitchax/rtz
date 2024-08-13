@@ -16,6 +16,9 @@ use crate::{
     CanPerformGeoLookup,
 };
 
+#[cfg(feature = "self-contained")]
+use include_bytes_aligned::include_bytes_aligned;
+
 // Trait impls.
 
 impl HasItemData for OsmTimezone {
@@ -89,14 +92,14 @@ impl CanPerformGeoLookup for OsmTimezone {
 // Statics.
 
 #[cfg(all(host_family_unix, feature = "self-contained"))]
-static TZ_BINCODE: &[u8] = include_bytes!("../../../../assets/osm_time_zones.bincode");
+static TZ_BINCODE: &[u8] = include_bytes_aligned!(8, "../../../../assets/osm_time_zones.bincode");
 #[cfg(all(host_family_windows, feature = "self-contained"))]
-static TZ_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\osm_time_zones.bincode");
+static TZ_BINCODE: &[u8] = include_bytes_aligned!(8, "..\\..\\..\\..\\assets\\osm_time_zones.bincode");
 
 #[cfg(all(host_family_unix, feature = "self-contained"))]
-static LOOKUP_BINCODE: &[u8] = include_bytes!("../../../../assets/osm_time_zone_lookup.bincode");
+static LOOKUP_BINCODE: &[u8] = include_bytes_aligned!(8, "../../../../assets/osm_time_zone_lookup.bincode");
 #[cfg(all(host_family_windows, feature = "self-contained"))]
-static LOOKUP_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\osm_time_zone_lookup.bincode");
+static LOOKUP_BINCODE: &[u8] = include_bytes_aligned!(8, "..\\..\\..\\..\\assets\\osm_time_zone_lookup.bincode");
 
 // Tests.
 
@@ -130,7 +133,7 @@ mod tests {
     #[test]
     fn can_perform_exact_lookup() {
         assert_eq!(OsmTimezone::lookup_slow(-177.0, -15.0).len(), 1);
-        assert_eq!(OsmTimezone::lookup_slow(-121.0, 46.0)[0].identifier, "America/Los_Angeles");
+        assert_eq!(OsmTimezone::lookup_slow(-121.0, 46.0)[0].identifier.as_ref(), "America/Los_Angeles");
 
         assert_eq!(OsmTimezone::lookup_slow(179.9968, -67.0959).len(), 1);
     }
@@ -146,7 +149,7 @@ mod tests {
         assert_eq!(tzs.len(), 1);
 
         let tz = cache.get(&(-121, 46)).map_into_items().unwrap()[0] as &OsmTimezone;
-        assert_eq!(tz.identifier, "America/Los_Angeles");
+        assert_eq!(tz.identifier.as_ref(), "America/Los_Angeles");
 
         let tzs = cache.get(&(-87, 38)).map_into_items().unwrap() as Vec<&OsmTimezone>;
         assert_eq!(tzs.len(), 7);

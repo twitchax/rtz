@@ -17,7 +17,7 @@ use bincode::{
 
 use crate::{
     base::types::Float,
-    geo::shared::{get_geojson_feature_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, HasGeometry, HasProperties},
+    geo::shared::{get_geojson_feature_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, EncodableString, HasGeometry, HasProperties},
 };
 
 use super::shared::IsAdmin;
@@ -94,9 +94,9 @@ pub struct OsmAdmin {
     pub id: usize,
 
     /// The `name` of the [`OsmAdmin`] (e.g., `Burkina Faso`).
-    pub name: Cow<'static, str>,
+    pub name: EncodableString,
     /// The `level` of the [`OsmAdmin`] (e.g., `3`).
-    pub level: u8,
+    pub level: usize,
 
     /// The geometry of the [`OsmAdmin`].
     pub geometry: EncodableGeometry,
@@ -109,8 +109,8 @@ impl Decode for OsmAdmin {
         D: Decoder,
     {
         let id = usize::decode(decoder)?;
-        let name = Cow::<'static, str>::decode(decoder)?;
-        let level = u8::decode(decoder)?;
+        let name = EncodableString::decode(decoder)?;
+        let level = usize::decode(decoder)?;
         let geometry = EncodableGeometry::decode(decoder)?;
 
         Ok(OsmAdmin { id, name, level, geometry })
@@ -127,8 +127,8 @@ where
         D: BorrowDecoder<'de>,
     {
         let id = usize::decode(decoder)?;
-        let name = Cow::<'static, str>::borrow_decode(decoder)?;
-        let level = u8::decode(decoder)?;
+        let name = EncodableString::borrow_decode(decoder)?;
+        let level = usize::decode(decoder)?;
         let geometry = EncodableGeometry::borrow_decode(decoder)?;
 
         Ok(OsmAdmin { id, name, level, geometry })
@@ -147,8 +147,8 @@ impl From<(usize, geojson::Feature)> for OsmAdmin {
         let properties = value.1.properties.as_ref().unwrap();
         let geometry = value.1.geometry.as_ref().unwrap();
 
-        let name = Cow::Owned(properties.get("name").unwrap().as_str().unwrap().to_string());
-        let level = properties.get("admin_level").unwrap().as_u64().unwrap() as u8;
+        let name = EncodableString(Cow::Owned(properties.get("name").unwrap().as_str().unwrap().to_string()));
+        let level = properties.get("admin_level").unwrap().as_u64().unwrap() as usize;
 
         let geometry: Geometry<Float> = geometry.value.clone().try_into().unwrap();
         let geometry = EncodableGeometry(simplify_geometry(geometry, SIMPLIFICATION_EPSILON));

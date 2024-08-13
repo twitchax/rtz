@@ -4,7 +4,7 @@
 // it is not included in the coverage report.
 #![cfg(not(tarpaulin_include))]
 
-use std::{collections::HashMap, ops::Deref};
+use std::{borrow::Cow, collections::HashMap, fmt::{Display, Formatter}, ops::Deref};
 
 use chashmap::CHashMap;
 use geo::{Coord, Geometry, Intersects, LineString, MultiPolygon, Polygon, Rect, SimplifyVw};
@@ -78,6 +78,164 @@ impl<'a, T> IntoIterator for &'a ConcreteVec<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.iter()
+    }
+}
+
+// Cow helpers.
+
+/// A wrapper for `Cow<'static, str>` to make encoding and decoding easier.
+#[cfg(feature = "self-contained")]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct EncodableString(pub Cow<'static, str>);
+
+impl AsRef<str> for EncodableString {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
+impl Deref for EncodableString {
+    type Target = Cow<'static, str>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Display for EncodableString {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[cfg(feature = "self-contained")]
+impl Encode for EncodableString {
+    fn encode<E>(&self, encoder: &mut E) -> Result<(), EncodeError>
+    where
+        E: Encoder,
+    {
+        let data = pad_string_alignment(self);
+
+        data.encode(encoder)
+    }
+}
+
+#[cfg(feature = "self-contained")]
+impl Decode for EncodableString {
+    fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
+    where
+        D: Decoder,
+    {
+        let cow = Cow::<'static, str>::decode(decoder)?;
+
+        Ok(EncodableString(cow))
+    }
+}
+
+#[cfg(feature = "self-contained")]
+impl<'de> BorrowDecode<'de> for EncodableString {
+    fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
+    where
+        D: BorrowDecoder<'de>,
+    {
+        let cow = Cow::<'static, str>::decode(decoder)?;
+
+        Ok(EncodableString(cow))
+    }
+}
+
+/// A wrapper for `Option<Cow<'static, str>>` to make encoding and decoding easier.
+#[cfg(feature = "self-contained")]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct EncodableOptionString(pub Option<Cow<'static, str>>);
+
+impl EncodableOptionString {
+    /// Converts from `EncodableOptionString`` to `Option<&Cow<'static, str>>``.
+    pub fn as_ref(&self) -> Option<&Cow<'static, str>> {
+        self.0.as_ref()
+    }
+}
+
+impl Deref for EncodableOptionString {
+    type Target = Option<Cow<'static, str>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Display for EncodableOptionString {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self.as_ref() {
+            None => write!(f, "None"),
+            Some(cow) => write!(f, "{}", cow),
+        }
+    }
+}
+
+#[cfg(feature = "self-contained")]
+impl Encode for EncodableOptionString {
+    fn encode<E>(&self, encoder: &mut E) -> Result<(), EncodeError>
+    where
+        E: Encoder,
+    {
+        match self.as_ref() {
+            None => 0usize.encode(encoder),
+            Some(cow) => {
+                // Descriminant.
+                1usize.encode(encoder)?;
+
+                // Padded data.
+                let data = pad_string_alignment(cow);
+
+                data.encode(encoder)
+            }
+            
+        }
+    }
+}
+
+#[cfg(feature = "self-contained")]
+impl Decode for EncodableOptionString {
+    fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
+    where
+        D: Decoder,
+    {
+        let variant = usize::decode(decoder)?;
+
+        let cow = match variant {
+            0 => None,
+            1 => {
+                let cow = Cow::<'static, str>::decode(decoder)?;
+
+                Some(cow)
+            }
+            _ => panic!("Unsupported variant."),
+        };
+
+        Ok(EncodableOptionString(cow))
+    }
+}
+
+#[cfg(feature = "self-contained")]
+impl<'de> BorrowDecode<'de> for EncodableOptionString {
+    fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
+    where
+        D: BorrowDecoder<'de>,
+    {
+        let variant = usize::decode(decoder)?;
+
+        let cow = match variant {
+            0 => None,
+            1 => {
+                let cow = Cow::<'static, str>::decode(decoder)?;
+
+                Some(cow)
+            }
+            _ => panic!("Unsupported variant."),
+        };
+
+        Ok(EncodableOptionString(cow))
     }
 }
 
@@ -161,6 +319,15 @@ where
 }
 
 // Helper methods.
+
+/// Pads a String before encoding to ensure that the string is aligned to the correct byte boundary.
+#[cfg(feature = "self-contained")]
+pub fn pad_string_alignment(string: impl AsRef<str>) -> Vec<u8> {
+    let alignment = std::mem::align_of::<Float>();
+    let padding = alignment - (string.as_ref().as_bytes().len() % alignment);
+
+    string.as_ref().as_bytes().iter().chain(std::iter::repeat(&0u8).take(padding)).copied().collect::<Vec<u8>>()
+}
 
 /// Simplifies a [`Geometry`] using the [Visvalingam-Whyatt algorithm](https://bost.ocks.org/mike/simplify/).
 ///
@@ -368,13 +535,13 @@ impl Encode for EncodableGeometry {
         match &self.0 {
             Geometry::Polygon(polygon) => {
                 // Encode the variant.
-                0u8.encode(encoder)?;
+                0usize.encode(encoder)?;
 
                 encode_poly(polygon, encoder)?;
             }
             Geometry::MultiPolygon(multi_polygon) => {
                 // Encode the variant.
-                1u8.encode(encoder)?;
+                1usize.encode(encoder)?;
 
                 let polygons = &multi_polygon.0;
 
@@ -467,7 +634,7 @@ impl Decode for EncodableGeometry {
     where
         D: Decoder,
     {
-        let variant = u8::decode(decoder)?;
+        let variant = usize::decode(decoder)?;
 
         let geometry = match variant {
             0 => {
@@ -501,7 +668,7 @@ impl<'de> BorrowDecode<'de> for EncodableGeometry {
     where
         D: BorrowDecoder<'de>,
     {
-        let variant = u8::decode(decoder)?;
+        let variant = usize::decode(decoder)?;
 
         let geometry = match variant {
             0 => {

@@ -18,7 +18,7 @@ use bincode::{
 
 use crate::{
     base::types::Float,
-    geo::shared::{get_geojson_features_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, HasGeometry, HasProperties},
+    geo::shared::{get_geojson_features_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, EncodableOptionString, EncodableString, HasGeometry, HasProperties},
 };
 
 use super::shared::IsTimezone;
@@ -65,15 +65,15 @@ pub struct NedTimezone {
     /// The `identifier` of the [`NedTimezone`] (e.g., `America/Los_Angeles`).
     ///
     /// Essentially, it is the IANA TZ identifier.
-    pub identifier: Option<Cow<'static, str>>,
+    pub identifier: EncodableOptionString,
 
     /// The `description` of the [`NedTimezone`] (e.g., the countries affected).
-    pub description: String,
+    pub description: EncodableString,
     /// The `dst_description` of the [`NedTimezone`] (i.e., daylight savings time information).
-    pub dst_description: Option<Cow<'static, str>>,
+    pub dst_description: EncodableOptionString,
 
     /// The `offset` of the [`NedTimezone`] (e.g., `UTC-8:00`).
-    pub offset: Cow<'static, str>,
+    pub offset: EncodableString,
 
     /// The `zone_num` of the [`NedTimezone`] (e.g., `-8.0`).
     pub zone: f32,
@@ -91,10 +91,10 @@ impl Decode for NedTimezone {
         D: Decoder,
     {
         let id = usize::decode(decoder)?;
-        let identifier = Option::<Cow<'static, str>>::decode(decoder)?;
-        let description = String::decode(decoder)?;
-        let dst_description = Option::<Cow<'static, str>>::decode(decoder)?;
-        let offset = Cow::<'static, str>::decode(decoder)?;
+        let identifier = EncodableOptionString::decode(decoder)?;
+        let description = EncodableString::decode(decoder)?;
+        let dst_description = EncodableOptionString::decode(decoder)?;
+        let offset = EncodableString::decode(decoder)?;
         let zone = f32::decode(decoder)?;
         let raw_offset = i32::decode(decoder)?;
         let geometry = EncodableGeometry::decode(decoder)?;
@@ -122,10 +122,10 @@ where
         D: BorrowDecoder<'de>,
     {
         let id = usize::decode(decoder)?;
-        let identifier = Option::<Cow<'static, str>>::borrow_decode(decoder)?;
-        let description = String::decode(decoder)?;
-        let dst_description = Option::<Cow<'static, str>>::borrow_decode(decoder)?;
-        let offset = Cow::<'static, str>::borrow_decode(decoder)?;
+        let identifier = EncodableOptionString::borrow_decode(decoder)?;
+        let description = EncodableString::borrow_decode(decoder)?;
+        let dst_description = EncodableOptionString::borrow_decode(decoder)?;
+        let offset = EncodableString::borrow_decode(decoder)?;
         let zone = f32::decode(decoder)?;
         let raw_offset = i32::decode(decoder)?;
         let geometry = EncodableGeometry::borrow_decode(decoder)?;
@@ -155,11 +155,11 @@ impl From<(usize, geojson::Feature)> for NedTimezone {
         let properties = value.1.properties.as_ref().unwrap();
         let geometry = value.1.geometry.as_ref().unwrap();
 
-        let dst_places = properties.get("dst_places").unwrap().as_str().map(ToOwned::to_owned).map(Cow::Owned);
-        let places = properties.get("places").unwrap().as_str().unwrap().to_owned();
+        let dst_places = EncodableOptionString(properties.get("dst_places").unwrap().as_str().map(ToOwned::to_owned).map(Cow::Owned));
+        let places = EncodableString(Cow::Owned(properties.get("places").unwrap().as_str().unwrap().to_owned()));
 
-        let time_zone = Cow::Owned(properties.get("time_zone").unwrap().as_str().unwrap().to_owned());
-        let tz_name1st = properties.get("tz_name1st").unwrap().as_str().map(ToOwned::to_owned).map(Cow::Owned);
+        let time_zone = EncodableString(Cow::Owned(properties.get("time_zone").unwrap().as_str().unwrap().to_owned()));
+        let tz_name1st = EncodableOptionString(properties.get("tz_name1st").unwrap().as_str().map(ToOwned::to_owned).map(Cow::Owned));
         let zone = properties.get("zone").unwrap().as_f64().unwrap() as f32;
 
         let geometry: Geometry<Float> = geometry.value.clone().try_into().unwrap();

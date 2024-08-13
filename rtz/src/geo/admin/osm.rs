@@ -12,6 +12,9 @@ use crate::{
     CanPerformGeoLookup,
 };
 
+#[cfg(feature = "self-contained")]
+use include_bytes_aligned::include_bytes_aligned;
+
 // Trait impls.
 
 impl HasItemData for OsmAdmin {
@@ -65,14 +68,14 @@ impl CanPerformGeoLookup for OsmAdmin {}
 // Statics.
 
 #[cfg(all(host_family_unix, feature = "self-contained"))]
-static ADMIN_BINCODE: &[u8] = include_bytes!("../../../../assets/osm_admins.bincode");
+static ADMIN_BINCODE: &[u8] = include_bytes_aligned!(8, "../../../../assets/osm_admins.bincode");
 #[cfg(all(host_family_windows, feature = "self-contained"))]
-static ADMIN_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\osm_admins.bincode");
+static ADMIN_BINCODE: &[u8] = include_bytes_aligned!(8, "..\\..\\..\\..\\assets\\osm_admins.bincode");
 
 #[cfg(all(host_family_unix, feature = "self-contained"))]
-static LOOKUP_BINCODE: &[u8] = include_bytes!("../../../../assets/osm_admin_lookup.bincode");
+static LOOKUP_BINCODE: &[u8] = include_bytes_aligned!(8, "../../../../assets/osm_admin_lookup.bincode");
 #[cfg(all(host_family_windows, feature = "self-contained"))]
-static LOOKUP_BINCODE: &[u8] = include_bytes!("..\\..\\..\\..\\assets\\osm_admin_lookup.bincode");
+static LOOKUP_BINCODE: &[u8] = include_bytes_aligned!(8, "..\\..\\..\\..\\assets\\osm_admin_lookup.bincode");
 
 // Tests.
 
@@ -88,7 +91,7 @@ mod tests {
     #[test]
     fn can_get_timezones() {
         let admins = OsmAdmin::get_mem_items();
-        assert_eq!(admins.len(), 306278);
+        assert_eq!(admins.len(), 318111);
     }
 
     #[test]
@@ -100,13 +103,13 @@ mod tests {
     #[test]
     fn can_get_from_lookup() {
         let lookup = OsmAdmin::get_lookup_suggestions(-121, 46).unwrap();
-        assert_eq!(lookup.len(), 28);
+        assert_eq!(lookup.len(), 20);
     }
 
     #[test]
     fn can_perform_exact_lookup() {
         assert_eq!(OsmAdmin::lookup_slow(-177.0, -15.0).len(), 0);
-        assert_eq!(OsmAdmin::lookup_slow(-121.0, 46.0)[0].name, "United States");
+        assert_eq!(OsmAdmin::lookup_slow(-121.0, 46.0)[0].name.as_ref(), "United States");
 
         assert_eq!(OsmAdmin::lookup_slow(179.9968, -67.0959).len(), 0);
     }
@@ -119,10 +122,10 @@ mod tests {
         assert_eq!(tzs.len(), 0);
 
         let tzs = cache.get(&(-121, 46)).map_into_items().unwrap() as Vec<&OsmAdmin>;
-        assert_eq!(tzs.len(), 28);
+        assert_eq!(tzs.len(), 20);
 
         let tz = cache.get(&(-121, 46)).map_into_items().unwrap()[0] as &OsmAdmin;
-        assert_eq!(tz.name, "United States");
+        assert_eq!(tz.name.as_ref(), "United States");
 
         let tzs = cache.get(&(-87, 38)).map_into_items().unwrap() as Vec<&OsmAdmin>;
         assert_eq!(tzs.len(), 58);
