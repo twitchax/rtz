@@ -18,7 +18,7 @@ use bincode::{
 
 use crate::{
     base::types::Float,
-    geo::shared::{get_geojson_features_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, EncodableString, HasGeometry, HasProperties},
+    geo::shared::{get_geojson_features_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, EncodableString, HasGeometry, HasProperties, IdFeaturePair},
 };
 
 use super::shared::IsTimezone;
@@ -109,8 +109,8 @@ impl PartialEq for OsmTimezone {
     }
 }
 
-impl From<(usize, geojson::Feature)> for OsmTimezone {
-    fn from(value: (usize, geojson::Feature)) -> OsmTimezone {
+impl From<IdFeaturePair> for OsmTimezone {
+    fn from(value: IdFeaturePair) -> OsmTimezone {
         let id = value.0;
         let properties = value.1.properties.as_ref().unwrap();
         let geometry = value.1.geometry.as_ref().unwrap();

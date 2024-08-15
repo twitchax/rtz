@@ -17,7 +17,7 @@ use bincode::{
 
 use crate::{
     base::types::Float,
-    geo::shared::{get_geojson_feature_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, EncodableString, HasGeometry, HasProperties},
+    geo::shared::{get_geojson_feature_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, EncodableString, HasGeometry, HasProperties, IdFeaturePair},
 };
 
 use super::shared::IsAdmin;
@@ -58,7 +58,6 @@ pub fn get_geojson_features_from_source() -> geojson::FeatureCollection {
         })
         .map(|f| {
             let json = std::fs::read_to_string(f.path()).unwrap();
-
             get_geojson_feature_from_string(&json)
         })
         .collect::<Vec<_>>();
@@ -74,7 +73,6 @@ pub fn get_geojson_features_from_source() -> geojson::FeatureCollection {
 ///
 /// Hacking to local machine, for now.  Will create a repo at some point.
 pub static ADDRESS: &str = "D://LargeData//admin_data//admin2;D://LargeData//admin_data//admin3;D://LargeData//admin_data//admin4;D://LargeData//admin_data//admin5;D://LargeData//admin_data//admin6;D://LargeData//admin_data//admin7;D://LargeData//admin_data//admin8";
-//pub static ADDRESS: &str = "D://LargeData//admin_data//admin8_small";
 /// The name of the timezone bincode file.
 pub static ADMIN_BINCODE_DESTINATION_NAME: &str = "osm_admins.bincode";
 /// The name of the cache bincode file.
@@ -141,8 +139,8 @@ impl PartialEq for OsmAdmin {
     }
 }
 
-impl From<(usize, geojson::Feature)> for OsmAdmin {
-    fn from(value: (usize, geojson::Feature)) -> OsmAdmin {
+impl From<IdFeaturePair> for OsmAdmin {
+    fn from(value: IdFeaturePair) -> OsmAdmin {
         let id = value.0;
         let properties = value.1.properties.as_ref().unwrap();
         let geometry = value.1.geometry.as_ref().unwrap();

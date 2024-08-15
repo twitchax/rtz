@@ -16,6 +16,7 @@ default = []
 full = ["tz-ned", "tz-osm", "admin-osm", "self-contained", "rtz-core/full"]
 
 force-rebuild = []
+double-precision = ["rtz-core/double-precision"]
 self-contained = ["rtz-core/self-contained"]
 
 tz-ned = ["rtz-core/tz-ned"]

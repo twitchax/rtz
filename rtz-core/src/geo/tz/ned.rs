@@ -18,7 +18,7 @@ use bincode::{
 
 use crate::{
     base::types::Float,
-    geo::shared::{get_geojson_features_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, EncodableOptionString, EncodableString, HasGeometry, HasProperties},
+    geo::shared::{get_geojson_features_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, EncodableOptionString, EncodableString, HasGeometry, HasProperties, IdFeaturePair},
 };
 
 use super::shared::IsTimezone;
@@ -149,8 +149,8 @@ impl PartialEq for NedTimezone {
     }
 }
 
-impl From<(usize, geojson::Feature)> for NedTimezone {
-    fn from(value: (usize, geojson::Feature)) -> NedTimezone {
+impl From<IdFeaturePair> for NedTimezone {
+    fn from(value: IdFeaturePair) -> NedTimezone {
         let id = value.0;
         let properties = value.1.properties.as_ref().unwrap();
         let geometry = value.1.geometry.as_ref().unwrap();

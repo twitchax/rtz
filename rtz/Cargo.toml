@@ -29,7 +29,7 @@ required-features = ["cli"]
 default = ["cli"]
 full = ["tz-ned", "tz-osm", "admin-osm", "self-contained", "rtz-core/full", "rtz-build/full"]
 
-double-precision = ["rtz-core/double-precision"]
+double-precision = ["rtz-core/double-precision", "rtz-build/double-precision"]
 unsimplified = ["rtz-core/unsimplified"]
 extrasimplified = ["rtz-core/extrasimplified"]
 self-contained = ["rtz-core/self-contained", "rtz-build/self-contained", "include_bytes_aligned"]

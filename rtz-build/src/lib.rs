@@ -23,8 +23,6 @@ fn generate_self_contained_bincodes() {
 
 #[cfg(all(feature = "tz-ned", feature = "self-contained"))]
 fn generate_ned_tz_bincodes() {
-    use std::path::Path;
-
     use rtz_core::geo::{
         shared::generate_bincodes,
         tz::ned::{get_geojson_features_from_source, NedTimezone, LOOKUP_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME},
@@ -34,7 +32,7 @@ fn generate_ned_tz_bincodes() {
     let lookup_bincode_destination = &format!("../assets/{}", LOOKUP_BINCODE_DESTINATION_NAME);
 
     #[cfg(not(feature = "force-rebuild"))]
-    if Path::new(timezone_bincode_destination).exists() && Path::new(lookup_bincode_destination).exists() {
+    if std::path::Path::new(timezone_bincode_destination).exists() && std::path::Path::new(lookup_bincode_destination).exists() {
         return;
     }
 
@@ -46,8 +44,6 @@ fn generate_ned_tz_bincodes() {
 
 #[cfg(all(feature = "tz-osm", feature = "self-contained"))]
 fn generate_osm_tz_bincodes() {
-    use std::path::Path;
-
     use rtz_core::geo::{
         shared::generate_bincodes,
         tz::osm::{get_geojson_features_from_source, OsmTimezone, LOOKUP_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME},
@@ -57,7 +53,7 @@ fn generate_osm_tz_bincodes() {
     let lookup_bincode_destination = &format!("../assets/{}", LOOKUP_BINCODE_DESTINATION_NAME);
 
     #[cfg(not(feature = "force-rebuild"))]
-    if Path::new(timezone_bincode_destination).exists() && Path::new(lookup_bincode_destination).exists() {
+    if std::path::Path::new(timezone_bincode_destination).exists() && std::path::Path::new(lookup_bincode_destination).exists() {
         return;
     }
 
@@ -69,8 +65,6 @@ fn generate_osm_tz_bincodes() {
 
 #[cfg(all(feature = "admin-osm", feature = "self-contained"))]
 fn generate_osm_admin_bincodes() {
-    use std::path::Path;
-
     use rtz_core::geo::{
         admin::osm::{get_geojson_features_from_source, OsmAdmin, ADMIN_BINCODE_DESTINATION_NAME, LOOKUP_BINCODE_DESTINATION_NAME},
         shared::generate_bincodes,
@@ -80,7 +74,7 @@ fn generate_osm_admin_bincodes() {
     let lookup_bincode_destination = &format!("../assets/{}", LOOKUP_BINCODE_DESTINATION_NAME);
 
     #[cfg(not(feature = "force-rebuild"))]
-    if Path::new(admin_bincode_destination).exists() && Path::new(lookup_bincode_destination).exists() {
+    if std::path::Path::new(admin_bincode_destination).exists() && std::path::Path::new(lookup_bincode_destination).exists() {
         return;
     }
 

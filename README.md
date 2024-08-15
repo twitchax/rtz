@@ -200,6 +200,10 @@ This implementation trades binary size for performance by employing an in-binary
 
 ![Bench](static/bench.png)
 
+On average, for random cities, the OSM dataset lookup time is around `1.5 μs`, and the NED dataset lookup time is around `400 ns`.
+
+![Bench](static/bench_cities_osm.png)
+
 ### Free Server
 
 Below is the sample performance to resolve a time zone from a `(lng,lat)` pair to one of the data centers using a concurrency of 1,000, achieving 8,000 RPS.

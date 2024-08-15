@@ -4,6 +4,7 @@
 // it is not included in the coverage report.
 #![cfg(not(tarpaulin_include))]
 
+use core::str;
 use std::{
     borrow::Cow,
     collections::HashMap,
@@ -14,7 +15,7 @@ use std::{
 use chashmap::CHashMap;
 use geo::{Coord, Geometry, Intersects, LineString, MultiPolygon, Polygon, Rect, SimplifyVw};
 use geojson::{Feature, FeatureCollection, GeoJson};
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 use serde_json::{Map, Value};
 use std::path::Path;
 
@@ -59,10 +60,10 @@ impl<T> Deref for ConcreteVec<T> {
 
 impl<T> From<geojson::FeatureCollection> for ConcreteVec<T>
 where
-    T: From<IdFeaturePair>,
+    T: From<IdFeaturePair> + Send,
 {
     fn from(value: geojson::FeatureCollection) -> ConcreteVec<T> {
-        let values = value.features.into_iter().enumerate().map(T::from).collect::<Vec<T>>();
+        let values = value.features.into_par_iter().enumerate().map(T::from).collect::<Vec<T>>();
 
         ConcreteVec(values)
     }
@@ -131,9 +132,10 @@ impl Decode for EncodableString {
     where
         D: Decoder,
     {
-        let cow = Cow::<'static, str>::decode(decoder)?;
+        let data = Vec::decode(decoder)?;
 
-        Ok(EncodableString(cow))
+        // Now, we can limit the slice to trim the null padding.
+        unpad_string_alignment(&data).map(ToString::to_string).map(Cow::Owned).map(EncodableString)
     }
 }
 
@@ -143,9 +145,14 @@ impl<'de> BorrowDecode<'de> for EncodableString {
     where
         D: BorrowDecoder<'de>,
     {
-        let cow = Cow::<'static, str>::decode(decoder)?;
+        let length = usize::decode(decoder)?;
+        let slice = decoder.borrow_reader().take_bytes(length * std::mem::size_of::<u8>())?;
 
-        Ok(EncodableString(cow))
+        // SAFETY: We know this slice is built into the binary, and it has a static lifetime.
+        let slice = unsafe { std::mem::transmute::<&'_ [u8], &'static [u8]>(slice) };
+
+        // Now, we can limit the slice to trim the null padding.
+        unpad_string_alignment(slice).map(Cow::Borrowed).map(EncodableString)
     }
 }
 
@@ -207,17 +214,17 @@ impl Decode for EncodableOptionString {
     {
         let variant = usize::decode(decoder)?;
 
-        let cow = match variant {
-            0 => None,
+        let result = match variant {
+            0 => EncodableOptionString(None),
             1 => {
-                let cow = Cow::<'static, str>::decode(decoder)?;
+                let es = EncodableString::decode(decoder)?;
 
-                Some(cow)
+                EncodableOptionString(Some(es.0))
             }
             _ => panic!("Unsupported variant."),
         };
 
-        Ok(EncodableOptionString(cow))
+        Ok(result)
     }
 }
 
@@ -229,17 +236,17 @@ impl<'de> BorrowDecode<'de> for EncodableOptionString {
     {
         let variant = usize::decode(decoder)?;
 
-        let cow = match variant {
-            0 => None,
+        let result = match variant {
+            0 => EncodableOptionString(None),
             1 => {
-                let cow = Cow::<'static, str>::decode(decoder)?;
+                let es = EncodableString::borrow_decode(decoder)?;
 
-                Some(cow)
+                EncodableOptionString(Some(es.0))
             }
             _ => panic!("Unsupported variant."),
         };
 
-        Ok(EncodableOptionString(cow))
+        Ok(result)
     }
 }
 
@@ -333,6 +340,19 @@ pub fn pad_string_alignment(string: impl AsRef<str>) -> Vec<u8> {
     string.as_ref().as_bytes().iter().chain(std::iter::repeat(&0u8).take(padding)).copied().collect::<Vec<u8>>()
 }
 
+/// Unpads a String after decoding to remove any null padding.
+#[cfg(feature = "self-contained")]
+pub fn unpad_string_alignment(data: &[u8]) -> Result<&str, DecodeError> {
+    let terminator = data.iter().position(|&x| x == 0).unwrap_or(data.len());
+    let slice = &data[..terminator];
+
+    let str = str::from_utf8(slice).map_err(|e| DecodeError::Utf8 {
+        inner: e,
+    })?;
+
+    Ok(str)
+}
+
 /// Simplifies a [`Geometry`] using the [Visvalingam-Whyatt algorithm](https://bost.ocks.org/mike/simplify/).
 ///
 /// For geometries that cannot be simplified, the original geometry is returned.
@@ -409,13 +429,13 @@ where
 
     let cache = get_lookup_from_geometries(&timezones);
 
-    std::fs::write(bincode_destination, bincode::encode_to_vec(cache, get_global_bincode_config()).unwrap()).unwrap();
+    bincode::encode_into_std_write(cache, &mut std::fs::File::create(bincode_destination).unwrap(), get_global_bincode_config()).unwrap();
 }
 
 /// Get the concrete timezones from features.
 pub fn get_items_from_features<T>(features: FeatureCollection) -> ConcreteVec<T>
 where
-    T: HasGeometry + From<IdFeaturePair>,
+    T: HasGeometry + From<IdFeaturePair> + Send,
 {
     ConcreteVec::from(features)
 }
@@ -424,11 +444,10 @@ where
 #[cfg(feature = "self-contained")]
 fn generate_item_bincode<T>(geojson_features: FeatureCollection, bincode_destination: impl AsRef<Path>)
 where
-    T: HasGeometry + Encode + From<IdFeaturePair> + 'static,
+    T: HasGeometry + Encode + From<IdFeaturePair> + Send + 'static,
 {
     let items: ConcreteVec<T> = get_items_from_features(geojson_features);
-
-    std::fs::write(bincode_destination, bincode::encode_to_vec(items, get_global_bincode_config()).unwrap()).unwrap();
+    bincode::encode_into_std_write(items, &mut std::fs::File::create(bincode_destination).unwrap(), get_global_bincode_config()).unwrap();
 }
 
 /// Get the GeoJSON features from the binary assets.
