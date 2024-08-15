@@ -90,7 +90,6 @@ impl<'a, T> IntoIterator for &'a ConcreteVec<T> {
 // Cow helpers.
 
 /// A wrapper for `Cow<'static, str>` to make encoding and decoding easier.
-#[cfg(feature = "self-contained")]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct EncodableString(pub Cow<'static, str>);
 
@@ -157,7 +156,6 @@ impl<'de> BorrowDecode<'de> for EncodableString {
 }
 
 /// A wrapper for `Option<Cow<'static, str>>` to make encoding and decoding easier.
-#[cfg(feature = "self-contained")]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct EncodableOptionString(pub Option<Cow<'static, str>>);
 
