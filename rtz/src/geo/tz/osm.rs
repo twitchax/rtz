@@ -158,7 +158,7 @@ mod tests {
     #[test]
     fn can_verify_lookup_assisted_accuracy() {
         let x = rand::random::<Float>() * 360.0 - 180.0;
-        
+
         (0..100).into_par_iter().for_each(|_| {
             let y = rand::random::<Float>() * 180.0 - 90.0;
             let full = OsmTimezone::lookup_slow(x, y);

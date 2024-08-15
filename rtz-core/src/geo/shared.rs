@@ -344,9 +344,7 @@ pub fn unpad_string_alignment(data: &[u8]) -> Result<&str, DecodeError> {
     let terminator = data.iter().position(|&x| x == 0).unwrap_or(data.len());
     let slice = &data[..terminator];
 
-    let str = str::from_utf8(slice).map_err(|e| DecodeError::Utf8 {
-        inner: e,
-    })?;
+    let str = str::from_utf8(slice).map_err(|e| DecodeError::Utf8 { inner: e })?;
 
     Ok(str)
 }

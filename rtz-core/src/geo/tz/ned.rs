@@ -18,7 +18,9 @@ use bincode::{
 
 use crate::{
     base::types::Float,
-    geo::shared::{get_geojson_features_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, EncodableOptionString, EncodableString, HasGeometry, HasProperties, IdFeaturePair},
+    geo::shared::{
+        get_geojson_features_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, EncodableOptionString, EncodableString, HasGeometry, HasProperties, IdFeaturePair,
+    },
 };
 
 use super::shared::IsTimezone;
