@@ -1,6 +1,6 @@
 [package]
 name = 'twitchax/rtz'
-version = '0.5.0'
+version = '0.7.0'
 description = 'A tool to easily work with geo lookups via a binary, a library, or a server.'
 license = 'MIT'
 readme = 'README.md'
@@ -14,8 +14,7 @@ wasmer-extra-flags = "--net --enable-threads --enable-bulk-memory"
 
 [[module]]
 name = 'rtz'
-source = 'target/wasm32-wasmer-wasi/release/rtz.wasm'
-abi = 'wasi'
+source = 'target/wasm32-wasi/release/rtz.wasm'
 
 [module.interfaces]
 wasi = '0.1.0-unstable'
@@ -23,4 +22,4 @@ wasi = '0.1.0-unstable'
 [[command]]
 name = 'rtz'
 module = 'rtz'
-runner = "https://webc.org/runner/wasi"
+runner = "wasi"
