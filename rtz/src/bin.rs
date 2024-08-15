@@ -2,7 +2,6 @@
 
 use clap::{command, Parser, Subcommand};
 use rtz_core::base::types::Void;
-use rtzlib::geo::shared::CanPerformGeoLookup;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -94,6 +93,7 @@ fn start(args: Args) -> Void {
             Some(NedCommand::Tz { lng_lat }) => {
                 use rtz_core::base::types::Float;
                 use rtz_core::geo::tz::ned::NedTimezone;
+                use rtzlib::geo::shared::CanPerformGeoLookup;
 
                 let Some((lng, lat)) = lng_lat.split_once(',') else {
                     return Err(anyhow::Error::msg("Invalid lng,lat pair."));
@@ -123,6 +123,7 @@ fn start(args: Args) -> Void {
             Some(OsmCommand::Tz { lng_lat }) => {
                 use rtz_core::base::types::Float;
                 use rtz_core::geo::tz::osm::OsmTimezone;
+                use rtzlib::geo::shared::CanPerformGeoLookup;
 
                 let Some((lng, lat)) = lng_lat.split_once(',') else {
                     return Err(anyhow::Error::msg("Invalid lng,lat pair."));
@@ -142,6 +143,7 @@ fn start(args: Args) -> Void {
             Some(OsmCommand::Admin { lng_lat }) => {
                 use rtz_core::base::types::Float;
                 use rtz_core::geo::admin::osm::OsmAdmin;
+                use rtzlib::geo::shared::CanPerformGeoLookup;
 
                 let Some((lng, lat)) = lng_lat.split_once(',') else {
                     return Err(anyhow::Error::msg("Invalid lng,lat pair."));
@@ -172,10 +174,13 @@ fn start(args: Args) -> Void {
         }) => {
             rtzlib::server_start(config_path, bind_address, port, should_log)?;
         }
+        #[allow(unused_variables)]
         Some(Command::DumpGeojson { prefix }) => {
             #[cfg(feature = "tz-ned")]
             {
                 use rtz_core::geo::tz::ned::NedTimezone;
+                use rtzlib::geo::shared::CanPerformGeoLookup;
+
                 let json = NedTimezone::memory_data_to_geojson();
 
                 std::fs::write(format!("{}-tz-ned.geojson", prefix), json)?;
@@ -184,6 +189,8 @@ fn start(args: Args) -> Void {
             #[cfg(feature = "tz-osm")]
             {
                 use rtz_core::geo::tz::osm::OsmTimezone;
+                use rtzlib::geo::shared::CanPerformGeoLookup;
+
                 let json = OsmTimezone::memory_data_to_geojson();
 
                 std::fs::write(format!("{}-tz-osm.geojson", prefix), json)?;
@@ -192,6 +199,8 @@ fn start(args: Args) -> Void {
             #[cfg(feature = "admin-osm")]
             {
                 use rtz_core::geo::admin::osm::OsmAdmin;
+                use rtzlib::geo::shared::CanPerformGeoLookup;
+
                 let json = OsmAdmin::memory_data_to_geojson();
 
                 std::fs::write(format!("{}-admin-osm.geojson", prefix), json)?;

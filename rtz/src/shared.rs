@@ -1,5 +1,6 @@
 //! Shared functionality for the `rtz` crate.
 
+#[cfg(any(feature = "admin-osm", feature = "tz-ned", feature = "tz-osm"))]
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
