@@ -1,17 +1,17 @@
-FROM twitchax/rust:2023.07.04 AS server
+FROM rust:1.80 AS server
 WORKDIR /build
 
 # Force preferred nameservers during build.
 RUN cat /etc/resolv.conf
 
 # Add the `mold` linker.
-RUN apt-get update
-RUN apt-get install -y build-essential git clang cmake libstdc++-10-dev libssl-dev libxxhash-dev zlib1g-dev pkg-config
 RUN git clone https://github.com/rui314/mold.git
 WORKDIR /build/mold
-RUN git checkout v1.1.1
-RUN make -j$(nproc)
-RUN make install
+RUN git checkout v2.33.0
+RUN ./install-build-deps.sh
+RUN cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=c++ -B build
+RUN cmake --build build -j$(nproc)
+RUN cmake --build build --target install
 WORKDIR /build
 
 # Set up the directory.
@@ -24,6 +24,7 @@ COPY ./assets ./assets
 COPY ./Cargo.toml ./Cargo.lock ./
 
 RUN mkdir -p ./rtz/src
+RUN mkdir -p ./rtz/benches
 RUN mkdir -p ./rtz-core/src
 RUN mkdir -p ./rtz-build/src
 
@@ -32,6 +33,7 @@ COPY ./rtz-core/Cargo.toml ./rtz-core/
 COPY ./rtz-build/Cargo.toml ./rtz-build/
 
 RUN touch ./rtz/src/lib.rs
+RUN touch ./rtz/benches/benches.rs
 RUN touch ./rtz-core/src/lib.rs
 RUN touch ./rtz-build/src/lib.rs
 
@@ -53,7 +55,7 @@ RUN mold -run cargo build --features web --release --lib
 RUN mold -run cargo build --features web --release
 
 # Copy the statically-linked binary into a scratch container.
-FROM ubuntu:focal
+FROM ubuntu:oracular
 RUN apt-get update && apt-get install -y libssl-dev ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY --from=server /build/rtz/target/release/rtz .
 COPY ./docker/app.entrypoint.sh .
