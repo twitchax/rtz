@@ -2520,7 +2520,7 @@ dependencies = [
 
 [[package]]
 name = "rtz-build"
-version = "0.2.6"
+version = "0.2.7"
 dependencies = [
  "rtz-core",
 ]
