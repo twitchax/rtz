@@ -100,7 +100,7 @@ js-sys = { version = "0.3.61", optional = true }
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
-cities-json = "*"
+cities-json = "0.5.5"
 futures = "0.3.28"
 criterion = { version = "0.5", features = ["html_reports"] }
 
