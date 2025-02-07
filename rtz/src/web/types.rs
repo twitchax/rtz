@@ -3,7 +3,6 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use async_trait::async_trait;
 use axum::{
     extract::FromRequestParts,
     http::{request::Parts, HeaderValue},
@@ -45,7 +44,6 @@ pub struct AppState {
 #[derive(Debug)]
 pub struct IfModifiedSince(HeaderValue);
 
-#[async_trait]
 impl<S> FromRequestParts<S> for IfModifiedSince
 where
     S: Send + Sync,

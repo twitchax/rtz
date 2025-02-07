@@ -18,3 +18,4 @@ pub type Float = f64;
 /// The (single-precision) floating point type used in the library.
 #[cfg(not(feature = "double-precision"))]
 pub type Float = f32;
+

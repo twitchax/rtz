@@ -1,5 +1,11 @@
 # rtz development
 
+## Full Tests
+
+```bash
+$ cargo test --features full --features web
+```
+
 ## Publish to Cargo
 
 Make sure `rtz` references the correct versions of `rtz-core` and `rtz-build` in `Cargo.toml`.

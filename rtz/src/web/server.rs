@@ -61,7 +61,7 @@ pub fn create_axum_app(config: &Config) -> Router {
 
     let telemetry_layer = AppInsights::default()
         .with_connection_string(config.analytics_api_key.clone())
-        .with_service_config("rtz", name)
+        .with_service_config("twitchax", "rtz", name)
         .with_live_metrics(true)
         .with_catch_panic(true)
         .with_field_mapper(|p| {
@@ -96,12 +96,12 @@ pub fn create_axum_app(config: &Config) -> Router {
 
     let api_router = Router::new()
         .route("/health", get(health))
-        .route("/ned/tz/:lng/:lat", get(timezone_ned))
-        .route("/v1/ned/tz/:lng/:lat", get(timezone_ned_v1))
-        .route("/osm/tz/:lng/:lat", get(timezone_osm))
-        .route("/v1/osm/tz/:lng/:lat", get(timezone_osm_v1))
-        .route("/osm/admin/:lng/:lat", get(admin_osm))
-        .route("/v1/osm/admin/:lng/:lat", get(admin_osm_v1));
+        .route("/ned/tz/{lng}/{lat}", get(timezone_ned))
+        .route("/v1/ned/tz/{lng}/{lat}", get(timezone_ned_v1))
+        .route("/osm/tz/{lng}/{lat}", get(timezone_osm))
+        .route("/v1/osm/tz/{lng}/{lat}", get(timezone_osm_v1))
+        .route("/osm/admin/{lng}/{lat}", get(admin_osm))
+        .route("/v1/osm/admin/{lng}/{lat}", get(admin_osm_v1));
 
     Router::new()
         .merge(SwaggerUi::new("/swagger").url("/api-docs/openapi.json", ApiDoc::openapi()))
