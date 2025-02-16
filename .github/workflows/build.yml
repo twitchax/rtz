@@ -55,7 +55,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --features full --target x86_64-pc-windows-gnu --release
+          args: --features full --target x86_64-pc-windows-gnu --release -Zbuild-std=core,std,alloc
       - uses: actions/upload-artifact@v3
         with:
           name: rtz_x86_64-pc-windows-gnu
