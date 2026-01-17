@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use axum::{extract::Path, routing::get, Json, Router};
+use axum::{extract::Path, Json, Router};
 use axum_insights::AppInsights;
 use http::{Method, StatusCode};
 use rtz_core::{
@@ -16,6 +16,7 @@ use rtz_core::{
 use tower_http::cors::{Any, CorsLayer};
 use tracing::instrument;
 use utoipa::OpenApi;
+use utoipa_axum::{router::OpenApiRouter, routes};
 use utoipa_rapidoc::RapiDoc;
 use utoipa_redoc::{Redoc, Servable};
 use utoipa_swagger_ui::SwaggerUi;
@@ -94,18 +95,19 @@ pub fn create_axum_app(config: &Config) -> Router {
         .unwrap()
         .layer();
 
-    let api_router = Router::new()
-        .route("/health", get(health))
-        .route("/ned/tz/{lng}/{lat}", get(timezone_ned))
-        .route("/v1/ned/tz/{lng}/{lat}", get(timezone_ned_v1))
-        .route("/osm/tz/{lng}/{lat}", get(timezone_osm))
-        .route("/v1/osm/tz/{lng}/{lat}", get(timezone_osm_v1))
-        .route("/osm/admin/{lng}/{lat}", get(admin_osm))
-        .route("/v1/osm/admin/{lng}/{lat}", get(admin_osm_v1));
+    let (api_router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
+        .routes(routes!(health))
+        .routes(routes!(timezone_ned))
+        .routes(routes!(timezone_ned_v1))
+        .routes(routes!(timezone_osm))
+        .routes(routes!(timezone_osm_v1))
+        .routes(routes!(admin_osm))
+        .routes(routes!(admin_osm_v1))
+        .split_for_parts();
 
     Router::new()
-        .merge(SwaggerUi::new("/swagger").url("/api-docs/openapi.json", ApiDoc::openapi()))
-        .merge(Redoc::with_url("/redoc", ApiDoc::openapi()))
+        .merge(SwaggerUi::new("/swagger").url("/api-docs/openapi.json", api.clone()))
+        .merge(Redoc::with_url("/redoc", api.clone()))
         .merge(RapiDoc::new("/api-docs/openapi.json").path("/rapidoc"))
         .nest("/api", api_router)
         .layer(cors_layer)
@@ -123,7 +125,6 @@ struct ApiDoc;
 /// Performs a "semi-deep" health check.
 #[utoipa::path(
     get,
-    context_path = "/api", 
     path = "/health", 
     tag = "Health", 
     responses(
@@ -148,7 +149,6 @@ async fn health(if_modified_since: IfModifiedSince) -> WebVoid {
 /// [project](https://github.com/twitchax/rtz) itself.  It is provided as-is, with no warranty (as of today).
 #[utoipa::path(
     get,
-    context_path = "/api", 
     path = "/ned/tz/{lng}/{lat}", 
     tag = "TZ", 
     params(("lng" = f32, Path, description = "The longitude."), ("lat" = f32, Path, description = "The latitude.")), 
@@ -171,7 +171,6 @@ async fn timezone_ned(Path((lng, lat)): Path<(Float, Float)>, if_modified_since:
 /// [project](https://github.com/twitchax/rtz) itself.  It is provided as-is, with no warranty (as of today).
 #[utoipa::path(
     get,
-    context_path = "/api", 
     path = "/v1/ned/tz/{lng}/{lat}", 
     tag = "TZv1", 
     params(("lng" = f32, Path, description = "The longitude."), ("lat" = f32, Path, description = "The latitude.")), 
@@ -201,7 +200,6 @@ async fn timezone_ned_v1(Path((lng, lat)): Path<(Float, Float)>, if_modified_sin
 /// [project](https://github.com/twitchax/rtz) itself.  It is provided as-is, with no warranty (as of today).
 #[utoipa::path(
     get,
-    context_path = "/api", 
     path = "/osm/tz/{lng}/{lat}", 
     tag = "TZ", 
     params(("lng" = f32, Path, description = "The longitude."), ("lat" = f32, Path, description = "The latitude.")), 
@@ -224,7 +222,6 @@ async fn timezone_osm(Path((lng, lat)): Path<(Float, Float)>) -> WebResult<Looku
 /// [project](https://github.com/twitchax/rtz) itself.  It is provided as-is, with no warranty (as of today).
 #[utoipa::path(
     get,
-    context_path = "/api", 
     path = "/v1/osm/tz/{lng}/{lat}", 
     tag = "TZv1", 
     params(("lng" = f32, Path, description = "The longitude."), ("lat" = f32, Path, description = "The latitude.")), 
@@ -249,7 +246,6 @@ async fn timezone_osm_v1(Path((lng, lat)): Path<(Float, Float)>) -> WebResult<Lo
 /// [project](https://github.com/twitchax/rtz) itself.  It is provided as-is, with no warranty (as of today).
 #[utoipa::path(
     get,
-    context_path = "/api", 
     path = "/osm/admin/{lng}/{lat}", 
     tag = "Admin", 
     params(("lng" = f32, Path, description = "The longitude."), ("lat" = f32, Path, description = "The latitude.")), 
@@ -272,7 +268,6 @@ async fn admin_osm(Path((lng, lat)): Path<(Float, Float)>) -> WebResult<LookupRe
 /// [project](https://github.com/twitchax/rtz) itself.  It is provided as-is, with no warranty (as of today).
 #[utoipa::path(
     get,
-    context_path = "/api", 
     path = "/v1/osm/admin/{lng}/{lat}", 
     tag = "Adminv1", 
     params(("lng" = f32, Path, description = "The longitude."), ("lat" = f32, Path, description = "The latitude.")), 
