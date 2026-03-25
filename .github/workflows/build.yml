@@ -8,55 +8,46 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --features web
+      - uses: cargo-bins/cargo-binstall@main
+      - run: cargo binstall -y cargo-nextest
+      - run: cargo nextest run --features web
 
   codecov:
     needs: test
     name: Code Coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          override: true
+          components: llvm-tools-preview
       - uses: Swatinem/rust-cache@v2
         with:
           cache-all-crates: "true"
-      - name: Install tarpaulin
-        run: cargo install cargo-tarpaulin
-        continue-on-error: true
-      - run: cargo tarpaulin --features web --skip-clean --out Xml
-      - uses: codecov/codecov-action@v2
+      - uses: cargo-bins/cargo-binstall@main
+      - run: cargo binstall -y cargo-nextest cargo-llvm-cov
+      - run: cargo llvm-cov nextest --workspace --features web --lcov --output-path coverage.lcov
+      - uses: codecov/codecov-action@v4
+        with:
+          files: coverage.lcov
 
   build_windows:
     needs: test
     name: Build Windows
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install mingw-w64
         run: sudo apt-get install mingw-w64
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: x86_64-pc-windows-gnu
-          override: true
+          targets: x86_64-pc-windows-gnu
       - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --features full --target x86_64-pc-windows-gnu --release -Zbuild-std=core,std,alloc
-      - uses: actions/upload-artifact@v3
+      - run: cargo build --features full --target x86_64-pc-windows-gnu --release -Zbuild-std=core,std,alloc
+      - uses: actions/upload-artifact@v4
         with:
           name: rtz_x86_64-pc-windows-gnu
           path: target/x86_64-pc-windows-gnu/release/rtz.exe
@@ -66,18 +57,13 @@ jobs:
     name: Build Linux
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: x86_64-unknown-linux-gnu
-          override: true
+          targets: x86_64-unknown-linux-gnu
       - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --features full --target x86_64-unknown-linux-gnu --release
-      - uses: actions/upload-artifact@v3
+      - run: cargo build --features full --target x86_64-unknown-linux-gnu --release
+      - uses: actions/upload-artifact@v4
         with:
           name: rtz_x86_64-unknown-linux-gnu
           path: target/x86_64-unknown-linux-gnu/release/rtz
@@ -88,18 +74,13 @@ jobs:
     # TODO: Eventually, it would be better to cross-compile with `aarch64-apple-darwin`.
     runs-on: macos-12
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: aarch64-apple-darwin
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --features full --target aarch64-apple-darwin --release
-      - uses: actions/upload-artifact@v3
+          targets: aarch64-apple-darwin
+      - run: cargo build --features full --target aarch64-apple-darwin --release
+      - uses: actions/upload-artifact@v4
         with:
           name: rtz_aarch64-apple-darwin
           path: target/aarch64-apple-darwin/release/rtz

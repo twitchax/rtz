@@ -1,63 +1,33 @@
-FROM rust:1.80 AS server
+FROM rust:1.80 AS chef
+
+# Install mold linker.
+RUN git clone https://github.com/rui314/mold.git /tmp/mold && \
+    cd /tmp/mold && git checkout v2.33.0 && \
+    ./install-build-deps.sh && \
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=c++ -B build && \
+    cmake --build build -j$(nproc) && \
+    cmake --build build --target install && \
+    rm -rf /tmp/mold
+
+RUN cargo install cargo-chef
 WORKDIR /build
 
-# Force preferred nameservers during build.
-RUN cat /etc/resolv.conf
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
 
-# Add the `mold` linker.
-RUN git clone https://github.com/rui314/mold.git
-WORKDIR /build/mold
-RUN git checkout v2.33.0
-RUN ./install-build-deps.sh
-RUN cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=c++ -B build
-RUN cmake --build build -j$(nproc)
-RUN cmake --build build --target install
-WORKDIR /build
-
-# Set up the directory.
-RUN USER=root cargo new rtz
-WORKDIR /build/rtz
-
-# The order of these statements is important: change with care.
-
+FROM chef AS builder
+COPY --from=planner /build/recipe.json recipe.json
 COPY ./assets ./assets
-COPY ./Cargo.toml ./Cargo.lock ./
-
-RUN mkdir -p ./rtz/src
-RUN mkdir -p ./rtz/benches
-RUN mkdir -p ./rtz-core/src
-RUN mkdir -p ./rtz-build/src
-
-COPY ./rtz/Cargo.toml ./rtz/
-COPY ./rtz-core/Cargo.toml ./rtz-core/
-COPY ./rtz-build/Cargo.toml ./rtz-build/
-
-RUN touch ./rtz/src/lib.rs
-RUN touch ./rtz/benches/benches.rs
-RUN touch ./rtz-core/src/lib.rs
-RUN touch ./rtz-build/src/lib.rs
-
-RUN mold -run cargo build --release --lib
-RUN rm -f target/release/deps/librtz*
-RUN rm -f target/release/deps/rtz*
-
-RUN rm -f ./rtz/src/lib.rs
-RUN rm -f ./rtz-core/src/lib.rs
-RUN rm -f ./rtz-build/src/lib.rs
-
-# Copy the source and build the application.
-
-COPY ./rtz ./rtz
-COPY ./rtz-core ./rtz-core
-COPY ./rtz-build ./rtz-build
-
+RUN mold -run cargo chef cook --release --recipe-path recipe.json
+COPY . .
 RUN mold -run cargo build --features web --release --lib
 RUN mold -run cargo build --features web --release
 
-# Copy the statically-linked binary into a scratch container.
-FROM ubuntu:oracular
+# Copy the binary into a minimal runtime image.
+FROM ubuntu:oracular AS runtime
 RUN apt-get update && apt-get install -y libssl-dev ca-certificates && rm -rf /var/lib/apt/lists/*
-COPY --from=server /build/rtz/target/release/rtz .
+COPY --from=builder /build/target/release/rtz .
 COPY ./docker/app.entrypoint.sh .
 RUN chmod a+x app.entrypoint.sh
 
