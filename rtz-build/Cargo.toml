@@ -1,6 +1,6 @@
 [package]
 name = "rtz-build"
-version = "0.2.7"
+version = "0.2.8"
 edition = "2021"
 authors = ["Aaron Roney <twitchax@gmail.com>"]
 license = "MIT"
@@ -24,4 +24,4 @@ tz-osm = ["rtz-core/tz-osm"]
 admin-osm = ["rtz-core/admin-osm"]
 
 [dependencies]
-rtz-core = { path = "../rtz-core", version = "0.1.4" }
+rtz-core = { path = "../rtz-core", version = "0.1.6" }

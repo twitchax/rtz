@@ -73,10 +73,10 @@ pub struct OsmTimezone {
 }
 
 #[cfg(feature = "self-contained")]
-impl Decode for OsmTimezone {
+impl<Context> Decode<Context> for OsmTimezone {
     fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
-        D: Decoder,
+        D: Decoder<Context = Context>,
     {
         let id = usize::decode(decoder)?;
         let identifier = EncodableString::decode(decoder)?;
@@ -87,13 +87,13 @@ impl Decode for OsmTimezone {
 }
 
 #[cfg(feature = "self-contained")]
-impl<'de> BorrowDecode<'de> for OsmTimezone
+impl<'de, Context> BorrowDecode<'de, Context> for OsmTimezone
 where
     'de: 'static,
 {
     fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
-        D: BorrowDecoder<'de>,
+        D: BorrowDecoder<'de, Context = Context>,
     {
         let id = usize::decode(decoder)?;
         let identifier = EncodableString::borrow_decode(decoder)?;

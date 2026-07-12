@@ -78,7 +78,7 @@ where
 #[cfg(feature = "self-contained")]
 pub fn decode_binary_data<T>(data: &'static [u8]) -> T
 where
-    T: bincode::Decode + bincode::BorrowDecode<'static>,
+    T: bincode::Decode<()> + bincode::BorrowDecode<'static, ()>,
 {
     #[cfg(not(feature = "owned-decode"))]
     let (value, _len): (T, usize) = bincode::borrow_decode_from_slice(data, rtz_core::geo::shared::get_global_bincode_config())

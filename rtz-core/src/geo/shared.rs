@@ -126,7 +126,7 @@ impl Encode for EncodableString {
 }
 
 #[cfg(feature = "self-contained")]
-impl Decode for EncodableString {
+impl<Context> Decode<Context> for EncodableString {
     fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
         D: Decoder,
@@ -139,7 +139,7 @@ impl Decode for EncodableString {
 }
 
 #[cfg(feature = "self-contained")]
-impl<'de> BorrowDecode<'de> for EncodableString {
+impl<'de, Context> BorrowDecode<'de, Context> for EncodableString {
     fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
         D: BorrowDecoder<'de>,
@@ -205,7 +205,7 @@ impl Encode for EncodableOptionString {
 }
 
 #[cfg(feature = "self-contained")]
-impl Decode for EncodableOptionString {
+impl<Context> Decode<Context> for EncodableOptionString {
     fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
         D: Decoder,
@@ -227,7 +227,7 @@ impl Decode for EncodableOptionString {
 }
 
 #[cfg(feature = "self-contained")]
-impl<'de> BorrowDecode<'de> for EncodableOptionString {
+impl<'de, Context> BorrowDecode<'de, Context> for EncodableOptionString {
     fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
         D: BorrowDecoder<'de>,
@@ -418,7 +418,7 @@ where
 #[cfg(feature = "self-contained")]
 fn generate_lookup_bincode<T>(bincode_input: impl AsRef<Path>, bincode_destination: impl AsRef<Path>)
 where
-    T: HasGeometry + Decode + Send + Sync + 'static,
+    T: HasGeometry + Decode<()> + Send + Sync + 'static,
 {
     let data = std::fs::read(bincode_input).unwrap();
     let (timezones, _len): (ConcreteVec<T>, usize) = bincode::decode_from_slice(&data, get_global_bincode_config()).unwrap();
@@ -472,7 +472,7 @@ pub fn get_geojson_feature_from_string(geojson_input: &str) -> Feature {
 #[cfg(feature = "self-contained")]
 pub fn generate_bincodes<T>(geojson_features: FeatureCollection, timezone_bincode_destination: impl AsRef<Path>, lookup_bincode_destination: impl AsRef<Path>)
 where
-    T: HasGeometry + Encode + From<IdFeaturePair> + Decode + Send + Sync + 'static,
+    T: HasGeometry + Encode + From<IdFeaturePair> + Decode<()> + Send + Sync + 'static,
 {
     generate_item_bincode::<T>(geojson_features, timezone_bincode_destination.as_ref());
     generate_lookup_bincode::<T>(timezone_bincode_destination, lookup_bincode_destination);
@@ -648,7 +648,7 @@ where
 }
 
 #[cfg(feature = "self-contained")]
-impl Decode for EncodableGeometry {
+impl<Context> Decode<Context> for EncodableGeometry {
     fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
         D: Decoder,
@@ -682,7 +682,7 @@ impl Decode for EncodableGeometry {
 }
 
 #[cfg(feature = "self-contained")]
-impl<'de> BorrowDecode<'de> for EncodableGeometry {
+impl<'de, Context> BorrowDecode<'de, Context> for EncodableGeometry {
     fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
         D: BorrowDecoder<'de>,
@@ -752,7 +752,7 @@ impl Encode for EncodableIds {
 }
 
 #[cfg(feature = "self-contained")]
-impl Decode for EncodableIds {
+impl<Context> Decode<Context> for EncodableIds {
     fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
         D: Decoder,
@@ -772,7 +772,7 @@ impl Decode for EncodableIds {
 }
 
 #[cfg(feature = "self-contained")]
-impl<'de> BorrowDecode<'de> for EncodableIds {
+impl<'de, Context> BorrowDecode<'de, Context> for EncodableIds {
     fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
         D: BorrowDecoder<'de>,

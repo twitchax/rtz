@@ -87,10 +87,10 @@ pub struct NedTimezone {
 }
 
 #[cfg(feature = "self-contained")]
-impl Decode for NedTimezone {
+impl<Context> Decode<Context> for NedTimezone {
     fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
-        D: Decoder,
+        D: Decoder<Context = Context>,
     {
         let id = usize::decode(decoder)?;
         let identifier = EncodableOptionString::decode(decoder)?;
@@ -115,13 +115,13 @@ impl Decode for NedTimezone {
 }
 
 #[cfg(feature = "self-contained")]
-impl<'de> BorrowDecode<'de> for NedTimezone
+impl<'de, Context> BorrowDecode<'de, Context> for NedTimezone
 where
     'de: 'static,
 {
     fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
-        D: BorrowDecoder<'de>,
+        D: BorrowDecoder<'de, Context = Context>,
     {
         let id = usize::decode(decoder)?;
         let identifier = EncodableOptionString::borrow_decode(decoder)?;

@@ -101,10 +101,10 @@ pub struct OsmAdmin {
 }
 
 #[cfg(feature = "self-contained")]
-impl Decode for OsmAdmin {
+impl<Context> Decode<Context> for OsmAdmin {
     fn decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
-        D: Decoder,
+        D: Decoder<Context = Context>,
     {
         let id = usize::decode(decoder)?;
         let name = EncodableString::decode(decoder)?;
@@ -116,13 +116,13 @@ impl Decode for OsmAdmin {
 }
 
 #[cfg(feature = "self-contained")]
-impl<'de> BorrowDecode<'de> for OsmAdmin
+impl<'de, Context> BorrowDecode<'de, Context> for OsmAdmin
 where
     'de: 'static,
 {
     fn borrow_decode<D>(decoder: &mut D) -> Result<Self, DecodeError>
     where
-        D: BorrowDecoder<'de>,
+        D: BorrowDecoder<'de, Context = Context>,
     {
         let id = usize::decode(decoder)?;
         let name = EncodableString::borrow_decode(decoder)?;
