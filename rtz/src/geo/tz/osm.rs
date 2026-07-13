@@ -92,14 +92,14 @@ impl CanPerformGeoLookup for OsmTimezone {
 // Statics.
 
 #[cfg(all(host_family_unix, feature = "self-contained"))]
-static TZ_BINCODE: &[u8] = include_bytes_aligned!(8, "../../../../assets/osm_time_zones.bincode");
+static TZ_BINCODE: &[u8] = include_bytes_aligned!(8, "../../../assets/osm_time_zones.bincode");
 #[cfg(all(host_family_windows, feature = "self-contained"))]
-static TZ_BINCODE: &[u8] = include_bytes_aligned!(8, "..\\..\\..\\..\\assets\\osm_time_zones.bincode");
+static TZ_BINCODE: &[u8] = include_bytes_aligned!(8, "..\\..\\..\\assets\\osm_time_zones.bincode");
 
 #[cfg(all(host_family_unix, feature = "self-contained"))]
-static LOOKUP_BINCODE: &[u8] = include_bytes_aligned!(8, "../../../../assets/osm_time_zone_lookup.bincode");
+static LOOKUP_BINCODE: &[u8] = include_bytes_aligned!(8, "../../../assets/osm_time_zone_lookup.bincode");
 #[cfg(all(host_family_windows, feature = "self-contained"))]
-static LOOKUP_BINCODE: &[u8] = include_bytes_aligned!(8, "..\\..\\..\\..\\assets\\osm_time_zone_lookup.bincode");
+static LOOKUP_BINCODE: &[u8] = include_bytes_aligned!(8, "..\\..\\..\\assets\\osm_time_zone_lookup.bincode");
 
 // Tests.
 

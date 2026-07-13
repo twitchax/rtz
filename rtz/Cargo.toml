@@ -1,6 +1,6 @@
 [package]
 name = "rtz"
-version = "0.7.2"
+version = "0.7.3"
 edition = "2021"
 authors = ["Aaron Roney <twitchax@gmail.com>"]
 license = "MIT"
@@ -11,6 +11,11 @@ repository = "https://github.com/twitchax/rtz"
 keywords = ["cli", "time", "zone", "timezone", "geospatial"]
 categories = ["command-line-utilities"]
 rust-version = "1.80"
+# The NED bincodes ship in the package so `self-contained` builds are truly
+# self-contained (no download / regeneration in the build script). The OSM
+# bincodes are far too large for crates.io (~57 MB), so those are still
+# generated at build time when the corresponding features are enabled.
+exclude = ["assets/osm_*"]
 
 [package.metadata."docs.rs"]
 features = ["tz-ned", "tz-osm", "admin-osm"]
@@ -104,7 +109,7 @@ futures = "0.3.28"
 criterion = { version = "0.5", features = ["html_reports"] }
 
 [build-dependencies]
-rtz-build = { path = "../rtz-build", version = "0.2.8"}
+rtz-build = { path = "../rtz-build", version = "0.2.9"}
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 reqwest = { version = "0.12.5", features = ["blocking"] }

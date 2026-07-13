@@ -4,11 +4,24 @@
 #![warn(rustdoc::broken_intra_doc_links, rust_2018_idioms, clippy::all, missing_docs)]
 #![allow(incomplete_features)]
 
-/// Main entry point for build script.
+#[cfg(feature = "self-contained")]
+use std::path::PathBuf;
 
+/// Main entry point for build script.
 pub fn main() {
     #[cfg(feature = "self-contained")]
     generate_self_contained_bincodes();
+}
+
+/// Returns the assets directory of the crate currently being built.
+///
+/// Resolved via the `CARGO_MANIFEST_DIR` cargo sets for the build script at
+/// runtime, so it lands on `rtz/assets` both in the workspace and in a
+/// registry checkout (where the packaged crate ships the NED bincodes and
+/// generated ones are written alongside them).
+#[cfg(feature = "self-contained")]
+fn assets_dir() -> PathBuf {
+    PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR is set by cargo for build scripts")).join("assets")
 }
 
 #[cfg(feature = "self-contained")]
@@ -28,15 +41,16 @@ fn generate_ned_tz_bincodes() {
         tz::ned::{get_geojson_features_from_source, NedTimezone, LOOKUP_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME},
     };
 
-    let timezone_bincode_destination = &format!("../assets/{}", TIMEZONE_BINCODE_DESTINATION_NAME);
-    let lookup_bincode_destination = &format!("../assets/{}", LOOKUP_BINCODE_DESTINATION_NAME);
+    let assets = assets_dir();
+    let timezone_bincode_destination = assets.join(TIMEZONE_BINCODE_DESTINATION_NAME);
+    let lookup_bincode_destination = assets.join(LOOKUP_BINCODE_DESTINATION_NAME);
 
     #[cfg(not(feature = "force-rebuild"))]
-    if std::path::Path::new(timezone_bincode_destination).exists() && std::path::Path::new(lookup_bincode_destination).exists() {
+    if timezone_bincode_destination.exists() && lookup_bincode_destination.exists() {
         return;
     }
 
-    std::fs::create_dir_all("../assets").unwrap();
+    std::fs::create_dir_all(&assets).unwrap();
 
     let features = get_geojson_features_from_source();
     generate_bincodes::<NedTimezone>(features, timezone_bincode_destination, lookup_bincode_destination);
@@ -49,15 +63,16 @@ fn generate_osm_tz_bincodes() {
         tz::osm::{get_geojson_features_from_source, OsmTimezone, LOOKUP_BINCODE_DESTINATION_NAME, TIMEZONE_BINCODE_DESTINATION_NAME},
     };
 
-    let timezone_bincode_destination = &format!("../assets/{}", TIMEZONE_BINCODE_DESTINATION_NAME);
-    let lookup_bincode_destination = &format!("../assets/{}", LOOKUP_BINCODE_DESTINATION_NAME);
+    let assets = assets_dir();
+    let timezone_bincode_destination = assets.join(TIMEZONE_BINCODE_DESTINATION_NAME);
+    let lookup_bincode_destination = assets.join(LOOKUP_BINCODE_DESTINATION_NAME);
 
     #[cfg(not(feature = "force-rebuild"))]
-    if std::path::Path::new(timezone_bincode_destination).exists() && std::path::Path::new(lookup_bincode_destination).exists() {
+    if timezone_bincode_destination.exists() && lookup_bincode_destination.exists() {
         return;
     }
 
-    std::fs::create_dir_all("../assets").unwrap();
+    std::fs::create_dir_all(&assets).unwrap();
 
     let features = get_geojson_features_from_source();
     generate_bincodes::<OsmTimezone>(features, timezone_bincode_destination, lookup_bincode_destination);
@@ -70,15 +85,16 @@ fn generate_osm_admin_bincodes() {
         shared::generate_bincodes,
     };
 
-    let admin_bincode_destination = &format!("../assets/{}", ADMIN_BINCODE_DESTINATION_NAME);
-    let lookup_bincode_destination = &format!("../assets/{}", LOOKUP_BINCODE_DESTINATION_NAME);
+    let assets = assets_dir();
+    let admin_bincode_destination = assets.join(ADMIN_BINCODE_DESTINATION_NAME);
+    let lookup_bincode_destination = assets.join(LOOKUP_BINCODE_DESTINATION_NAME);
 
     #[cfg(not(feature = "force-rebuild"))]
-    if std::path::Path::new(admin_bincode_destination).exists() && std::path::Path::new(lookup_bincode_destination).exists() {
+    if admin_bincode_destination.exists() && lookup_bincode_destination.exists() {
         return;
     }
 
-    std::fs::create_dir_all("../assets").unwrap();
+    std::fs::create_dir_all(&assets).unwrap();
 
     let features = get_geojson_features_from_source();
     generate_bincodes::<OsmAdmin>(features, admin_bincode_destination, lookup_bincode_destination);

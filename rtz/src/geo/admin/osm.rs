@@ -68,14 +68,14 @@ impl CanPerformGeoLookup for OsmAdmin {}
 // Statics.
 
 #[cfg(all(host_family_unix, feature = "self-contained"))]
-static ADMIN_BINCODE: &[u8] = include_bytes_aligned!(8, "../../../../assets/osm_admins.bincode");
+static ADMIN_BINCODE: &[u8] = include_bytes_aligned!(8, "../../../assets/osm_admins.bincode");
 #[cfg(all(host_family_windows, feature = "self-contained"))]
-static ADMIN_BINCODE: &[u8] = include_bytes_aligned!(8, "..\\..\\..\\..\\assets\\osm_admins.bincode");
+static ADMIN_BINCODE: &[u8] = include_bytes_aligned!(8, "..\\..\\..\\assets\\osm_admins.bincode");
 
 #[cfg(all(host_family_unix, feature = "self-contained"))]
-static LOOKUP_BINCODE: &[u8] = include_bytes_aligned!(8, "../../../../assets/osm_admin_lookup.bincode");
+static LOOKUP_BINCODE: &[u8] = include_bytes_aligned!(8, "../../../assets/osm_admin_lookup.bincode");
 #[cfg(all(host_family_windows, feature = "self-contained"))]
-static LOOKUP_BINCODE: &[u8] = include_bytes_aligned!(8, "..\\..\\..\\..\\assets\\osm_admin_lookup.bincode");
+static LOOKUP_BINCODE: &[u8] = include_bytes_aligned!(8, "..\\..\\..\\assets\\osm_admin_lookup.bincode");
 
 // Tests.
 
