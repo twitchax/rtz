@@ -12,7 +12,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: cargo-bins/cargo-binstall@main
-      - run: cargo binstall -y cargo-nextest
+      # --force: rust-cache restores binstall's install manifest (.crates.toml)
+      # without the binaries, so a plain binstall skips them and cargo reports
+      # "no such command: nextest". Forcing a reinstall keeps the binary present.
+      - run: cargo binstall -y --force cargo-nextest
       - run: cargo nextest run --features web
 
   codecov:
@@ -28,7 +31,7 @@ jobs:
         with:
           cache-all-crates: "true"
       - uses: cargo-bins/cargo-binstall@main
-      - run: cargo binstall -y cargo-nextest cargo-llvm-cov
+      - run: cargo binstall -y --force cargo-nextest cargo-llvm-cov
       - run: cargo llvm-cov nextest --workspace --features web --lcov --output-path coverage.lcov
       - uses: codecov/codecov-action@v4
         with:
