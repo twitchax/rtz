@@ -45,13 +45,15 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install mingw-w64
         run: sudo apt-get install mingw-w64
-      # Pin the action to the toolchain rust-toolchain.toml selects (1.93) and add
-      # the Windows target to IT. With @stable, the target's std lands on whatever
-      # stable release is current while the toml override builds on 1.93, so the
-      # std is missing ("can't find crate for `core`"). Prebuilt std also makes
-      # -Zbuild-std (which needs nightly anyway, so it never worked here) redundant.
-      - uses: dtolnay/rust-toolchain@1.93.0
+      # Install the toolchain under the EXACT string rust-toolchain.toml pins
+      # ("1.93") and add the Windows target to it. rustup treats "1.93" and
+      # "1.93.0" as different toolchains, so the @1.93.0 tag put the target's std
+      # on 1.93.0 while the toml override built on 1.93 → "can't find crate for
+      # `core`". Prebuilt std also makes -Zbuild-std (nightly-only, so it never
+      # worked here) redundant.
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: "1.93"
           targets: x86_64-pc-windows-gnu
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --features full --target x86_64-pc-windows-gnu --release
@@ -87,8 +89,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
-      - uses: dtolnay/rust-toolchain@1.93.0
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: "1.93"
           targets: aarch64-apple-darwin
       - run: cargo build --features full --target aarch64-apple-darwin --release
       - uses: actions/upload-artifact@v4
