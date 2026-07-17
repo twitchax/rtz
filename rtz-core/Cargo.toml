@@ -11,9 +11,9 @@ repository = "https://github.com/twitchax/rtz"
 keywords = ["cli", "time", "zone", "timezone"]
 categories = ["command-line-utilities"]
 
-# Allows for us to use wasm and tarpaulin flags.
+# `wasm` is set by rtz's build script; `coverage_nightly` is set by `cargo llvm-cov` on nightly.
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm)', 'cfg(tarpaulin_include)'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm)', 'cfg(coverage_nightly)'] }
 
 [features]
 default = []
@@ -29,24 +29,24 @@ tz-osm = []
 admin-osm = []
 
 [dependencies]
-anyhow = { version = "1.0.72", features = ["backtrace"] }
+anyhow = { version = "1", features = ["backtrace"] }
 
-rayon = "1.7.0"
+rayon = "1"
 
-geojson = "0.24.1"
-geo = "0.28.0"
+geojson = "1"
+geo = "0.33"
 
-chashmap = "2.2.2"
+chashmap = "2"
 
-serde = { version = "1.0.126" }
-serde_json = "1.0.64"
+serde = { version = "1" }
+serde_json = "1"
 
 # self-contained
 bincode = { version = "2", default-features = false, optional = true, features = ["std", "alloc", "serde", "derive"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-reqwest = { version = "0.12.5", features = ["blocking"] }
-zip = { version = "2.1.6" }
+reqwest = { version = "0.13", features = ["blocking"] }
+zip = { version = "8" }
 
 [dev-dependencies]
-pretty_assertions = "1.4.0"
+pretty_assertions = "1"

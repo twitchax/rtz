@@ -187,10 +187,20 @@ The library and binary both support various feature flags.  These are the availa
 
 ## Data Updates
 
-The last updates were made 2024.08.08.  The data sources on that date were as follows:
+The committed datasets (`rtz/assets/*.bincode`) were last generated 2024.08.08.  They are not refreshed automatically — the refresh pipeline below exists to regenerate them on demand, from the latest upstream sources:
 * [OSM Admin Data](https://planet.openstreetmap.org/pbf/planet-latest.osm.pbf).  This data is downloaded from the OSM planet file, and is then [processed](https://github.com/AndGem/osm_extract_polygon) locally to extract the administrative boundaries.
-* [OSM TZ Data](https://github.com/evansiroky/timezone-boundary-builder/releases/download/2024a/timezones-with-oceans.geojson.zip).  This data is downloaded from the latest generated release of the timezone boundary builder, and is processed automatically by this code.
+* [OSM TZ Data](https://github.com/evansiroky/timezone-boundary-builder/releases/download/2026c/timezones-with-oceans.geojson.zip).  This data is downloaded from the latest generated release of the timezone boundary builder, and is processed automatically by this code.
 * [NED TZ Data](https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_time_zones.geojson).  This data is downloaded from the `master` branch of the NED vector repository, and is processed automatically by this code.
+
+To refresh the committed bincodes to the latest sources, run:
+
+```bash
+$ cargo xtask update
+```
+
+This pulls NED `master`, OSM-tz `2026c`, and the latest `planet-latest.osm.pbf`; extracts admin boundaries via [`osm_extract_polygon`](https://github.com/AndGem/osm_extract_polygon); regenerates all six `rtz/assets/*.bincode` files; and verifies they decode via the test suite. It's a multi-hour, ~80GB-download job — see `cargo xtask --help` and the `update-data` skill (`.claude/skills/update-data/SKILL.md`) for prerequisites and the individual `download-pbf` / `extract-admin` / `regen` / `verify` subcommands.
+
+The OSM admin data source is the `RTZ_OSM_ADMIN_DIRS` environment variable (a semicolon-separated list of GeoJSON directories) rather than a hardcoded path; `cargo xtask regen` sets it for you from the directories `extract-admin` produces.
 
 ## Performance
 

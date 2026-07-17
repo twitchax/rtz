@@ -2,21 +2,32 @@ on: [push]
 
 name: Build and Test
 
-jobs:
+env:
+  # Stable pin, matching `rust-toolchain.toml`. Only the coverage job uses nightly (for
+  # `#[coverage(off)]`); everything else — build, test, publish — is stable.
+  RUST_TOOLCHAIN: "1.93"
+  # Authenticate cargo-binstall's GitHub API calls so concurrent jobs don't
+  # exhaust the unauthenticated rate limit.
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
       - uses: cargo-bins/cargo-binstall@main
-      # --force: rust-cache restores binstall's install manifest (.crates.toml)
-      # without the binaries, so a plain binstall skips them and cargo reports
-      # "no such command: nextest". Forcing a reinstall keeps the binary present.
-      - run: cargo binstall -y --force cargo-nextest
-      - run: cargo nextest run --features web
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-all-crates: "true"
+      # Force-install the test tools AFTER rust-cache restore: the cache restores
+      # binstall's install manifest without the binaries, so a plain binstall skips
+      # them and `cargo nextest` reports "no such command". (See commit beafd8d.)
+      - run: cargo binstall cargo-make cargo-nextest --force --no-confirm
+      - run: cargo make test
 
   codecov:
     needs: test
@@ -24,17 +35,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      # Coverage needs nightly so `cargo llvm-cov` sets `coverage_nightly` (activating the
+      # `#[coverage(off)]` exclusions). This is the only job that uses nightly; the Makefile
+      # `codecov` task invokes `cargo +nightly` to override the stable pin.
+      - uses: dtolnay/rust-toolchain@nightly
         with:
           components: llvm-tools-preview
+      - uses: cargo-bins/cargo-binstall@main
       - uses: Swatinem/rust-cache@v2
         with:
           cache-all-crates: "true"
-      - uses: cargo-bins/cargo-binstall@main
-      - run: cargo binstall -y --force cargo-nextest cargo-llvm-cov
-      - run: cargo llvm-cov nextest --workspace --features web --lcov --output-path coverage.lcov
-      - uses: codecov/codecov-action@v4
+      # Force-install after cache restore — see the Test job for why.
+      - run: cargo binstall cargo-make cargo-nextest cargo-llvm-cov --force --no-confirm
+      - run: cargo make codecov
+      - uses: codecov/codecov-action@v5
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: twitchax/rtz
           files: coverage.lcov
 
   build_windows:
@@ -44,19 +61,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install mingw-w64
-        run: sudo apt-get install mingw-w64
-      # Install the toolchain under the EXACT string rust-toolchain.toml pins
-      # ("1.93") and add the Windows target to it. rustup treats "1.93" and
-      # "1.93.0" as different toolchains, so the @1.93.0 tag put the target's std
-      # on 1.93.0 while the toml override built on 1.93 → "can't find crate for
-      # `core`". Prebuilt std also makes -Zbuild-std (nightly-only, so it never
-      # worked here) redundant.
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.93"
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
           targets: x86_64-pc-windows-gnu
+      - uses: cargo-bins/cargo-binstall@main
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build --features full --target x86_64-pc-windows-gnu --release
+      - run: cargo binstall cargo-make --force --no-confirm
+      - run: cargo make build-windows
       - uses: actions/upload-artifact@v4
         with:
           name: rtz_x86_64-pc-windows-gnu
@@ -68,11 +81,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
           targets: x86_64-unknown-linux-gnu
+      - uses: cargo-bins/cargo-binstall@main
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build --features full --target x86_64-unknown-linux-gnu --release
+      - run: cargo binstall cargo-make --force --no-confirm
+      - run: cargo make build-linux
       - uses: actions/upload-artifact@v4
         with:
           name: rtz_x86_64-unknown-linux-gnu
@@ -81,19 +97,17 @@ jobs:
   build_macos:
     needs: test
     name: Build MacOS
-    # macos-latest is Apple Silicon, so aarch64-apple-darwin is the native target.
-    # (The old pin, macos-12, was retired by GitHub and left this job queued
-    # forever.) Pin the toolchain to match rust-toolchain.toml, as in the Windows
-    # job, so there is no drift between the installed toolchain and the build.
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.93"
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
           targets: aarch64-apple-darwin
-      - run: cargo build --features full --target aarch64-apple-darwin --release
+      - uses: cargo-bins/cargo-binstall@main
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo binstall cargo-make --force --no-confirm
+      - run: cargo make build-macos
       - uses: actions/upload-artifact@v4
         with:
           name: rtz_aarch64-apple-darwin

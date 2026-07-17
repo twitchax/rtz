@@ -1,0 +1,79 @@
+# Tooling installers (in CI, cargo-binstall is provided by the cargo-bins action).
+
+[tasks.install-cargo-binstall]
+# No-op locally; documents the dependency. Install manually if missing:
+# https://github.com/cargo-bins/cargo-binstall
+script = "echo 'Checking cargo-binstall availability...'"
+
+[tasks.install-nextest]
+dependencies = ["install-cargo-binstall"]
+command = "cargo"
+args = ["binstall", "cargo-nextest", "--no-confirm"]
+
+[tasks.install-llvm-cov]
+dependencies = ["install-cargo-binstall"]
+command = "cargo"
+args = ["binstall", "cargo-llvm-cov", "--no-confirm"]
+
+[tasks.tools]
+dependencies = ["install-nextest", "install-llvm-cov"]
+
+# Build / test.
+
+[tasks.fmt]
+workspace = false
+command = "cargo"
+args = ["fmt"]
+
+[tasks.build]
+workspace = false
+command = "cargo"
+args = ["build"]
+
+[tasks.clippy]
+workspace = false
+command = "cargo"
+args = ["clippy", "--all-targets", "--features", "web", "--", "-D", "warnings"]
+
+[tasks.test]
+workspace = false
+dependencies = ["install-nextest"]
+command = "cargo"
+args = ["nextest", "run", "--features", "web"]
+
+[tasks.codecov]
+# `clear = true` fully replaces cargo-make's built-in `codecov` task (a codecov.io
+# uploader script); without it the definitions merge into "multiple actions" and fail.
+# `+nightly` overrides the stable pin in `rust-toolchain.toml`: coverage needs nightly so
+# `cargo llvm-cov` sets `coverage_nightly`, activating the `#[coverage(off)]` exclusions.
+clear = true
+workspace = false
+dependencies = ["tools"]
+command = "cargo"
+# `xtask` is operator/data-pipeline tooling (like the build script) — excluded from the coverage
+# denominator so the number reflects the library/binary surface, not untested dev tooling.
+args = ["+nightly", "llvm-cov", "nextest", "--features", "web", "--workspace", "--ignore-filename-regex", "xtask/src", "--lcov", "--output-path", "coverage.lcov"]
+
+[tasks.codecov-html]
+clear = true
+workspace = false
+dependencies = ["tools"]
+command = "cargo"
+args = ["+nightly", "llvm-cov", "nextest", "--features", "web", "--workspace", "--ignore-filename-regex", "xtask/src", "--html"]
+
+# Release cross-builds (default `cli` feature stays on, so the bin is produced).
+
+[tasks.build-linux]
+workspace = false
+command = "cargo"
+args = ["build", "--features", "full", "--target", "x86_64-unknown-linux-gnu", "--release"]
+
+[tasks.build-windows]
+workspace = false
+command = "cargo"
+args = ["build", "--features", "full", "--target", "x86_64-pc-windows-gnu", "--release"]
+
+[tasks.build-macos]
+workspace = false
+command = "cargo"
+args = ["build", "--features", "full", "--target", "aarch64-apple-darwin", "--release"]

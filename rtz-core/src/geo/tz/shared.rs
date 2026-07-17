@@ -1,9 +1,5 @@
 //! The `shared` module.  Contains types and helpers pertinent to all TZ implementations.
 
-// This module is mostly used for cache preprocessing, which is expensive during coverage, so
-// it is not included in the coverage report.
-#![cfg(not(tarpaulin_include))]
-
 use crate::geo::shared::{HasGeometry, HasProperties};
 
 // Types.

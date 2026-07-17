@@ -23,6 +23,9 @@ assert_eq!(
 #![warn(rustdoc::broken_intra_doc_links, rust_2018_idioms, clippy::all, missing_docs)]
 #![allow(incomplete_features)]
 #![allow(stable_features)]
+// `coverage(off)` is nightly-only; the feature (and the attrs elsewhere in the crate) activate
+// only under `cargo llvm-cov` on nightly (which sets `coverage_nightly`). Inert on stable.
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 // #![feature(async_closure)]
 // #![feature(test)]
 // #![feature(string_remove_matches)]

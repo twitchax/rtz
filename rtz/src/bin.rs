@@ -1,6 +1,6 @@
 //! The main binary entrypoint.
 
-use clap::{command, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 use rtz_core::base::types::Void;
 
 #[derive(Parser, Debug)]
@@ -57,6 +57,8 @@ enum NedCommand {
     #[cfg(feature = "tz-ned")]
     Tz {
         /// The lng,lat pair for which to lookup timezone information.
+        // `allow_hyphen_values` so a negative longitude (e.g. `-87.62,41.88`) isn't parsed as a flag.
+        #[arg(allow_hyphen_values = true)]
         lng_lat: String,
     },
 }
@@ -67,6 +69,8 @@ enum OsmCommand {
     #[cfg(feature = "tz-osm")]
     Tz {
         /// The lng,lat pair for which to lookup timezone information.
+        // `allow_hyphen_values` so a negative longitude (e.g. `-87.62,41.88`) isn't parsed as a flag.
+        #[arg(allow_hyphen_values = true)]
         lng_lat: String,
     },
 
@@ -74,6 +78,8 @@ enum OsmCommand {
     #[cfg(feature = "admin-osm")]
     Admin {
         /// The lng,lat pair for which to lookup administrative information.
+        // `allow_hyphen_values` so a negative longitude (e.g. `-87.62,41.88`) isn't parsed as a flag.
+        #[arg(allow_hyphen_values = true)]
         lng_lat: String,
     },
 }

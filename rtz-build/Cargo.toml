@@ -11,12 +11,18 @@ repository = "https://github.com/twitchax/rtz"
 keywords = ["cli", "time", "zone", "timezone"]
 categories = ["command-line-utilities"]
 
+# `coverage_nightly` is set by `cargo llvm-cov` on nightly; keep it a known cfg on stable builds.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage_nightly)'] }
+
 [features]
 default = []
 full = ["tz-ned", "tz-osm", "admin-osm", "self-contained", "rtz-core/full"]
 
 force-rebuild = []
 double-precision = ["rtz-core/double-precision"]
+unsimplified = ["rtz-core/unsimplified"]
+extrasimplified = ["rtz-core/extrasimplified"]
 self-contained = ["rtz-core/self-contained"]
 
 tz-ned = ["rtz-core/tz-ned"]

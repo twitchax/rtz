@@ -139,4 +139,47 @@ mod tests {
 
         assert_eq!(body, expected);
     }
+
+    #[tokio::test]
+    async fn unversioned_ned_matches_v1_body() {
+        let client = get_client();
+
+        let a = client.clone().oneshot(Request::get("/api/ned/tz/-121.0/46.0").body(Body::empty()).unwrap()).await.unwrap();
+        let a_body = a.into_body().collect().await.unwrap().to_bytes();
+
+        let b = client.oneshot(Request::get("/api/v1/ned/tz/-121.0/46.0").body(Body::empty()).unwrap()).await.unwrap();
+        let b_body = b.into_body().collect().await.unwrap().to_bytes();
+
+        assert_eq!(a_body, b_body);
+    }
+
+    #[tokio::test]
+    async fn malformed_coordinate_is_bad_request() {
+        let client = get_client();
+
+        let request = Request::get("/api/v1/ned/tz/not-a-number/46.0").body(Body::empty()).unwrap();
+        let response = client.oneshot(request).await.unwrap();
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn unknown_route_is_not_found() {
+        let client = get_client();
+
+        let request = Request::get("/api/does-not-exist").body(Body::empty()).unwrap();
+        let response = client.oneshot(request).await.unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn health_endpoint_is_ok() {
+        let client = get_client();
+
+        let request = Request::get("/api/health").body(Body::empty()).unwrap();
+        let response = client.oneshot(request).await.unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
 }

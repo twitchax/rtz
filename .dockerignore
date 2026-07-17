@@ -1,0 +1,10 @@
+/target
+/.git
+/docs
+/pkg
+/static
+/.github
+/.devcontainer
+/.vscode
+/.fly
+/coverage.lcov

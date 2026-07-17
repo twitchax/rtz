@@ -1,9 +1,5 @@
 //! All of the geo-specific functions for OSM admin lookups.
 
-// This module is mostly used for cache preprocessing, which is expensive during coverage, so
-// it is not included in the coverage report.
-#![cfg(not(tarpaulin_include))]
-
 use geo::Geometry;
 use serde_json::{Map, Value};
 use std::borrow::Cow;
@@ -33,10 +29,13 @@ const SIMPLIFICATION_EPSILON: Float = 0.1;
 
 /// Get the GeoJSON [`geojson::Feature`]s from the source.
 #[cfg(not(target_family = "wasm"))]
+#[cfg_attr(coverage_nightly, coverage(off))]
 pub fn get_geojson_features_from_source() -> geojson::FeatureCollection {
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
-    let paths = ADDRESS.split(';').collect::<Vec<_>>();
+    let admin_dirs = std::env::var("RTZ_OSM_ADMIN_DIRS")
+        .expect("RTZ_OSM_ADMIN_DIRS must be set (semicolon-separated admin GeoJSON directories) to regenerate OSM admin data");
+    let paths = admin_dirs.split(';').collect::<Vec<_>>();
     let mut files = Vec::new();
 
     for path in paths {
@@ -69,10 +68,6 @@ pub fn get_geojson_features_from_source() -> geojson::FeatureCollection {
     }
 }
 
-/// The address of the GeoJSON file.
-///
-/// Hacking to local machine, for now.  Will create a repo at some point.
-pub static ADDRESS: &str = "D://LargeData//admin_data//admin2;D://LargeData//admin_data//admin3;D://LargeData//admin_data//admin4;D://LargeData//admin_data//admin5;D://LargeData//admin_data//admin6;D://LargeData//admin_data//admin7;D://LargeData//admin_data//admin8";
 /// The name of the timezone bincode file.
 pub static ADMIN_BINCODE_DESTINATION_NAME: &str = "osm_admins.bincode";
 /// The name of the cache bincode file.

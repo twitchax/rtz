@@ -11,7 +11,6 @@ use axum::{
 use axum_insights::AppInsightsError;
 use chrono::{DateTime, Utc};
 use hyper::{header, StatusCode};
-use rtz_core::base::types::Err;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -73,9 +72,6 @@ pub type WebResult<T> = Result<T, WebError>;
 /// A simple web result with no return value.
 pub type WebVoid = WebResult<()>;
 
-/// A [`WebResult`] where the content is [`Json`].
-//pub type JsonResult<T> = WebResult<Json<T>>;
-
 // Web error types.
 
 /// The error type returned during an HTTP error response.
@@ -123,137 +119,26 @@ impl IntoResponse for WebError {
     }
 }
 
-// Response builders.
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::response::IntoResponse;
 
-/// Builds a [`Custom`] response (usually for errors).
-#[allow(dead_code)]
-pub fn custom(status: StatusCode, message: impl Into<String>) -> WebError {
-    let error = anyhow::Error::msg(message.into());
-
-    WebError {
-        status: status.as_u16(),
-        message: error.to_string(),
-        backtrace: Some(error.backtrace().to_string()),
-    }
-}
-
-/// Builds an error response.
-#[allow(dead_code)]
-fn build_err<T>(status: StatusCode, message: impl Into<String>) -> WebResult<T> {
-    Err(custom(status, message))
-}
-
-/// Builds a bad request (400) response.
-#[allow(dead_code)]
-pub fn bad_req<T>(message: impl Into<String>) -> WebResult<T> {
-    build_err(StatusCode::BAD_REQUEST, message)
-}
-
-/// Builds an internal error (500) response.
-#[allow(dead_code)]
-pub fn internal_err<T>(message: impl Into<String>) -> WebResult<T> {
-    build_err(StatusCode::INTERNAL_SERVER_ERROR, message)
-}
-
-/// Builds an unauthorized (401) response.
-#[allow(dead_code)]
-pub fn unauthorized<T>(message: impl Into<String>) -> WebResult<T> {
-    build_err(StatusCode::UNAUTHORIZED, message)
-}
-
-/// Builds an unauthorized (404) response.
-#[allow(dead_code)]
-pub fn notfound<T>(message: impl Into<String>) -> WebResult<T> {
-    build_err(StatusCode::NOT_FOUND, message)
-}
-
-/// Builds a function that takes an error, and maps it into an error response.
-fn map_err(status: StatusCode, message: impl Into<String>) -> impl FnOnce(Err) -> WebError {
-    move |e| WebError {
-        status: status.as_u16(),
-        message: format!("{}  {}", message.into(), e),
-        backtrace: Some(e.backtrace().to_string()),
-    }
-}
-
-/// Builds a function that takes an error, and maps it into a bad request (400) response.
-pub fn map_bad_req(message: impl Into<String>) -> impl FnOnce(Err) -> WebError {
-    map_err(StatusCode::BAD_REQUEST, message)
-}
-
-/// Builds a function that takes an error, and maps it into an internal error (500) response.
-pub fn map_internal_err(message: impl Into<String>) -> impl FnOnce(Err) -> WebError {
-    map_err(StatusCode::INTERNAL_SERVER_ERROR, message)
-}
-
-/// Builds a function that takes an error, and maps it into an unauthorized (401) response.
-pub fn map_unauthorized(message: impl Into<String>) -> impl FnOnce(Err) -> WebError {
-    map_err(StatusCode::UNAUTHORIZED, message)
-}
-
-/// Builds a function that takes an error, and maps it into an not found (404) response.
-pub fn map_notfound(message: impl Into<String>) -> impl FnOnce(Err) -> WebError {
-    map_err(StatusCode::NOT_FOUND, message)
-}
-
-/// Builds a function that takes an error, and maps it into an not found (429) response.
-pub fn map_too_many_requests(message: impl Into<String>) -> impl FnOnce(Err) -> WebError {
-    map_err(StatusCode::TOO_MANY_REQUESTS, message)
-}
-
-/// Trait that makes it easy to map generic `Result`s into `WebResult`s.
-#[allow(dead_code)]
-pub trait WebResultMapper<T> {
-    fn or_bad_req(self, message: impl Into<String>) -> WebResult<T>;
-    fn or_internal_err(self, message: impl Into<String>) -> WebResult<T>;
-    fn or_unauthorized(self, message: impl Into<String>) -> WebResult<T>;
-    fn or_notfound(self, message: impl Into<String>) -> WebResult<T>;
-    fn or_too_many_requests(self, message: impl Into<String>) -> WebResult<T>;
-}
-
-impl<T, E> WebResultMapper<T> for Result<T, E>
-where
-    E: std::error::Error + Send + Sync + 'static,
-{
-    fn or_bad_req(self, message: impl Into<String>) -> WebResult<T> {
-        self.map_err(|e| Err::from(e)).map_err(map_bad_req(message))
+    #[test]
+    fn web_error_display_is_the_message() {
+        let e = WebError { status: 400, message: "boom".to_string(), backtrace: None };
+        assert_eq!(e.to_string(), "boom");
     }
 
-    fn or_internal_err(self, message: impl Into<String>) -> WebResult<T> {
-        self.map_err(move |e| Err::from(e)).map_err(map_internal_err(message))
+    #[test]
+    fn web_error_into_response_uses_its_status() {
+        let e = WebError { status: 404, message: "nope".to_string(), backtrace: None };
+        let response = e.into_response();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
-    fn or_unauthorized(self, message: impl Into<String>) -> WebResult<T> {
-        self.map_err(move |e| Err::from(e)).map_err(map_unauthorized(message))
-    }
-
-    fn or_notfound(self, message: impl Into<String>) -> WebResult<T> {
-        self.map_err(move |e| Err::from(e)).map_err(map_notfound(message))
-    }
-
-    fn or_too_many_requests(self, message: impl Into<String>) -> WebResult<T> {
-        self.map_err(move |e| Err::from(e)).map_err(map_too_many_requests(message))
-    }
-}
-
-impl<T> WebResultMapper<T> for Option<T> {
-    fn or_bad_req(self, message: impl Into<String>) -> WebResult<T> {
-        self.ok_or_else(|| anyhow::Error::msg("Option was `None`.")).map_err(map_bad_req(message))
-    }
-
-    fn or_internal_err(self, message: impl Into<String>) -> WebResult<T> {
-        self.ok_or_else(|| anyhow::Error::msg("Option was `None`.")).map_err(map_internal_err(message))
-    }
-
-    fn or_unauthorized(self, message: impl Into<String>) -> WebResult<T> {
-        self.ok_or_else(|| anyhow::Error::msg("Option was `None`.")).map_err(map_unauthorized(message))
-    }
-
-    fn or_notfound(self, message: impl Into<String>) -> WebResult<T> {
-        self.ok_or_else(|| anyhow::Error::msg("Option was `None`.")).map_err(map_notfound(message))
-    }
-
-    fn or_too_many_requests(self, message: impl Into<String>) -> WebResult<T> {
-        self.ok_or_else(|| anyhow::Error::msg("Option was `None`.")).map_err(map_too_many_requests(message))
+    #[test]
+    fn last_modified_time_is_nonempty() {
+        assert!(!get_last_modified_time().is_empty());
     }
 }

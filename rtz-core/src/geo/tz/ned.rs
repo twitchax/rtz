@@ -1,9 +1,5 @@
 //! All of the geo-specific functions for NED TZ lookups.
 
-// This module is mostly used for cache preprocessing, which is expensive during coverage, so
-// it is not included in the coverage report.
-#![cfg(not(tarpaulin_include))]
-
 use std::borrow::Cow;
 
 use geo::Geometry;
@@ -36,6 +32,7 @@ const SIMPLIFICATION_EPSILON: Float = 0.001;
 
 /// Get the GeoJSON [`geojson::Feature`]s from the source.
 #[cfg(not(target_family = "wasm"))]
+#[cfg_attr(coverage_nightly, coverage(off))]
 pub fn get_geojson_features_from_source() -> geojson::FeatureCollection {
     let response = reqwest::blocking::get(ADDRESS).unwrap();
     let geojson_input = response.text().unwrap();

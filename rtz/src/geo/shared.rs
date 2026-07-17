@@ -30,24 +30,6 @@ where
     fn get_mem_lookup() -> &'static HashMap<RoundLngLat, Self::Lookup>;
 }
 
-/// Trait that allows converting a [`u16`] into the item to which the id refers (from the global list).
-// pub(crate) trait MapIntoItem<T> {
-//     fn map_into_item(self) -> Option<&'static T>;
-// }
-
-// impl<T> MapIntoItem<T> for Option<&u16>
-// where
-//     T: HasItemData,
-// {
-//     fn map_into_item(self) -> Option<&'static T> {
-//         let value = self?;
-
-//         let items = T::get_mem_items();
-
-//         items.get(*value as usize)
-//     }
-// }
-
 /// Trait that allows converting a [`u16`] into the items to which the ids refer (from the global list).
 pub(crate) trait MapIntoItems<T> {
     fn map_into_items(self) -> Option<Vec<&'static T>>;
@@ -118,7 +100,7 @@ where
     /// Gets the geojson representation of the memory cache.
     fn memory_data_to_geojson() -> String {
         let geojson = Self::get_mem_items().to_geojson();
-        geojson.to_json_value().to_string()
+        geojson.to_string()
     }
 
     /// Get value from the static memory cache.

@@ -1,5 +1,10 @@
 [workspace]
-members = ["rtz-core", "rtz"]
+members = ["rtz-core", "rtz", "xtask"]
+# `xtask` has no `web` feature, so it must stay out of the workspace-wide
+# `--features web` invocations that `cargo make test` / `cargo make clippy`
+# use. Without this, those commands would fail trying to resolve `web` on
+# a member that doesn't define it.
+default-members = ["rtz-core", "rtz"]
 resolver = "2"
 
 # These sections allow for the build steps to be optimized.

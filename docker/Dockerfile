@@ -1,16 +1,9 @@
-FROM rust:1.80 AS chef
+# syntax=docker/dockerfile:1
 
-# Install mold linker.
-RUN git clone https://github.com/rui314/mold.git /tmp/mold && \
-    cd /tmp/mold && git checkout v2.33.0 && \
-    ./install-build-deps.sh && \
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=c++ -B build && \
-    cmake --build build -j$(nproc) && \
-    cmake --build build --target install && \
-    rm -rf /tmp/mold
-
-RUN cargo install cargo-chef
+# Chef base — copy the toolchain file early so rustup installs the repo's pinned toolchain for every stage.
+FROM lukemathwalker/cargo-chef:latest-rust-latest AS chef
 WORKDIR /build
+COPY rust-toolchain.toml .
 
 FROM chef AS planner
 COPY . .
@@ -18,17 +11,19 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
 COPY --from=planner /build/recipe.json recipe.json
-COPY ./assets ./assets
-RUN mold -run cargo chef cook --release --recipe-path recipe.json
+# Compiled dependencies are cached in their own layer, independent of source changes.
+RUN cargo chef cook --release --features web --recipe-path recipe.json
+# The bincode assets ship in rtz/assets, so this build is self-contained (no downloads).
 COPY . .
-RUN mold -run cargo build --features web --release --lib
-RUN mold -run cargo build --features web --release
+RUN cargo build --features web --release
 
-# Copy the binary into a minimal runtime image.
-FROM ubuntu:oracular AS runtime
-RUN apt-get update && apt-get install -y libssl-dev ca-certificates && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /build/target/release/rtz .
-COPY ./docker/app.entrypoint.sh .
-RUN chmod a+x app.entrypoint.sh
-
-ENTRYPOINT [ "/app.entrypoint.sh" ]
+# Minimal runtime image.
+FROM debian:stable-slim AS runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libssl3 ca-certificates tini && \
+    rm -rf /var/lib/apt/lists/*
+COPY --from=builder /build/target/release/rtz /rtz
+EXPOSE 8082
+# tini as PID 1 so SIGTERM reaches the app and its graceful-shutdown handler fires.
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/rtz", "serve"]

@@ -1,9 +1,5 @@
 //! All of the geo-specific functions for OSM TZ lookups.
 
-// This module is mostly used for cache preprocessing, which is expensive during coverage, so
-// it is not included in the coverage report.
-#![cfg(not(tarpaulin_include))]
-
 use std::{borrow::Cow, io::Read};
 
 use geo::Geometry;
@@ -34,6 +30,7 @@ const SIMPLIFICATION_EPSILON: Float = 0.01;
 
 /// Get the GeoJSON [`geojson::Feature`]s from the source.
 #[cfg(not(target_family = "wasm"))]
+#[cfg_attr(coverage_nightly, coverage(off))]
 pub fn get_geojson_features_from_source() -> geojson::FeatureCollection {
     let response = reqwest::blocking::get(ADDRESS).unwrap();
     let geojson_zip = response.bytes().unwrap();
@@ -45,7 +42,7 @@ pub fn get_geojson_features_from_source() -> geojson::FeatureCollection {
 }
 
 /// The address of the GeoJSON file.
-pub static ADDRESS: &str = "https://github.com/evansiroky/timezone-boundary-builder/releases/download/2024a/timezones-with-oceans.geojson.zip";
+pub static ADDRESS: &str = "https://github.com/evansiroky/timezone-boundary-builder/releases/download/2026c/timezones-with-oceans.geojson.zip";
 /// The name of the timezone bincode file.
 pub static TIMEZONE_BINCODE_DESTINATION_NAME: &str = "osm_time_zones.bincode";
 /// The name of the cache bincode file.

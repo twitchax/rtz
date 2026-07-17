@@ -1,9 +1,5 @@
 //! Shared functionality for geo operations.
 
-// This module is mostly used for cache preprocessing, which is expensive during coverage, so
-// it is not included in the coverage report.
-#![cfg(not(tarpaulin_include))]
-
 use core::str;
 use std::{
     borrow::Cow,
@@ -13,7 +9,11 @@ use std::{
 };
 
 use chashmap::CHashMap;
-use geo::{Coord, Geometry, Intersects, LineString, MultiPolygon, Polygon, Rect, SimplifyVw};
+use geo::{Coord, Geometry, Intersects, Rect, SimplifyVw};
+// These types are named only in the `self-contained` codec helpers; `simplify_geometry` uses them
+// via `Geometry::` variants, which don't need the imports. Gating them keeps the default build warning-free.
+#[cfg(feature = "self-contained")]
+use geo::{LineString, MultiPolygon, Polygon};
 use geojson::{Feature, FeatureCollection, GeoJson};
 use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 use serde_json::{Map, Value};
@@ -295,7 +295,7 @@ pub trait ToGeoJsonFeatureCollection {
 }
 
 /// Implementation specifically for [`ConcreteVec`].
-impl<'a, L, D, T> ToGeoJsonFeatureCollection for &'a L
+impl<L, D, T> ToGeoJsonFeatureCollection for &L
 where
     L: Deref<Target = D>,
     D: Deref<Target = [T]>,
@@ -333,9 +333,9 @@ where
 #[cfg(feature = "self-contained")]
 pub fn pad_string_alignment(string: impl AsRef<str>) -> Vec<u8> {
     let alignment = std::mem::align_of::<Float>();
-    let padding = alignment - (string.as_ref().as_bytes().len() % alignment);
+    let padding = alignment - (string.as_ref().len() % alignment);
 
-    string.as_ref().as_bytes().iter().chain(std::iter::repeat(&0u8).take(padding)).copied().collect::<Vec<u8>>()
+    string.as_ref().as_bytes().iter().chain(std::iter::repeat_n(&0u8, padding)).copied().collect::<Vec<u8>>()
 }
 
 /// Unpads a String after decoding to remove any null padding.
@@ -356,19 +356,19 @@ pub fn simplify_geometry(geometry: Geometry<Float>, simplification_epsilon: Floa
     #[cfg(not(feature = "unsimplified"))]
     let geometry = match geometry {
         Geometry::Polygon(polygon) => {
-            let simplified = polygon.simplify_vw(&simplification_epsilon);
+            let simplified = polygon.simplify_vw(simplification_epsilon);
             Geometry::Polygon(simplified)
         }
         Geometry::MultiPolygon(multi_polygon) => {
-            let simplified = multi_polygon.simplify_vw(&simplification_epsilon);
+            let simplified = multi_polygon.simplify_vw(simplification_epsilon);
             Geometry::MultiPolygon(simplified)
         }
         Geometry::LineString(line_string) => {
-            let simplified = line_string.simplify_vw(&simplification_epsilon);
+            let simplified = line_string.simplify_vw(simplification_epsilon);
             Geometry::LineString(simplified)
         }
         Geometry::MultiLineString(multi_line_string) => {
-            let simplified = multi_line_string.simplify_vw(&simplification_epsilon);
+            let simplified = multi_line_string.simplify_vw(simplification_epsilon);
             Geometry::MultiLineString(simplified)
         }
         g => g,
@@ -416,6 +416,7 @@ where
 /// "100km" is a bit of a misnomer.  This is really 100km _at the equator_, but this
 /// makes it easier to reason about what the caches are doing.
 #[cfg(feature = "self-contained")]
+#[cfg_attr(coverage_nightly, coverage(off))]
 fn generate_lookup_bincode<T>(bincode_input: impl AsRef<Path>, bincode_destination: impl AsRef<Path>)
 where
     T: HasGeometry + Decode<()> + Send + Sync + 'static,
@@ -438,6 +439,7 @@ where
 
 /// Generate bincode representation of the timezones.
 #[cfg(feature = "self-contained")]
+#[cfg_attr(coverage_nightly, coverage(off))]
 fn generate_item_bincode<T>(geojson_features: FeatureCollection, bincode_destination: impl AsRef<Path>)
 where
     T: HasGeometry + Encode + From<IdFeaturePair> + Send + 'static,
@@ -470,6 +472,7 @@ pub fn get_geojson_feature_from_string(geojson_input: &str) -> Feature {
 
 /// Generates new bincodes for the timezones and the cache from the GeoJSON.
 #[cfg(feature = "self-contained")]
+#[cfg_attr(coverage_nightly, coverage(off))]
 pub fn generate_bincodes<T>(geojson_features: FeatureCollection, timezone_bincode_destination: impl AsRef<Path>, lookup_bincode_destination: impl AsRef<Path>)
 where
     T: HasGeometry + Encode + From<IdFeaturePair> + Decode<()> + Send + Sync + 'static,
@@ -784,5 +787,95 @@ impl<'de, Context> BorrowDecode<'de, Context> for EncodableIds {
         let vec = unsafe { Vec::from_raw_parts(slice.as_ptr() as *mut Id, len, len) };
 
         Ok(EncodableIds(vec))
+    }
+}
+
+#[cfg(all(test, feature = "self-contained"))]
+mod codec_tests {
+    use super::*;
+    use crate::base::types::Float;
+    use geo::{Coord, Geometry, LineString, MultiPolygon, Polygon};
+    use std::borrow::Cow;
+
+    fn roundtrip_string(s: &str) {
+        let cfg = get_global_bincode_config();
+        let original = EncodableString(Cow::Owned(s.to_string()));
+        let bytes = bincode::encode_to_vec(&original, cfg).unwrap();
+        let (decoded, _len): (EncodableString, usize) = bincode::decode_from_slice(&bytes, cfg).unwrap();
+        assert_eq!(decoded, original, "string roundtrip failed for {s:?}");
+    }
+
+    #[test]
+    fn string_roundtrips_ascii_empty_nonascii_and_alignment() {
+        roundtrip_string(""); // empty
+        roundtrip_string("America/Los_Angeles");
+        roundtrip_string("مصر"); // non-ASCII UTF-8 through pad/unpad
+        roundtrip_string("abc"); // len 3 -> 1 pad byte
+        roundtrip_string("abcd"); // len 4 -> full extra 4 pad bytes (alignment boundary)
+    }
+
+    #[test]
+    fn option_string_roundtrips_none_and_some() {
+        let cfg = get_global_bincode_config();
+        for original in [EncodableOptionString(None), EncodableOptionString(Some(Cow::Owned("x".to_string())))] {
+            let bytes = bincode::encode_to_vec(&original, cfg).unwrap();
+            let (decoded, _len): (EncodableOptionString, usize) = bincode::decode_from_slice(&bytes, cfg).unwrap();
+            assert_eq!(decoded, original);
+        }
+    }
+
+    #[test]
+    fn ids_roundtrip_empty_and_many() {
+        let cfg = get_global_bincode_config();
+        for v in [Vec::<Id>::new(), vec![0u32, 1, 2, 4_000_000]] {
+            let original = EncodableIds(v.clone());
+            let bytes = bincode::encode_to_vec(&original, cfg).unwrap();
+            let (decoded, _len): (EncodableIds, usize) = bincode::decode_from_slice(&bytes, cfg).unwrap();
+            assert_eq!(decoded.0, v);
+        }
+    }
+
+    #[test]
+    fn geometry_roundtrips_polygon_with_interior_and_multipolygon() {
+        let cfg = get_global_bincode_config();
+        let exterior = LineString(vec![
+            Coord { x: 0.0, y: 0.0 },
+            Coord { x: 4.0, y: 0.0 },
+            Coord { x: 4.0, y: 4.0 },
+            Coord { x: 0.0, y: 4.0 },
+            Coord { x: 0.0, y: 0.0 },
+        ]);
+        let interior = LineString(vec![
+            Coord { x: 1.0, y: 1.0 },
+            Coord { x: 2.0, y: 1.0 },
+            Coord { x: 2.0, y: 2.0 },
+            Coord { x: 1.0, y: 1.0 },
+        ]);
+        let poly: Polygon<Float> = Polygon::new(exterior, vec![interior]);
+
+        let original = EncodableGeometry(Geometry::Polygon(poly.clone()));
+        let bytes = bincode::encode_to_vec(&original, cfg).unwrap();
+        let (decoded, _len): (EncodableGeometry, usize) = bincode::decode_from_slice(&bytes, cfg).unwrap();
+        assert_eq!(decoded.0, original.0);
+
+        let multi = EncodableGeometry(Geometry::MultiPolygon(MultiPolygon::new(vec![poly])));
+        let bytes = bincode::encode_to_vec(&multi, cfg).unwrap();
+        let (decoded, _len): (EncodableGeometry, usize) = bincode::decode_from_slice(&bytes, cfg).unwrap();
+        assert_eq!(decoded.0, multi.0);
+    }
+
+    #[test]
+    fn string_borrow_decode_matches_owned() {
+        // The borrowed decode path builds a `Cow::Borrowed` via an internal transmute to
+        // 'static. Exercising it here is sound because the source buffer outlives the decoded
+        // value and `Cow::Borrowed` frees nothing on drop. We deliberately do NOT borrow-decode
+        // the `Vec::from_raw_parts` types (EncodableIds / EncodableGeometry) from a local buffer:
+        // their decoded Vecs would free borrowed memory on drop. Those borrow paths are already
+        // exercised at runtime against the embedded 'static bincodes by the `geo::*` tests.
+        let cfg = get_global_bincode_config();
+        let original = EncodableString(Cow::Owned("America/Los_Angeles".to_string()));
+        let bytes = bincode::encode_to_vec(&original, cfg).unwrap();
+        let (decoded, _len): (EncodableString, usize) = bincode::borrow_decode_from_slice(&bytes, cfg).unwrap();
+        assert_eq!(decoded.as_ref(), original.as_ref());
     }
 }

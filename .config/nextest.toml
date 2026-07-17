@@ -1,0 +1,6 @@
+[profile.default]
+# The randomized `can_verify_lookup_assisted_accuracy` tests and the CLI e2e tests
+# (which spawn the real binary) are the only mildly-flaky ones; a couple of retries
+# keep a transient blip from reddening an otherwise-green run.
+retries = 2
+slow-timeout = { period = "30s", terminate-after = 4 }

@@ -1,9 +1,14 @@
 # rtz development
 
+> Builds and tests on the **stable** toolchain pinned in `rust-toolchain.toml`. Use `cargo make
+> test`, `cargo make clippy`, and `cargo make codecov`. Coverage is the one exception: it needs a
+> **nightly** toolchain (with `llvm-tools-preview`) for the `#[coverage(off)]` exclusions, so
+> `cargo make codecov` invokes `cargo +nightly llvm-cov` for you.
+
 ## Full Tests
 
 ```bash
-$ cargo test --features full --features web
+$ cargo make test
 ```
 
 ## Publish to Cargo
