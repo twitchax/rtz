@@ -510,6 +510,24 @@ pub fn get_global_bincode_config() -> Configuration<bincode::config::LittleEndia
 #[derive(Debug)]
 pub struct EncodableGeometry(pub Geometry<Float>);
 
+// When `owned-decode` is off, geometries are borrow-decoded: their coordinate `Vec`s are
+// reconstructed via `Vec::from_raw_parts` directly over the embedded asset bytes (see
+// `borrow_decode_poly`). Those `Vec`s do not own heap memory, so letting `geo`'s `Vec::drop` run
+// would `dealloc` a pointer into `.rodata` — undefined behavior. We forget the geometry on drop so
+// that never happens; the bytes live in the binary, so there is nothing to free.
+//
+// SAFETY / INVARIANT: this leak-on-drop is correct *only* because, with `owned-decode` off, every
+// geometry originates from `borrow_decode` (static-backed). The single selector that guarantees
+// this is `decode_binary_data` in `rtz/src/geo/shared.rs` — keep the two in lockstep. With
+// `owned-decode` on, geometries own real allocations and must drop normally, so there is no `Drop`.
+#[cfg(not(feature = "owned-decode"))]
+impl Drop for EncodableGeometry {
+    fn drop(&mut self) {
+        let geometry = std::mem::replace(&mut self.0, Geometry::Point(geo::Point::new(0.0, 0.0)));
+        std::mem::forget(geometry);
+    }
+}
+
 #[cfg(feature = "self-contained")]
 fn encode_poly<E>(polygon: &Polygon<Float>, encoder: &mut E) -> Result<(), EncodeError>
 where

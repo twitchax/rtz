@@ -40,7 +40,7 @@ double-precision = ["rtz-core/double-precision", "rtz-build/double-precision"]
 unsimplified = ["rtz-core/unsimplified", "rtz-build/unsimplified"]
 extrasimplified = ["rtz-core/extrasimplified", "rtz-build/extrasimplified"]
 self-contained = ["rtz-core/self-contained", "rtz-build/self-contained", "include_bytes_aligned"]
-owned-decode = []
+owned-decode = ["rtz-core/owned-decode"]
 
 tz-ned = ["rtz-core/tz-ned", "rtz-build/tz-ned"]
 tz-osm = ["rtz-core/tz-osm", "rtz-build/tz-osm", "chrono-tz", "chrono"]

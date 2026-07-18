@@ -23,6 +23,10 @@ double-precision = []
 unsimplified = []
 extrasimplified = []
 self-contained = ["bincode"]
+# When off (default), geometries are borrow-decoded directly over the embedded asset bytes, so
+# `EncodableGeometry` leaks on drop instead of freeing static memory. When on, geometries own real
+# heap allocations and drop normally. Kept in sync with `rtz`'s decode selection (see rtz's owned-decode).
+owned-decode = []
 
 tz-ned = []
 tz-osm = []

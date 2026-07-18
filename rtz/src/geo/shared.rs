@@ -62,6 +62,10 @@ pub fn decode_binary_data<T>(data: &'static [u8]) -> T
 where
     T: bincode::Decode<()> + bincode::BorrowDecode<'static, ()>,
 {
+    // INVARIANT: this is the single selector of borrow-vs-owned decode. With `owned-decode` off we
+    // borrow directly over the embedded bytes, which is what makes `EncodableGeometry`'s leak-on-drop
+    // correct (see its `Drop` in `rtz-core`). Do not introduce a second, differently-gated decode of
+    // geometry data, or the two can desync and free static memory (UB).
     #[cfg(not(feature = "owned-decode"))]
     let (value, _len): (T, usize) = bincode::borrow_decode_from_slice(data, rtz_core::geo::shared::get_global_bincode_config())
         .expect("Could not decode binary data: try rebuilding with `force-rebuild` due to a likely precision difference between the generated assets and the current build.");
