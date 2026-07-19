@@ -18,7 +18,7 @@ Read this whole file before running anything — the pipeline downloads ~80GB an
   (Coverage is the only thing that needs nightly; the data regen does not.)
 - **`curl`** on `PATH` — used for the resumable planet-PBF download.
 - **~150GB of free disk** — the planet PBF is ~80GB, plus scratch space for `osm_extract_polygon`
-  to write per-level admin GeoJSON.
+  to write the per-area admin GeoJSON (~20GB).
 - **Time and bandwidth** — the download alone is 80GB; extraction over the full planet is heavy on
   CPU and I/O. Budget for this to run unattended for a long while. Prefer a wired connection and a
   machine you can leave alone.
@@ -39,10 +39,10 @@ cargo xtask update
 ```
 
 This downloads the planet PBF (resumable — safe to re-run if it drops), extracts admin boundaries,
-regenerates all bincodes, and verifies them. **The first run will stop partway** — see the
-two-phase handshake below for why, and just re-run the command it gives you.
+regenerates all bincodes, and verifies them, end to end — no manual step in the middle. It's a
+multi-hour, ~80GB-download, mostly-unattended job.
 
-### Step-by-step (or to resume after the handshake stop)
+### Step-by-step (equivalent to `update`, if you want to drive the phases yourself)
 
 1. **Download the planet PBF** (skip if you already have one):
 
@@ -60,15 +60,14 @@ two-phase handshake below for why, and just re-run the command it gives you.
    ```
 
    Installs `osm_extract_polygon` automatically if it's not on `PATH` (via `cargo install --git`).
-   Runs it with `--min 2 --max 8`, writing one subdirectory per admin level under
-   `.rtz-data/admin_data/` (the default `--out`).
-   When it finishes, it prints the exact subdirectories it produced — copy that list for the next
-   step.
+   Runs it with `--min 2 --max 8`, writing every admin area (levels 2-8) as its own GeoJSON file
+   **flat** under `.rtz-data/admin_data/` (the default `--out`) — one directory, not per-level
+   subdirectories. That directory is the `--admin-dirs` value for the next step.
 
-3. **Regenerate the bincodes**, passing the admin dirs from step 2:
+3. **Regenerate the bincodes**, pointing `--admin-dirs` at that directory:
 
    ```bash
-   cargo xtask regen --admin-dirs ".rtz-data/admin_data/admin2;...;.rtz-data/admin_data/admin8"
+   cargo xtask regen --admin-dirs ".rtz-data/admin_data"
    ```
 
    Rebuilds with `full` + `force-rebuild`, which regenerates all six `rtz/assets/*.bincode` files
@@ -85,24 +84,14 @@ two-phase handshake below for why, and just re-run the command it gives you.
    of the normal test suite. Green means the new bincodes are structurally sound; it does not mean
    the *data* is better — that's a judgment call for the operator, not this pipeline.
 
-## The two-phase `--admin-dirs` handshake
+## Admin GeoJSON layout & `--admin-dirs`
 
-`extract-admin` decides the per-level admin subdirectory names (`admin_data/admin2`,
-`admin_data/admin3`, etc.) — they don't exist, and can't be predicted, until it actually runs. So
-`regen` (and therefore `update`) needs `--admin-dirs` supplied *after* extraction completes.
-
-`cargo xtask update` handles this by running `download-pbf` and `extract-admin` first. If you
-didn't pass `--admin-dirs` up front, it stops there and prints the exact flag to re-run with:
-
-```
-extract-admin finished, but `--admin-dirs` was not provided, so `regen` cannot run.
-Re-run `cargo xtask update` (or `cargo xtask regen`) with:
-  --admin-dirs ".rtz-data/admin_data/admin2;...;.rtz-data/admin_data/admin8"
-```
-
-Copy that line verbatim into your next `cargo xtask update --pbf .rtz-data/planet-latest.osm.pbf
---admin-dirs "..."` (or straight into `cargo xtask regen`) — don't guess at the directory names
-yourself.
+`osm_extract_polygon` writes every admin area as its own GeoJSON file, all **flat** in one output
+directory (`.rtz-data/admin_data/` by default) — there are no per-level subdirectories. So the
+`--admin-dirs` value is simply that one directory, and `cargo xtask update` uses it automatically
+(no handshake). You only pass `--admin-dirs` explicitly — to `regen` or `update` — when reusing an
+earlier extraction to skip re-running `extract-admin`. `RTZ_OSM_ADMIN_DIRS` accepts a
+semicolon-separated list, so you *can* combine multiple such directories if you ever need to.
 
 ## `RTZ_OSM_ADMIN_DIRS`
 

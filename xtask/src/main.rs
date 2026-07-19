@@ -170,8 +170,9 @@ fn download_pbf(repo_root: &Path, url: &str, out: &Path) -> Result<()> {
 }
 
 /// `extract-admin`: ensures `osm_extract_polygon` is installed, then runs it
-/// against `pbf`, producing per-admin-level GeoJSON dirs under `out`.
-/// Returns `out` on success for use by `update`.
+/// against `pbf`, producing one GeoJSON file per admin area (levels 2-8) flat
+/// under `out`. Returns `out` on success — that directory is the `--admin-dirs`
+/// value for `regen`.
 fn extract_admin(repo_root: &Path, pbf: &Path, out: &Path) -> Result<PathBuf> {
     if !pbf.exists() {
         bail!("PBF file not found at {} — run `cargo xtask download-pbf` first, or pass `--pbf` to an existing file.", pbf.display());
@@ -200,8 +201,8 @@ fn extract_admin(repo_root: &Path, pbf: &Path, out: &Path) -> Result<PathBuf> {
     run(repo_root, command, "osm_extract_polygon failed to extract admin boundaries")?;
 
     println!("extracted admin boundaries to {}", out.display());
-    println!("note: osm_extract_polygon writes one subdirectory per admin level under {} —", out.display());
-    println!("      pass the semicolon-separated list of those subdirectories as `--admin-dirs` to `cargo xtask regen`.");
+    println!("note: all admin areas are written as individual GeoJSON files flat under that");
+    println!("      directory — pass it directly as `--admin-dirs` to `cargo xtask regen`.");
 
     Ok(out.to_path_buf())
 }
@@ -209,13 +210,27 @@ fn extract_admin(repo_root: &Path, pbf: &Path, out: &Path) -> Result<PathBuf> {
 /// `regen`: rebuilds `rtz` with `full` + `force-rebuild`, regenerating all
 /// six bincodes into `rtz/assets/`.
 fn regen(repo_root: &Path, admin_dirs: &str) -> Result<()> {
+    // The build script that reads `RTZ_OSM_ADMIN_DIRS` runs with its CWD set to the `rtz` crate
+    // directory (cargo always runs build scripts there), not the workspace root or wherever the
+    // operator invoked xtask. A relative dir like `.rtz-data/admin_data` would resolve against
+    // `rtz/` and not be found, so absolutize each dir against the repo root before handing it off.
+    let admin_dirs = admin_dirs
+        .split(';')
+        .map(|dir| {
+            let dir = Path::new(dir.trim());
+            let abs = if dir.is_absolute() { dir.to_path_buf() } else { repo_root.join(dir) };
+            abs.to_string_lossy().into_owned()
+        })
+        .collect::<Vec<_>>()
+        .join(";");
+
     println!("regenerating all data bincodes into rtz/assets/ — this downloads NED (master) and OSM-tz (2026c) fresh");
     println!("and re-encodes everything from scratch. RTZ_OSM_ADMIN_DIRS={admin_dirs}");
 
     let mut command = Command::new("cargo");
     command
         .args(["build", "--features", "full", "--features", "force-rebuild"])
-        .env("RTZ_OSM_ADMIN_DIRS", admin_dirs);
+        .env("RTZ_OSM_ADMIN_DIRS", &admin_dirs);
 
     run(repo_root, command, "cargo build failed while regenerating the data bincodes")?;
 
@@ -247,11 +262,10 @@ fn verify(repo_root: &Path) -> Result<()> {
 /// `update`: chains `download-pbf` (if needed) -> `extract-admin` -> `regen`
 /// -> `verify`.
 ///
-/// `--admin-dirs` can only name real paths once `extract-admin` has actually
-/// run (it decides the per-level subdirectory names), so this always runs
-/// download + extract first; if `--admin-dirs` is still missing at that
-/// point, it errors out with the concrete directories `extract-admin` just
-/// produced so the operator can re-run with the right value.
+/// `extract-admin` writes every admin area as its own GeoJSON file flat under
+/// one output directory, so that directory is the admin source directly — no
+/// per-level handshake. Pass `--admin-dirs` only to override it (e.g. to reuse
+/// a prior extraction without re-running `extract-admin`).
 fn update(repo_root: &Path, pbf: Option<PathBuf>, admin_out: &Path, admin_dirs: Option<String>) -> Result<()> {
     let pbf = match pbf {
         Some(pbf) => pbf,
@@ -264,19 +278,9 @@ fn update(repo_root: &Path, pbf: Option<PathBuf>, admin_out: &Path, admin_dirs: 
 
     let produced_dir = extract_admin(repo_root, &pbf, admin_out)?;
 
-    let admin_dirs = match admin_dirs {
-        Some(admin_dirs) => admin_dirs,
-        None => {
-            let discovered = admin_subdirs(&produced_dir);
-            bail!(
-                "extract-admin finished, but `--admin-dirs` was not provided, so `regen` cannot run.\n\
-                 Re-run `cargo xtask update` (or `cargo xtask regen`) with:\n  --admin-dirs \"{}\"\n\
-                 (those are the per-level subdirectories extract-admin just produced under {})",
-                discovered.join(";"),
-                produced_dir.display()
-            );
-        }
-    };
+    // The admin source is the flat directory `extract-admin` produced, unless the operator
+    // explicitly overrode it (e.g. to reuse an earlier extraction).
+    let admin_dirs = admin_dirs.unwrap_or_else(|| produced_dir.display().to_string());
 
     regen(repo_root, &admin_dirs)?;
     verify(repo_root)?;
@@ -284,25 +288,6 @@ fn update(repo_root: &Path, pbf: Option<PathBuf>, admin_out: &Path, admin_dirs: 
     println!("update: pipeline complete.");
 
     Ok(())
-}
-
-/// Lists the immediate subdirectories of `dir`, sorted, for use in a helpful
-/// `--admin-dirs` suggestion. Returns an empty list (rather than erroring) if
-/// `dir` can't be read, since this is only used to enrich an error message.
-fn admin_subdirs(dir: &Path) -> Vec<String> {
-    let Ok(entries) = std::fs::read_dir(dir) else {
-        return Vec::new();
-    };
-
-    let mut subdirs: Vec<String> = entries
-        .flatten()
-        .map(|entry| entry.path())
-        .filter(|path| path.is_dir())
-        .map(|path| path.display().to_string())
-        .collect();
-
-    subdirs.sort();
-    subdirs
 }
 
 /// `clean`: removes the `.rtz-data/` scratch directory (downloaded PBF +
