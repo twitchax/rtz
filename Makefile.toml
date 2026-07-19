@@ -44,22 +44,25 @@ args = ["nextest", "run", "--features", "web"]
 [tasks.codecov]
 # `clear = true` fully replaces cargo-make's built-in `codecov` task (a codecov.io
 # uploader script); without it the definitions merge into "multiple actions" and fail.
-# `+nightly` overrides the stable pin in `rust-toolchain.toml`: coverage needs nightly so
-# `cargo llvm-cov` sets `coverage_nightly`, activating the `#[coverage(off)]` exclusions.
+# `RUSTUP_TOOLCHAIN = "nightly"` overrides the stable pin in `rust-toolchain.toml`: coverage needs
+# nightly so `cargo llvm-cov` sets `coverage_nightly`, activating the `#[coverage(off)]` exclusions.
+# (Passing `+nightly` as an arg does NOT work under cargo-make — it mis-parses it as a subcommand.)
 clear = true
 workspace = false
 dependencies = ["tools"]
+env = { RUSTUP_TOOLCHAIN = "nightly" }
 command = "cargo"
 # `xtask` is operator/data-pipeline tooling (like the build script) — excluded from the coverage
 # denominator so the number reflects the library/binary surface, not untested dev tooling.
-args = ["+nightly", "llvm-cov", "nextest", "--features", "web", "--workspace", "--ignore-filename-regex", "xtask/src", "--lcov", "--output-path", "coverage.lcov"]
+args = ["llvm-cov", "nextest", "--features", "web", "--workspace", "--ignore-filename-regex", "xtask/src", "--lcov", "--output-path", "coverage.lcov"]
 
 [tasks.codecov-html]
 clear = true
 workspace = false
 dependencies = ["tools"]
+env = { RUSTUP_TOOLCHAIN = "nightly" }
 command = "cargo"
-args = ["+nightly", "llvm-cov", "nextest", "--features", "web", "--workspace", "--ignore-filename-regex", "xtask/src", "--html"]
+args = ["llvm-cov", "nextest", "--features", "web", "--workspace", "--ignore-filename-regex", "xtask/src", "--html"]
 
 # Release cross-builds (default `cli` feature stays on, so the bin is produced).
 

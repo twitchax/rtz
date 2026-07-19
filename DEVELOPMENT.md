@@ -43,11 +43,10 @@ $ wasm-pack publish
 ## Publish to wasmer
 
 ```bash
-$ # Regenerate the cache.
-$ cargo build --release --no-default-features --features full
-$ # Create the WASI binary.
-$ cargo wasi build --release --features full
-$ # Need `--no-validate` for some reason when pushing a WASIX binary.
+$ # Build the WASI binary. (`cargo-wasi`'s old `wasm32-wasi` target is unsupported on modern
+$ # toolchains; use `wasm32-wasip1` directly. Bump the version in `wasmer.toml` first.)
+$ rustup target add wasm32-wasip1
+$ cargo build --release --features full --target wasm32-wasip1
 $ wasmer publish
 ```
 
