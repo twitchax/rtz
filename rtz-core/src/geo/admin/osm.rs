@@ -86,6 +86,10 @@ pub struct OsmAdmin {
     /// This is is not stable across builds or new data sets.  It is merely unique during a single build.
     pub id: usize,
 
+    /// The OSM relation id of the admin area (e.g., `1473947`), or `0` if the source boundary was
+    /// not relation-backed. Unlike [`OsmAdmin::id`], this is stable across builds and data sets.
+    pub relation_id: u64,
+
     /// The `name` of the [`OsmAdmin`] (e.g., `Burkina Faso`).
     pub name: EncodableString,
     /// The `level` of the [`OsmAdmin`] (e.g., `3`).
@@ -102,11 +106,12 @@ impl<Context> Decode<Context> for OsmAdmin {
         D: Decoder<Context = Context>,
     {
         let id = usize::decode(decoder)?;
+        let relation_id = u64::decode(decoder)?;
         let name = EncodableString::decode(decoder)?;
         let level = usize::decode(decoder)?;
         let geometry = EncodableGeometry::decode(decoder)?;
 
-        Ok(OsmAdmin { id, name, level, geometry })
+        Ok(OsmAdmin { id, relation_id, name, level, geometry })
     }
 }
 
@@ -120,11 +125,12 @@ where
         D: BorrowDecoder<'de, Context = Context>,
     {
         let id = usize::decode(decoder)?;
+        let relation_id = u64::decode(decoder)?;
         let name = EncodableString::borrow_decode(decoder)?;
         let level = usize::decode(decoder)?;
         let geometry = EncodableGeometry::borrow_decode(decoder)?;
 
-        Ok(OsmAdmin { id, name, level, geometry })
+        Ok(OsmAdmin { id, relation_id, name, level, geometry })
     }
 }
 
@@ -140,13 +146,16 @@ impl From<IdFeaturePair> for OsmAdmin {
         let properties = value.1.properties.as_ref().unwrap();
         let geometry = value.1.geometry.as_ref().unwrap();
 
+        // Read defensively: a way-backed boundary can lack `relation_id`, and a single missing
+        // value would otherwise panic the whole regen. `0` marks "unknown" (no OSM id is ever 0).
+        let relation_id = properties.get("relation_id").and_then(|v| v.as_u64()).unwrap_or(0);
         let name = EncodableString(Cow::Owned(properties.get("name").unwrap().as_str().unwrap().to_string()));
         let level = properties.get("admin_level").unwrap().as_u64().unwrap() as usize;
 
         let geometry: Geometry<Float> = geometry.value.clone().try_into().unwrap();
         let geometry = EncodableGeometry(simplify_geometry(geometry, SIMPLIFICATION_EPSILON));
 
-        OsmAdmin { id, name, level, geometry }
+        OsmAdmin { id, relation_id, name, level, geometry }
     }
 }
 

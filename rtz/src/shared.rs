@@ -144,6 +144,10 @@ pub struct OsmAdminResponse1 {
     /// This is is not stable across builds or new data sets.  It is merely unique during a single build.
     pub id: usize,
 
+    /// The OSM relation id of the admin area (e.g., `1473947`), or `null` if the source boundary
+    /// was not relation-backed. Unlike [`OsmAdminResponse1::id`], this is stable across builds.
+    pub relation_id: Option<u64>,
+
     /// The `name` of the [`OsmAdminResponse1`] (e.g., `France`).
     pub name: &'static str,
 
@@ -156,6 +160,7 @@ impl From<&'static OsmAdmin> for OsmAdminResponse1 {
     fn from(value: &'static OsmAdmin) -> OsmAdminResponse1 {
         OsmAdminResponse1 {
             id: value.id,
+            relation_id: (value.relation_id != 0).then_some(value.relation_id),
             name: value.name.as_ref(),
             level: value.level,
         }

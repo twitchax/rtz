@@ -91,7 +91,10 @@ mod tests {
     #[test]
     fn can_get_timezones() {
         let admins = OsmAdmin::get_mem_items();
-        assert_eq!(admins.len(), 318111);
+        // Sanity floor rather than an exact count: the admin set grows with every OSM refresh, so
+        // pinning the exact size breaks each legitimate regen. A generous floor still catches a
+        // truncated or empty regen.
+        assert!(admins.len() > 300_000, "admin item count implausibly low: {}", admins.len());
     }
 
     #[test]
@@ -103,13 +106,21 @@ mod tests {
     #[test]
     fn can_get_from_lookup() {
         let lookup = OsmAdmin::get_lookup_suggestions(-121, 46).unwrap();
-        assert_eq!(lookup.len(), 20);
+        // A populated cell keeps many candidates; assert a floor rather than the exact count, which
+        // shifts with the data.
+        assert!(lookup.len() >= 10, "too few lookup suggestions: {}", lookup.len());
     }
 
     #[test]
     fn can_perform_exact_lookup() {
         assert_eq!(OsmAdmin::lookup_slow(-177.0, -15.0).len(), 0);
-        assert_eq!(OsmAdmin::lookup_slow(-121.0, 46.0)[0].name.as_ref(), "United States");
+
+        // Assert set membership, not `[0]`: (-121, 46) is inside both the country and the state,
+        // and the result order is not stable across regens.
+        let admins = OsmAdmin::lookup_slow(-121.0, 46.0);
+        let names = admins.iter().map(|a| a.name.as_ref()).collect::<Vec<&str>>();
+        assert!(names.contains(&"United States"), "expected United States in {names:?}");
+        assert!(names.contains(&"Washington"), "expected Washington in {names:?}");
 
         assert_eq!(OsmAdmin::lookup_slow(179.9968, -67.0959).len(), 0);
     }
@@ -121,14 +132,15 @@ mod tests {
         let tzs = cache.get(&(-177, -15)).map_into_items().unwrap() as Vec<&OsmAdmin>;
         assert_eq!(tzs.len(), 0);
 
+        // Populated cells: assert a floor and set membership, not exact counts / ordering (both
+        // shift with the data).
         let tzs = cache.get(&(-121, 46)).map_into_items().unwrap() as Vec<&OsmAdmin>;
-        assert_eq!(tzs.len(), 20);
-
-        let tz = cache.get(&(-121, 46)).map_into_items().unwrap()[0] as &OsmAdmin;
-        assert_eq!(tz.name.as_ref(), "United States");
+        assert!(tzs.len() >= 10, "too few items in cell (-121, 46): {}", tzs.len());
+        let names = tzs.iter().map(|t| t.name.as_ref()).collect::<Vec<&str>>();
+        assert!(names.contains(&"United States"), "expected United States in {names:?}");
 
         let tzs = cache.get(&(-87, 38)).map_into_items().unwrap() as Vec<&OsmAdmin>;
-        assert_eq!(tzs.len(), 58);
+        assert!(tzs.len() >= 10, "too few items in cell (-87, 38): {}", tzs.len());
     }
 
     #[test]
