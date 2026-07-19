@@ -1,0 +1,39 @@
+# Fly.io config for the free public rtz server (https://twitchax-rtz.fly.dev).
+#
+# Reconstructed from the deployed app config. The server image is built and pushed to Docker Hub
+# (`docker/Dockerfile` -> twitchax/rtz:{version}), then rolled out with `fly deploy -a twitchax-rtz`,
+# which updates the existing machines in place (currently ~3 per region across sin/sjc/ams/iad).
+#
+# NOTE: `RTZ_ANALYTICS_API_KEY` is intentionally NOT here — it's a credential and this repo is
+# public. Set it as a Fly secret instead (persists across deploys, injected as an env var):
+#   fly secrets set RTZ_ANALYTICS_API_KEY="<connection-string>" -a twitchax-rtz
+
+app = "twitchax-rtz"
+primary_region = "sea"
+
+[build]
+image = "twitchax/rtz:0.8.0"
+
+[env]
+RTZ_PORT = "8080"
+RTZ_SHOULD_LOG = "false"
+RUST_BACKTRACE = "1"
+
+[http_service]
+internal_port = 8080
+auto_stop_machines = "suspend"
+auto_start_machines = true
+min_machines_running = 0
+processes = ["app"]
+
+[http_service.concurrency]
+type = "requests"
+hard_limit = 100000
+soft_limit = 100
+
+[[http_service.checks]]
+interval = "1m0s"
+timeout = "5s"
+grace_period = "5s"
+method = "GET"
+path = "/api/health"
