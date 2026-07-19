@@ -2,11 +2,12 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.8.0] - 2026-07-19
 
-A tooling and coverage pass, a dependency sweep, and a new pipeline for refreshing the embedded
-datasets on demand. No committed data changed as part of this release; the pipeline exists so it
-*can* be refreshed, not because it was.
+A tooling and coverage pass, a full dependency sweep, a new pipeline for refreshing the embedded
+datasets — and the first refresh through it: all six bincodes regenerated from the latest upstream
+sources. Minor bump because the `geo` 0.28 → 0.33 update is exposed through the public geometry
+types (`Geometry<Float>`), and `OsmAdmin` gained a field.
 
 ### Added
 
@@ -16,8 +17,11 @@ datasets on demand. No committed data changed as part of this release; the pipel
   against the latest NED/OSM sources, and a decode-check via `cargo nextest`. Large artifacts (the
   ~80GB PBF, extracted GeoJSON) default into a gitignored `.rtz-data/` scratch dir, and `cargo
   xtask clean` reclaims it. Paired with a repo-local `update-data` project skill
-  (`.claude/skills/update-data/SKILL.md`) that walks an operator through it, including the
-  `--admin-dirs` handshake.
+  (`.claude/skills/update-data/SKILL.md`) that walks an operator through it.
+- **Stable OSM `relationId` on the admin API.** `OsmAdmin` now carries the OSM `relation_id` from
+  the source (e.g. Egypt = `1473947`), surfaced as `relationId` on `/osm/admin` responses. Unlike
+  the existing `id` — a build-local index used to address the lookup cache — it's stable across
+  builds and datasets, giving consumers a durable identifier. Additive; `id` is unchanged.
 - **cargo-make/nextest/llvm-cov tooling**, replacing tarpaulin. `Makefile.toml` and
   `.config/nextest.toml` give us `cargo make test`, `cargo make clippy`, and `cargo make codecov`
   as the canonical commands, matching the rest of the house. Building, testing, and `cargo install
@@ -42,6 +46,12 @@ datasets on demand. No committed data changed as part of this release; the pipel
 - **OSM admin data source is now `RTZ_OSM_ADMIN_DIRS`**, a semicolon-separated list of GeoJSON
   directories, instead of a hardcoded Windows path. `cargo xtask regen` sets it for you from
   whatever `extract-admin` produces. OSM-tz source pin also moved from `2024a` to `2026c`.
+- **All six embedded bincodes regenerated from the latest sources.** NED `master`, OSM-tz `2026c`,
+  and a fresh planet admin extraction (levels 2-8). `osm_time_zones` shrank ~7.5MB → ~2.6MB under
+  geo-0.33 simplification (99.99% agreement with the finer epsilon); `osm_admins` grew with OSM
+  coverage and the new `relation_id`. The OSM admin/tz tests were made regen-stable in the process
+  (set membership, floors, and the stable `relationId`/`identifier` instead of exact counts,
+  build-local ids, and result ordering — all of which legitimately shift on every refresh).
 - **Docker build modernized**: `cargo-chef` planner/cook layers so dependency compilation is
   cached separately from source changes, a `cargo-chef` rust base that installs the repo's pinned
   toolchain, a slim `debian:stable-slim` runtime, and a proper `.dockerignore` so the build context
@@ -54,3 +64,13 @@ datasets on demand. No committed data changed as part of this release; the pipel
 - **The CLI rejected negative longitudes.** `rtz ned tz -87.62,41.88` failed because clap parsed
   the leading `-` as a flag instead of the start of a coordinate. Fixed with
   `allow_hyphen_values` on the lng/lat args in `rtz/src/bin.rs`.
+- **Zero-copy geometry could `dealloc` static memory.** The `self-contained` borrow-decode path
+  rebuilds coordinate `Vec`s over the embedded `.rodata` bytes via `Vec::from_raw_parts`; letting
+  `geo`'s `Vec::drop` run on those would free a pointer the allocator never handed out (UB). It was
+  only sound because the geometries live in a process-lifetime static. `EncodableGeometry` now has a
+  `Drop` (present only under the default borrow decode, gated off by `owned-decode`) that forgets the
+  static-backed geometry, so the dealloc can't happen; `owned-decode` builds still drop normally.
+- **The `cargo xtask` data pipeline didn't actually run end-to-end.** `regen` passed a relative
+  `--admin-dirs` that the build script (CWD = `rtz/`) couldn't resolve, and `update` assumed
+  per-level `adminN/` subdirectories that `osm_extract_polygon` doesn't produce (it writes one flat
+  file per area). Both fixed; the skill docs corrected to match.

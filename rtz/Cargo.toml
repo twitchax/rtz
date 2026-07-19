@@ -1,6 +1,6 @@
 [package]
 name = "rtz"
-version = "0.7.3"
+version = "0.8.0"
 edition = "2021"
 authors = ["Aaron Roney <twitchax@gmail.com>"]
 license = "MIT"
@@ -53,7 +53,7 @@ wasm = ["wasm-bindgen", "wasm-bindgen-futures", "wee_alloc", "js-sys"]
 force-rebuild = ["rtz-build/force-rebuild"]
 
 [dependencies]
-rtz-core = { path = "../rtz-core", version = "0.1.6"}
+rtz-core = { path = "../rtz-core", version = "0.2.0"}
 
 anyhow = { version = "1", features = ["backtrace"] }
 rayon = "1"
@@ -111,7 +111,7 @@ futures = "0.3"
 criterion = { version = "0.8", features = ["html_reports"] }
 
 [build-dependencies]
-rtz-build = { path = "../rtz-build", version = "0.2.9"}
+rtz-build = { path = "../rtz-build", version = "0.2.10"}
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 reqwest = { version = "0.13", features = ["blocking"] }
