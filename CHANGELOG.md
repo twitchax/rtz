@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Changed
+
+- **WASI distribution moved from wasmer to a WASI Preview 2 component.** Releases now attach
+  `rtz-wasm32-wasip2.wasm` to the GitHub release, runnable with any component-capable runtime
+  (`wasmtime run rtz-wasm32-wasip2.wasm ned tz 30,30`) — no registry, no manifest. The wasmer
+  channel is deprecated and frozen at `0.8.0`: its runtime can't execute Preview 2 components,
+  which pinned us to the legacy Preview 1 target. `wasmer.toml` removed.
+
 ## [0.8.0] - 2026-07-19
 
 A tooling and coverage pass, a full dependency sweep, a new pipeline for refreshing the embedded

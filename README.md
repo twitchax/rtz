@@ -103,11 +103,20 @@ Description:     Canada (almost all of Saskatchewan), Costa Rica, El Salvador, E
 DST Description: Canada (Manitoba), United States (Illinois, most of Texas)
 ```
 
-### Run with Wasmer
+### Run with Wasmtime
+
+Each release ships a [WASI Preview 2](https://component-model.bytecodealliance.org/) component as a
+release asset (`rtz-wasm32-wasip2.wasm`). Grab it from the [latest
+release](https://github.com/twitchax/rtz/releases/latest) and run it with any component-capable
+runtime:
 
 ```bash
-wasmer run twitchax/rtz@latest -- ned tz 30,30
+wasmtime run rtz-wasm32-wasip2.wasm ned tz 30,30
 ```
+
+> Older versions were also published to wasmer (`wasmer run twitchax/rtz@latest`). That channel is
+> deprecated and frozen at `0.8.0` — wasmer's runtime does not execute Preview 2 components yet.
+> Prefer the component above, or the native binaries attached to each release.
 
 ### Run the Server
 

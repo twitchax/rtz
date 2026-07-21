@@ -40,15 +40,22 @@ Rename package to `rtzweb` in `pkg/package.json`.
 $ wasm-pack publish
 ```
 
-## Publish to wasmer
+## Publish the WASI component
+
+Each release attaches a WASI Preview 2 component to the GitHub release — no registry involved.
 
 ```bash
-$ # Build the WASI binary. (`cargo-wasi`'s old `wasm32-wasi` target is unsupported on modern
-$ # toolchains; use `wasm32-wasip1` directly. Bump the version in `wasmer.toml` first.)
-$ rustup target add wasm32-wasip1
-$ cargo build --release --features full --target wasm32-wasip1
-$ wasmer publish
+$ rustup target add wasm32-wasip2
+$ cargo build --release --features full --target wasm32-wasip2
+$ # Verify it actually runs before attaching it.
+$ wasmtime run target/wasm32-wasip2/release/rtz.wasm ned tz 30,30
+$ gh release upload v{v} target/wasm32-wasip2/release/rtz.wasm#rtz-wasm32-wasip2.wasm
 ```
+
+> **wasmer is retired as of `0.8.0`.** Its runtime can't execute Preview 2 components, which pinned
+> us to the legacy `wasm32-wasi`/Preview 1 target. The published `twitchax/rtz` wasmer package is
+> left in place at `0.8.0` so existing invocations keep working, but new versions are not pushed
+> there; `wasmer.toml` was removed (recoverable from git history if it's ever needed again).
 
 ## Publish to Docker
 
