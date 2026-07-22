@@ -35,26 +35,25 @@ HTTPS is also available, but is not recommended due to the performance overhead 
 
 ### Install
 
+Releases attach the binaries directly, so there is nothing to unpack.
+
 Windows:
 
 ```powershell
-$ iwr https://github.com/twitchax/rtz/releases/latest/download/rtz_x86_64-pc-windows-gnu.zip
-$ Expand-Archive rtz_x86_64-pc-windows-gnu.zip -DestinationPath C:\Users\%USERNAME%\AppData\Local\Programs\rtz
+$ iwr https://github.com/twitchax/rtz/releases/latest/download/rtz-x86_64-pc-windows-gnu.exe -OutFile rtz.exe
 ```
 
 Mac OS (Apple Silicon):
 
 ```bash
-$ curl -LO https://github.com/twitchax/rtz/releases/latest/download/rtz_aarch64-apple-darwin.zip
-$ unzip rtz_aarch64-apple-darwin.zip -d /usr/local/bin
+$ curl -Lo /usr/local/bin/rtz https://github.com/twitchax/rtz/releases/latest/download/rtz-aarch64-apple-darwin
 $ chmod a+x /usr/local/bin/rtz
 ```
 
 Linux:
 
 ```bash
-$ curl -LO https://github.com/twitchax/rtz/releases/latest/download/rtz_x86_64-unknown-linux-gnu.zip
-$ unzip rtz_x86_64-unknown-linux-gnu.zip -d /usr/local/bin
+$ curl -Lo /usr/local/bin/rtz https://github.com/twitchax/rtz/releases/latest/download/rtz-x86_64-unknown-linux-gnu
 $ chmod a+x /usr/local/bin/rtz
 ```
 
