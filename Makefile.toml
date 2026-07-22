@@ -64,6 +64,32 @@ env = { RUSTUP_TOOLCHAIN = "nightly" }
 command = "cargo"
 args = ["llvm-cov", "nextest", "--features", "web", "--workspace", "--ignore-filename-regex", "xtask/src", "--html"]
 
+# WASM / NPM package.
+
+# `wasm-pack` regenerates `pkg/package.json` from `Cargo.toml` on every build, which resets the
+# published name back to `rtz`. The rename to `rtzweb` lives here rather than as a manual step,
+# because a hand-edit silently reverts on the next build (and would publish under the wrong name).
+# `admin-osm` is intentionally omitted: it roughly triples the package size.
+[tasks.wasm]
+workspace = false
+cwd = "rtz"
+script = '''
+wasm-pack build --target web --no-default-features \
+  --features tz-osm --features tz-ned --features self-contained \
+  --features wasm --features extrasimplified
+jq '.name = "rtzweb"' pkg/package.json > pkg/package.json.tmp
+mv pkg/package.json.tmp pkg/package.json
+echo "pkg/package.json name -> $(jq -r .name pkg/package.json)"
+'''
+
+# Exercises the JS ABI under Node. Not part of `cargo make test`, which targets the native
+# toolchain; run this when touching `src/wasm.rs` or the response types it serializes.
+[tasks.test-wasm]
+workspace = false
+cwd = "rtz"
+command = "wasm-pack"
+args = ["test", "--node", "--no-default-features", "--features", "tz-ned", "--features", "tz-osm", "--features", "self-contained", "--features", "wasm", "--features", "extrasimplified"]
+
 # Release cross-builds (default `cli` feature stays on, so the bin is produced).
 
 [tasks.build-linux]

@@ -164,12 +164,21 @@ First, load the module as you would any other ES module.
 import * as rtz from 'rtzweb/rtzlib.js';
 ```
 
-Then, you can use the library similarly as you would in Rust.
+Then, you can use the library similarly as you would in Rust.  Each lookup returns an array of
+matches (a `(lng,lat)` can fall in more than one zone), and the package ships TypeScript
+definitions generated from the Rust response types.
 
 ```js
-let tz = rtz.getTimezoneNed(-121, 46);
-tz.identifier; // "America/Los_Angeles"
+let tzs = rtz.getTimezoneNed(-121, 46);
+tzs[0].identifier; // "America/Los_Angeles"
+tzs[0].rawOffset;  // -28800
 ```
+
+> **Breaking change in `0.8.0`.** These bindings previously returned a JSON *string*, so consumers
+> had to `JSON.parse` the result — and the example above (documented since the first release)
+> silently evaluated to `undefined`. They now return real JS objects. If you were parsing the
+> result, drop the `JSON.parse`; if you were on `0.7.0` or earlier and reading `.identifier`
+> directly, it works now.
 
 ## Feature Flags
 

@@ -6,6 +6,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use utoipa::ToSchema;
 
+#[cfg(feature = "wasm")]
+use tsify::Tsify;
+
 #[cfg(feature = "admin-osm")]
 use rtz_core::geo::admin::osm::OsmAdmin;
 #[cfg(feature = "tz-ned")]
@@ -19,28 +22,27 @@ use rtz_core::geo::tz::osm::OsmTimezone;
 #[cfg(feature = "tz-ned")]
 #[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "web", derive(ToSchema))]
+#[cfg_attr(feature = "wasm", derive(Tsify))]
 #[serde(rename_all = "camelCase")]
 pub struct NedTimezoneResponse1 {
-    /// The index of the [`NedTimezoneResponse1`] in the global static cache.
+    /// The index of this timezone in the global static cache.
     ///
-    /// This is is not stable across builds or new data sets.  It is merely unique during a single build.
+    /// This is not stable across builds or new data sets.  It is merely unique during a single build.
     pub id: usize,
-    /// The `identifier` of the [`NedTimezoneResponse1`] (e.g., `America/Los_Angeles`).
-    ///
-    /// Essentially, it is the IANA TZ identifier.
+    /// The IANA time zone identifier (e.g., `America/Los_Angeles`).
     pub identifier: Option<&'static str>,
 
-    /// The `description` of the [`NedTimezoneResponse1`] (e.g., the countries affected).
+    /// The countries and regions this zone covers.
     pub description: &'static str,
-    /// The `dst_description` of the [`NedTimezoneResponse1`] (i.e., daylight savings time information).
+    /// The daylight savings time information for this zone.
     pub dst_description: Option<&'static str>,
 
-    /// The `offset_str` of the [`NedTimezoneResponse1`] (e.g., `UTC-8:00`).
+    /// The UTC offset in display form (e.g., `UTC-8:00`).
     pub offset: &'static str,
 
-    /// The `zone_num` of the [`NedTimezoneResponse1`] (e.g., `-8`).
+    /// The UTC offset in hours (e.g., `-8`).
     pub zone: f32,
-    /// The `raw_offset` of the [`NedTimezoneResponse1`] (e.g., `-28800`).
+    /// The UTC offset in seconds (e.g., `-28800`).
     pub raw_offset: i32,
 }
 
@@ -65,33 +67,32 @@ impl From<&'static NedTimezone> for NedTimezoneResponse1 {
 #[cfg(feature = "tz-osm")]
 #[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "web", derive(ToSchema))]
+#[cfg_attr(feature = "wasm", derive(Tsify))]
 #[serde(rename_all = "camelCase")]
 pub struct OsmTimezoneResponse1 {
-    /// The index of the [`OsmTimezoneResponse1`] in the global static cache.
+    /// The index of this timezone in the global static cache.
     ///
-    /// This is is not stable across builds or new data sets.  It is merely unique during a single build.
+    /// This is not stable across builds or new data sets.  It is merely unique during a single build.
     pub id: usize,
-    /// The `identifier` of the [`OsmTimezoneResponse1`] (e.g., `America/Los_Angeles`).
-    ///
-    /// Essentially, it is the IANA TZ identifier.
+    /// The IANA time zone identifier (e.g., `America/Los_Angeles`).
     pub identifier: &'static str,
-    /// The `short_identifier` of the [`OsmTimezoneResponse1`] (e.g., `PDT`).
+    /// The abbreviated name of the offset currently in effect (e.g., `PDT`).
     pub short_identifier: String,
 
-    /// The `offset` of the [`OsmTimezoneResponse1`] (e.g., `UTC-8:00`).
+    /// The current UTC offset in display form (e.g., `UTC-8:00`).
     pub offset: String,
 
-    /// The `raw_offset` of the [`OsmTimezoneResponse1`] (e.g., `-28800`).
+    /// The current UTC offset in seconds, including any daylight savings adjustment (e.g., `-28800`).
     pub raw_offset: i32,
-    /// The `raw_base_offset` of the [`OsmTimezoneResponse1`] (e.g., `-28800`).
+    /// The standard UTC offset in seconds, excluding daylight savings (e.g., `-28800`).
     pub raw_base_offset: i32,
-    /// The `raw_dst_offset` of the [`OsmTimezoneResponse1`] (e.g., `-28800`).
+    /// The daylight savings adjustment in seconds, or `0` when it is not in effect.
     pub raw_dst_offset: i32,
 
-    /// The `zone_num` of the [`OsmTimezoneResponse1`] (e.g., `-8`).
+    /// The current UTC offset in hours (e.g., `-8`).
     pub zone: f32,
 
-    /// The current time in the timezone.
+    /// The current time in this timezone, as an RFC 3339 timestamp.
     pub current_time: String,
 }
 
@@ -131,27 +132,28 @@ impl From<&'static OsmTimezone> for OsmTimezoneResponse1 {
     }
 }
 
-/// The response type for the [`OsmAdmin`] endpoint when found.
+/// The response type for the OSM admin endpoint when found.
 ///
 /// Currently ingested version of this data set is [here](https://planet.openstreetmap.org/).
 #[cfg(feature = "admin-osm")]
 #[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "web", derive(ToSchema))]
+#[cfg_attr(feature = "wasm", derive(Tsify))]
 #[serde(rename_all = "camelCase")]
 pub struct OsmAdminResponse1 {
-    /// The index of the [`OsmAdminResponse1`] in the global static cache.
+    /// The index of this admin area in the global static cache.
     ///
-    /// This is is not stable across builds or new data sets.  It is merely unique during a single build.
+    /// This is not stable across builds or new data sets.  It is merely unique during a single build.
     pub id: usize,
 
     /// The OSM relation id of the admin area (e.g., `1473947`), or `null` if the source boundary
-    /// was not relation-backed. Unlike [`OsmAdminResponse1::id`], this is stable across builds.
+    /// was not relation-backed.  Unlike `id`, this is stable across builds.
     pub relation_id: Option<u64>,
 
-    /// The `name` of the [`OsmAdminResponse1`] (e.g., `France`).
+    /// The name of the admin area (e.g., `France`).
     pub name: &'static str,
 
-    /// The `admin_level` of the [`OsmAdminResponse1`] (e.g., `2`).
+    /// The OSM admin level of the area (e.g., `2` for a country).
     pub level: usize,
 }
 

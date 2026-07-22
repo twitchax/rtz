@@ -4,8 +4,31 @@ All notable changes to this project are documented here. Format loosely follows 
 
 ## [Unreleased]
 
+### Fixed
+
+- **The WASM bindings returned a JSON string, not JS objects.** `getTimezoneNed(-121, 46)` handed
+  back a `JsValue::from_str(...)` of serialized JSON, so the `tz.identifier` access documented in
+  the README since the first release evaluated to `undefined` — consumers had to `JSON.parse` the
+  result first. A later change to `lookup` also shifted the payload from a single object to an
+  array without a note, breaking `JSON.parse(tz).identifier` as well. The bindings now return real
+  JS arrays of objects via `serde-wasm-bindgen`. **Breaking for NPM consumers of `0.7.0` and
+  earlier**; the README documents the migration. Nothing had ever tested the JS ABI, which is why
+  this survived several releases — `cargo make test-wasm` now covers it under Node.
+
 ### Changed
 
+- **NPM package hygiene.** Dropped `wee_alloc` (unmaintained since 2022, with a known unfixed
+  leak, and worth nothing here — the package is ~99% static dataset, and removing it made the
+  `.wasm` *smaller*). Removed `js-sys` and `wasm-bindgen-futures`, which were declared in the
+  `wasm` feature but referenced nowhere. Serialization failures now surface as thrown JS
+  exceptions rather than panics, which in WASM trap and poison the module instance.
+- **The NPM package ships real TypeScript types.** Every binding was typed `any`; the response
+  structs now derive `Tsify` alongside the existing `ToSchema`, so `rtzlib.d.ts` carries real
+  interfaces — including the Rust doc comments — generated from the same definitions the server
+  uses. `getTimezoneNed` is now `(lng: number, lat: number) => NedTimezoneResponse1[]`.
+- **`cargo make wasm` / `cargo make test-wasm`** replace the hand-run `wasm-pack` invocation and
+  the manual `rtzweb` rename in `pkg/package.json` (which reverted on every build, so a forgetful
+  release would publish under the wrong package name).
 - **WASI distribution moved from wasmer to a WASI Preview 2 component.** Releases now attach
   `rtz-wasm32-wasip2.wasm` to the GitHub release, runnable with any component-capable runtime
   (`wasmtime run rtz-wasm32-wasip2.wasm ned tz 30,30`) — no registry, no manifest. The wasmer

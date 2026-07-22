@@ -48,7 +48,7 @@ admin-osm = ["rtz-core/admin-osm", "rtz-build/admin-osm"]
 
 cli = ["clap"]
 web = ["full", "tokio", "config", "log", "simple_logger", "schemars", "chrono", "axum", "hyper", "tower", "tower-http", "http", "http-body-util", "utoipa", "utoipa-swagger-ui", "utoipa-redoc", "utoipa-rapidoc", "axum-insights", "tracing"]
-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "wee_alloc", "js-sys"]
+wasm = ["wasm-bindgen", "serde-wasm-bindgen", "tsify"]
 
 force-rebuild = ["rtz-build/force-rebuild"]
 
@@ -100,14 +100,20 @@ tracing = { version = "0.1", optional = true }
 
 # wasm
 wasm-bindgen = { version = "0.2", optional = true }
-wasm-bindgen-futures = { version = "0.4", optional = true }
-wee_alloc = { version = "0.4", optional = true }
-js-sys = { version = "0.3", optional = true }
+# Converts the response structs into real JS objects (not JSON strings), and
+# emits the matching TypeScript declarations from the same Rust definitions.
+serde-wasm-bindgen = { version = "0.6", optional = true }
+tsify = { version = "0.5", default-features = false, features = ["js"], optional = true }
 
 [dev-dependencies]
 pretty_assertions = "1"
-cities-json = "0.6"
 futures = "0.3"
+
+# Bench-only, and native-only: `cities-json` pulls `rand` 0.9 -> `getrandom` 0.3, which refuses to
+# build for `wasm32-unknown-unknown` without a backend cfg. Keeping it off the wasm dev-dep tree
+# lets `cargo make test-wasm` compile without imposing RUSTFLAGS on the whole workspace.
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+cities-json = "0.6"
 criterion = { version = "0.8", features = ["html_reports"] }
 
 [build-dependencies]
@@ -116,6 +122,11 @@ rtz-build = { path = "../rtz-build", version = "0.2.10"}
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 reqwest = { version = "0.13", features = ["blocking"] }
 zip = { version = "8" }
+
+# Exercising the JS ABI requires poking at the returned `JsValue` the way a JS consumer would.
+[target.'cfg(target_family = "wasm")'.dev-dependencies]
+wasm-bindgen-test = "0.3"
+js-sys = "0.3"
 
 [[bench]]
 name = "benches"

@@ -29,16 +29,17 @@ $ cargo bench --features web
 
 ## Publish to NPM
 
-```bash
-$ cd rtz
-$ wasm-pack build --target web --no-default-features --features tz-osm --features tz-ned --features self-contained --features wasm --features extrasimplified
-```
-
-Rename package to `rtzweb` in `pkg/package.json`.
+`cargo make wasm` runs `wasm-pack` with the right feature set and applies the `rtzweb` rename.
+The rename has to happen here rather than by hand: `wasm-pack` regenerates `pkg/package.json`
+from `Cargo.toml` on every build, so a manual edit silently reverts and you publish as `rtz`.
 
 ```bash
-$ wasm-pack publish
+$ cargo make wasm
+$ cargo make test-wasm   # exercises the JS ABI under Node
+$ cd rtz/pkg && npm publish --otp={code}
 ```
+
+`admin-osm` is deliberately excluded from the NPM build — it roughly triples the package size.
 
 ## Publish the WASI component
 
