@@ -4,6 +4,16 @@ All notable changes to this project are documented here. Format loosely follows 
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-22
+
+A WASM/NPM release. The JS bindings returned a JSON string rather than objects — so the usage
+documented since the first release never worked — and nothing tested that boundary. Both are
+fixed, the package ships real TypeScript types, and the JS ABI now has CI coverage. Minor bump
+because the `wasm` feature's exported signatures changed.
+
+> **NPM version note.** `rtzweb@0.8.0` was published from this code before the release was cut,
+> so it is identical to `0.9.0`. `0.9.0` restores the crate/NPM version lockstep; prefer it.
+
 ### Fixed
 
 - **The WASM bindings returned a JSON string, not JS objects.** `getTimezoneNed(-121, 46)` handed

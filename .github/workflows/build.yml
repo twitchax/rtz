@@ -29,6 +29,29 @@ jobs:
       - run: cargo binstall cargo-make cargo-nextest --force --no-confirm
       - run: cargo make test
 
+  # The JS ABI is a separate surface from the native one: the bindings can compile and still hand
+  # JS the wrong shape (they returned a JSON string rather than objects for several releases,
+  # unnoticed, because nothing exercised them). `cargo make test` cannot catch that — it targets
+  # the native toolchain — so the wasm bindings get their own job.
+  test_wasm:
+    needs: test
+    name: Test WASM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: wasm32-unknown-unknown
+      - uses: cargo-bins/cargo-binstall@main
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-all-crates: "true"
+      # Force-install after cache restore — see the Test job for why.
+      - run: cargo binstall cargo-make wasm-pack --force --no-confirm
+      # `wasm-pack test --node` runs the bindings under the runner's preinstalled Node.
+      - run: cargo make test-wasm
+
   codecov:
     needs: test
     name: Code Coverage

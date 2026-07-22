@@ -2898,7 +2898,7 @@ dependencies = [
 
 [[package]]
 name = "rtz"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -2955,7 +2955,7 @@ dependencies = [
 
 [[package]]
 name = "rtz-core"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "bincode",
