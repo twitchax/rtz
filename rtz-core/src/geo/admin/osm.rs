@@ -13,8 +13,13 @@ use bincode::{
 
 use crate::{
     base::types::Float,
-    geo::shared::{get_geojson_feature_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, EncodableString, HasGeometry, HasProperties, IdFeaturePair},
+    geo::shared::{simplify_geometry, EncodableGeometry, EncodableString, HasGeometry, HasProperties, IdFeaturePair},
 };
+
+// Source ingestion is native-only (it reads GeoJSON off disk), so its imports carry the same
+// gate as the functions that use them.
+#[cfg(not(target_family = "wasm"))]
+use crate::geo::shared::{get_geojson_feature_from_string, CanGetGeoJsonFeaturesFromSource};
 
 use super::shared::IsAdmin;
 

@@ -1,6 +1,9 @@
 //! All of the geo-specific functions for OSM TZ lookups.
 
-use std::{borrow::Cow, io::Read};
+use std::borrow::Cow;
+
+#[cfg(not(target_family = "wasm"))]
+use std::io::Read;
 
 use geo::Geometry;
 use serde_json::{Map, Value};
@@ -14,8 +17,13 @@ use bincode::{
 
 use crate::{
     base::types::Float,
-    geo::shared::{get_geojson_features_from_string, simplify_geometry, CanGetGeoJsonFeaturesFromSource, EncodableGeometry, EncodableString, HasGeometry, HasProperties, IdFeaturePair},
+    geo::shared::{simplify_geometry, EncodableGeometry, EncodableString, HasGeometry, HasProperties, IdFeaturePair},
 };
+
+// Source ingestion is native-only (it downloads and unzips GeoJSON), so its imports carry the
+// same gate as the functions that use them.
+#[cfg(not(target_family = "wasm"))]
+use crate::geo::shared::{get_geojson_features_from_string, CanGetGeoJsonFeaturesFromSource};
 
 use super::shared::IsTimezone;
 
