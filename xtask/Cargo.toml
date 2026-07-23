@@ -7,3 +7,7 @@ publish = false
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 anyhow = "1"
+
+# Only for `resort-admins`, which rewrites the committed bincodes in place and
+# therefore needs the codecs that define their layout.
+rtz-core = { path = "../rtz-core", features = ["self-contained", "admin-osm"] }

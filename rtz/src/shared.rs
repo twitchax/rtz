@@ -134,6 +134,9 @@ impl From<&'static OsmTimezone> for OsmTimezoneResponse1 {
 
 /// The response type for the OSM admin endpoint when found.
 ///
+/// Results are returned broadest-first: ascending by `level`, so a point inside nested areas
+/// yields the containment hierarchy in order (country, then state, then county, then city).
+///
 /// Currently ingested version of this data set is [here](https://planet.openstreetmap.org/).
 #[cfg(feature = "admin-osm")]
 #[derive(Debug, Serialize, Deserialize)]

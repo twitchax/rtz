@@ -13,7 +13,7 @@ use bincode::{
 
 use crate::{
     base::types::Float,
-    geo::shared::{simplify_geometry, EncodableGeometry, EncodableString, HasGeometry, HasProperties, IdFeaturePair},
+    geo::shared::{simplify_geometry, ConcreteVec, EncodableGeometry, EncodableString, HasGeometry, HasProperties, IdFeaturePair},
 };
 
 // Source ingestion is native-only (it reads GeoJSON off disk), so its imports carry the same
@@ -177,6 +177,23 @@ impl HasGeometry for OsmAdmin {
 
     fn geometry(&self) -> &Geometry<Float> {
         &self.geometry.0
+    }
+
+    /// Order admins broadest-first, so a lookup returns the containment hierarchy in reading
+    /// order (country, then state, then county, then city) rather than in source-file order.
+    ///
+    /// `relation_id` breaks ties: levels collide constantly, and without a stable secondary key
+    /// the order would shift between regenerations of identical data.
+    fn reorder(items: ConcreteVec<Self>) -> ConcreteVec<Self> {
+        let mut items = items.into_iter().collect::<Vec<_>>();
+        items.sort_by_key(|admin| (admin.level, admin.relation_id));
+
+        // `id` is the item's index, so sorting invalidates it.
+        for (index, admin) in items.iter_mut().enumerate() {
+            admin.id = index;
+        }
+
+        ConcreteVec::from(items)
     }
 }
 

@@ -58,6 +58,12 @@ impl<T> Deref for ConcreteVec<T> {
     }
 }
 
+impl<T> From<Vec<T>> for ConcreteVec<T> {
+    fn from(value: Vec<T>) -> ConcreteVec<T> {
+        ConcreteVec(value)
+    }
+}
+
 impl<T> From<geojson::FeatureCollection> for ConcreteVec<T>
 where
     T: From<IdFeaturePair> + Send,
@@ -258,6 +264,20 @@ pub trait HasGeometry {
     fn id(&self) -> usize;
     /// Get the [`Geometry`] of the [`HasGeometry`].
     fn geometry(&self) -> &Geometry<Float>;
+
+    /// Impose a canonical order on the items at build time.  Defaults to leaving source order
+    /// alone; override to make lookup results come back in a meaningful order.
+    ///
+    /// A lookup returns candidates in the order their ids appear in the lookup cache, and the
+    /// cache is built by walking the items in order — so item order *is* result order, and it
+    /// costs nothing at runtime.  An implementation that reorders **must** rewrite each item's
+    /// `id` to its new index, because `id` is the item's position in this collection.
+    fn reorder(items: ConcreteVec<Self>) -> ConcreteVec<Self>
+    where
+        Self: Sized + 'static,
+    {
+        items
+    }
 }
 
 /// A trait for types that have properties.
@@ -444,8 +464,32 @@ fn generate_item_bincode<T>(geojson_features: FeatureCollection, bincode_destina
 where
     T: HasGeometry + Encode + From<IdFeaturePair> + Send + 'static,
 {
-    let items: ConcreteVec<T> = get_items_from_features(geojson_features);
+    let items: ConcreteVec<T> = T::reorder(get_items_from_features(geojson_features));
     bincode::encode_into_std_write(items, &mut std::fs::File::create(bincode_destination).unwrap(), get_global_bincode_config()).unwrap();
+}
+
+/// Re-impose [`HasGeometry::reorder`] on already-generated bincodes, rewriting the items blob and
+/// its lookup cache in place.
+///
+/// Both artifacts derive entirely from the items blob — the lookup cache is computed from the
+/// item geometries, never from the source GeoJSON — so this needs no source data.  That matters:
+/// re-ingesting the OSM planet extract is a multi-hour, ~80GB job, and the extract is not kept
+/// around after `cargo xtask clean`.
+#[cfg(feature = "self-contained")]
+#[cfg_attr(coverage_nightly, coverage(off))]
+pub fn resort_items_bincode<T>(items_path: impl AsRef<Path>, lookup_path: impl AsRef<Path>)
+where
+    T: HasGeometry + Encode + Decode<()> + Send + Sync + 'static,
+{
+    let data = std::fs::read(items_path.as_ref()).unwrap();
+    let (items, _len): (ConcreteVec<T>, usize) = bincode::decode_from_slice(&data, get_global_bincode_config()).unwrap();
+
+    // Reorder first: the cache stores ids, so it has to be derived from the reindexed items.
+    let items = T::reorder(items);
+    let cache = get_lookup_from_geometries(&items);
+
+    bincode::encode_into_std_write(items, &mut std::fs::File::create(items_path.as_ref()).unwrap(), get_global_bincode_config()).unwrap();
+    bincode::encode_into_std_write(cache, &mut std::fs::File::create(lookup_path.as_ref()).unwrap(), get_global_bincode_config()).unwrap();
 }
 
 /// Get the GeoJSON features from the binary assets.

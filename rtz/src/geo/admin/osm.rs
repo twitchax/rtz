@@ -115,14 +115,32 @@ mod tests {
     fn can_perform_exact_lookup() {
         assert_eq!(OsmAdmin::lookup_slow(-177.0, -15.0).len(), 0);
 
-        // Assert set membership, not `[0]`: (-121, 46) is inside both the country and the state,
-        // and the result order is not stable across regens.
+        // Assert set membership rather than indexing a position: (-121, 46) is inside both the
+        // country and the state, and which admins exist at a point shifts with each OSM refresh.
+        // (Their *order* is stable — see `lookup_returns_admins_broadest_first`.)
         let admins = OsmAdmin::lookup_slow(-121.0, 46.0);
         let names = admins.iter().map(|a| a.name.as_ref()).collect::<Vec<&str>>();
         assert!(names.contains(&"United States"), "expected United States in {names:?}");
         assert!(names.contains(&"Washington"), "expected Washington in {names:?}");
 
         assert_eq!(OsmAdmin::lookup_slow(179.9968, -67.0959).len(), 0);
+    }
+
+    /// Ordering is a storage property, not a query-time one: `OsmAdmin::reorder` sorts the items
+    /// at build time, the lookup cache is built by walking them in order, and neither `lookup` nor
+    /// `lookup_slow` re-sorts. So both paths must come back broadest-first, and a regen that
+    /// silently drops the sort would surface here.
+    #[test]
+    fn lookup_returns_admins_broadest_first() {
+        // Points chosen for depth: each sits inside several nested admin levels.
+        for (lng, lat) in [(-87.62, 41.88), (2.35, 48.86), (139.69, 35.68), (-74.006, 40.7128)] {
+            for (path, admins) in [("lookup", OsmAdmin::lookup(lng, lat)), ("lookup_slow", OsmAdmin::lookup_slow(lng, lat))] {
+                let levels = admins.iter().map(|a| a.level).collect::<Vec<usize>>();
+
+                assert!(levels.len() > 1, "({lng}, {lat}) via {path} should hit nested admins, got {levels:?}");
+                assert!(levels.is_sorted(), "({lng}, {lat}) via {path} returned levels out of order: {levels:?}");
+            }
+        }
     }
 
     #[test]

@@ -5,6 +5,10 @@
 //! sequencing them correctly, validating preconditions, and printing clear
 //! progress / warning messages. See each subcommand's `--help` text for
 //! details, and the top-level `update` subcommand for the full pipeline.
+//!
+//! The one exception is `resort-admins`, which calls into `rtz-core` directly
+//! rather than shelling out — it rewrites the committed bincodes in place, and
+//! the encode/decode logic that knows their layout lives there.
 
 use std::{
     env,
@@ -81,6 +85,14 @@ enum Cmd {
         admin_dirs: Option<String>,
     },
 
+    /// Re-sort the committed OSM admin bincodes into the canonical order
+    /// (`OsmAdmin::reorder`) and rebuild their lookup cache, without needing
+    /// the source planet extract.
+    ///
+    /// A one-time migration for assets generated before the ordering existed;
+    /// `regen` applies the same order to anything it produces.
+    ResortAdmins,
+
     /// Remove the `.rtz-data/` scratch directory (downloaded PBF + extracted
     /// admin GeoJSON) to reclaim disk space.
     Clean,
@@ -96,6 +108,7 @@ fn main() -> Result<()> {
         Cmd::Regen { admin_dirs } => regen(&repo_root, &admin_dirs),
         Cmd::Verify => verify(&repo_root),
         Cmd::Update { pbf, admin_out, admin_dirs } => update(&repo_root, pbf, &admin_out, admin_dirs),
+        Cmd::ResortAdmins => resort_admins(&repo_root),
         Cmd::Clean => clean(&repo_root),
     }
 }
@@ -292,6 +305,24 @@ fn update(repo_root: &Path, pbf: Option<PathBuf>, admin_out: &Path, admin_dirs: 
 
 /// `clean`: removes the `.rtz-data/` scratch directory (downloaded PBF +
 /// extracted admin GeoJSON) to reclaim disk space.
+fn resort_admins(repo_root: &Path) -> Result<()> {
+    let assets = repo_root.join("rtz").join("assets");
+    let items = assets.join("osm_admins.bincode");
+    let lookup = assets.join("osm_admin_lookup.bincode");
+
+    for path in [&items, &lookup] {
+        if !path.exists() {
+            bail!("{} does not exist — run `cargo xtask regen` first.", path.display());
+        }
+    }
+
+    println!("re-sorting {} and rebuilding {} ...", items.display(), lookup.display());
+    rtz_core::geo::shared::resort_items_bincode::<rtz_core::geo::admin::osm::OsmAdmin>(&items, &lookup);
+    println!("done. re-run `cargo xtask verify` to confirm the assets still decode.");
+
+    Ok(())
+}
+
 fn clean(repo_root: &Path) -> Result<()> {
     let scratch = repo_root.join(".rtz-data");
 
