@@ -4,6 +4,31 @@ All notable changes to this project are documented here. Format loosely follows 
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-07-23
+
+The OSM admin endpoint now returns results in a meaningful order — broadest-first — and, unusually,
+that made lookups substantially faster rather than slower. Minor bump because the ordering is a new
+behavioral guarantee and `rtz-core`'s public `HasGeometry` trait gained a method.
+
+### Changed
+
+- **OSM admin results are now returned broadest-first** — ascending by `level`, so a point inside
+  nested areas yields the containment hierarchy in order (country, state, county, city) instead of
+  source-file order. This is a *storage* property, not a query-time sort: `OsmAdmin::reorder` sorts
+  the items at build time (keyed on `level`, with `relation_id` breaking ties so regens are
+  deterministic), and since the lookup cache is built by walking items in order, the ordering costs
+  nothing at runtime. `HasGeometry::reorder` defaults to identity, so the timezone datasets are
+  untouched.
+- **Admin lookups got substantially faster** as a side effect — grouping same-level (and so
+  similarly-sized) geometries together improves locality on the scan. Measured with the existing
+  criterion benches: full-scan worst case −20.5%, assisted sweep −13.5%, random cities −43.0%.
+  This was expected to be a small regression, not a win; the numbers are reproducible via
+  `cargo bench --features web --bench benches -- admin_osm`.
+- `cargo xtask resort-admins` migrates already-generated admin bincodes into the new order without
+  the source planet extract — both artifacts derive from the items blob, so a re-sort is ~3 minutes
+  rather than a multi-hour, ~80GB re-ingest. `id` values shift as a result; they are documented as
+  build-unstable, and `relationId` remains the durable identifier.
+
 ## [0.9.0] - 2026-07-22
 
 A WASM/NPM release. The JS bindings returned a JSON string rather than objects — so the usage
